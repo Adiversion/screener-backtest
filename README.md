@@ -128,6 +128,24 @@ The task calls `RUN_BACKTEST.bat auto`, which refreshes data, rebuilds the
 rotation screen and the dashboard, and logs to `reports\scheduled_run.log`.
 It runs only while the PC is on and you are logged in.
 
+## Run it online (no PC needed)
+
+Pick whichever fits:
+
+| Option | What happens | How to use |
+|---|---|---|
+| **GitHub Actions (recommended)** | Runs every day at 19:00 IST on GitHub's servers, publishes reports to the `live` branch and as an artifact | Nothing to install. Watch it in the repo's **Actions** tab, or press **Run workflow**. Config: `.github/workflows/update-reports.yml` |
+| **GitHub Pages** | Same, plus a live dashboard URL you can open on a phone | Repo → **Settings → Pages → Source: GitHub Actions** (one-time). Config: `.github/workflows/pages.yml` |
+| **Google Colab** | Whole engine in a browser tab, nothing installed | Open `Colab_Backtest.ipynb` in Colab → **Runtime > Run all** |
+| **Replit** | Interactive cloud IDE with the repo mounted | Import the repo; `.replit` / `replit.nix` are committed |
+
+Browse the results the workflow produced at
+`https://github.com/Adiversion/screener-backtest/tree/live`.
+
+> GitHub pauses scheduled workflows on repos with no activity for 60+ days, and
+> schedules can start up to ~15 minutes late. If that happens, use
+> **Actions → Update live reports → Run workflow**.
+
 ## Tweaking a strategy
 
 Thresholds live in `config/protocol_v2.yaml` (single source of truth; every

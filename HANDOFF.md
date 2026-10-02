@@ -127,6 +127,15 @@ On Windows: double-click `RUN_BACKTEST.bat` (interactive), or use
 install 19:00` registers a daily Windows task that runs the `auto` mode and
 logs to `reports\scheduled_run.log`.
 
+**Running without a PC** — `.github/workflows/update-reports.yml` runs the whole
+pipeline on GitHub's servers daily at 19:00 IST (or on demand via
+**Actions → Run workflow**), then force-publishes `reports/` to the `live`
+branch and uploads an artifact. `.github/workflows/pages.yml` optionally deploys
+the same content to GitHub Pages (enable once: **Settings → Pages → Source:
+GitHub Actions**). `Colab_Backtest.ipynb` runs the whole engine from a browser
+tab with no install. The local `schedule_daily.bat` Windows task and the GitHub
+Actions schedule are **independent** — disable whichever you do not want.
+
 **Output formats for each run** (`reports/`): `REPORT.html` (dynamic,
 self-contained, human-friendly), `REPORT.md`, `report.json` (**slim** — metrics
 only, no per-trade rows, so an agent can read the whole thing),

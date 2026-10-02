@@ -1,0 +1,81 @@
+name: Update live reports
+
+# Runs the whole engine on GitHub's servers - no PC needed.
+#  - every day at 19:00 IST (13:30 UTC)
+#  - or on demand from the Actions tab / the API ("Run workflow")
+on:
+  schedule:
+    - cron: "30 13 * * *"
+  workflow_dispatch:
+    inputs:
+      full_backtest:
+        description: "Run all 29 strategies (slower, ~15 min) instead of the protocol set"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-live-reports
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip && pip install -r requirements.txt
+
+      - name: Refresh Nifty-500 price data
+        continue-on-error: true
+        run: python scripts/fetch_data.py --source nifty500 --start 2018-01-01 --limit 501
+
+      - name: Refresh delivery data (activates filter F4)
+        continue-on-error: true
+        run: python scripts/fetch_delivery.py --days 40
+
+      - name: Backtest
+        run: |
+          if [ "${{ inputs.full_backtest }}" = "true" ]; then
+            python scripts/run_backtest.py --strategies all --capital 1000 --set run.bootstrap_n=2000
+          else
+            python scripts/run_backtest.py --strategies protocol --capital 1000 --set run.bootstrap_n=2000
+          fi
+
+      - name: INR 1000 rotation backtest
+        continue-on-error: true
+        run: python scripts/rotation_backtest.py
+
+      - name: Rotation screen and dashboard
+        run: python scripts/screen_candidates.py
+
+      - name: Publish reports to the live branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -rf /tmp/live && mkdir -p /tmp/live
+          cp -r reports/. /tmp/live/
+          cd /tmp/live
+          git init -q -b live
+          git add -A
+          git commit -q -m "live reports $(date -u +%FT%TZ)"
+          git remote add origin "${{ github.server_url }}/${{ github.repository }}.git"
+          git push --force origin live
+
+      - name: Upload reports as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports-${{ github.run_number }}
+          path: reports/
+          retention-days: 30
