@@ -6,3 +6,7 @@ reports/
 data/adhoc_*.parquet
 .venv/
 .env
+
+# ad-hoc verification scratch files
+data/_bhav_*.parquet
+data/_verdict_cache.parquet
