@@ -9,10 +9,9 @@ protocol proposed. `scripts/validate.py` then measured their information
 coefficients against the 5-day forward return on 108,742 breakout events, and
 the verdict was `NO_INCREMENTAL_INFORMATION`:
 
-    retention      IC +0.00009   t +0.02   <- indistinguishable from noise
-    efficiency     IC -0.00000   t -0.46
-    closing_range  IC -0.0086    t -1.72
-    closing_disp   IC -0.0033    t -0.65
+    retention      IC +0.00009  t +0.02  <- indistinguishable from noise
+    closing_range  IC -0.0086   t -1.72
+    closing_disp   IC -0.0033   t -0.65
 
 so the protocol's own instruction applies: discard the complexity.
 
@@ -30,16 +29,14 @@ closing range. Scores are CROSS-SECTIONAL PERCENTILES, because a ranking is a
 rank; and there is NO DOUBLE COUNTING, since `efficiency` is result/volume and
 already carries the negative-volume effect.
 
-TWO CAVEATS, AND THE SECOND ONE IS THE SERIOUS ONE. These weights were set
-from information coefficients estimated on 2018-2026, so they are fitted to the
-sample and describe it rather than predict beyond it.
-
-More seriously: they were measured on 5-day FORWARD RETURNS and they do not
-survive a +15% target / -7% stop / 15-session strategy. `low_vol` -- whose
-factor has the single strongest IC we measured -- LOSES to the random null as a
-registered strategy, because calm names do not move enough to hit a +15% target.
-See `protocol/strategies_evidence.py`. The ranking is a cross-sectional ordering
-for holding periods measured in months; it is not a short-horizon entry signal.
+TWO CAVEATS. These weights were set from information coefficients estimated on
+2018-2026, so they are fitted to the sample and describe it rather than predict
+beyond it. More seriously, they were measured on 5-day FORWARD RETURNS and do
+NOT survive a +15% target / -7% stop / 15-session strategy: `low_vol`, whose
+factor has the strongest IC we measured, LOSES to the random null as a
+registered strategy because calm names do not move enough to hit a +15% target
+(see `protocol/strategies_evidence.py`). This ranking is a cross-sectional
+ordering for holding periods in months, not a short-horizon entry signal.
 
 Preserved from v1: missing data is UNKNOWN, never a real zero (`coverage()`).
 """
