@@ -117,6 +117,9 @@ python scripts/run_backtest.py --set filters.disabled='[F1,F5]'
 community scanners `n1_eod_momentum`, `n2_consolidation_breakout`,
 `n3_absorption`, `n4_effort_result_discrepancy`.
 
+**→ [`STRATEGIES.md`](STRATEGIES.md) lists every strategy with its exact rule
+and gives a five-step, copy-paste guide to adding your own.**
+
 Add your own in `protocol/strategies*.py` with the `@register("name")`
 decorator — it returns `TradeSignal`s and inherits the shared simulator,
 costs, metrics and comparison table automatically.

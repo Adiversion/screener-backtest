@@ -144,6 +144,9 @@ keep them that way. On the 499-symbol universe a full `--strategies all`
 
 ## 5. Adding / tweaking strategies
 
+> **See `STRATEGIES.md`** for the catalogue of all 29 registered strategies
+> (rule, family, source) and a fuller five-step authoring guide with tests.
+
 Register a builder in any `protocol/strategies*.py`:
 
 ```python
