@@ -168,16 +168,38 @@ from zero.**
 
 | Component | IC inside gates | t | IC outside gates | t |
 |---|---|---|---|---|
-| `atrpct` | **+0.0591** | +3.16 | **−0.0811** | −14.95 |
-| `efficiency` | **+0.0409** | +2.86 | **−0.0141** | −7.71 |
+| `efficiency` | **+0.0321** | +4.15 | **−0.0198** | −18.20 |
+| `atrpct` | +0.0357 | +3.77 | +0.0504 | +13.59 |
 
-The score applies one fixed sign to both regimes. In the regime the engine trades in,
-these two are **backwards**. Also: `penetration` sits at percentile **0.0** for every
-gate-clearing name — the gate has already pinned it, so it contributes nothing while
-still consuming a seventh of the score.
+**Only `efficiency` flips, and it does not matter.** The engine only ever buys
+gate-clearers, so the relevant sign is the inside-gate one, and `efficiency` already
+carries **+1** — which is the correct sign for that regime. There is nothing to fix.
 
-> **This is the most actionable defect in the engine.** A reviewer who fixes only one
-> thing should fix this.
+`atrpct` was previously reported here as flipping too. **It does not**, on the rebuilt
+6-year panel, at either horizon: it is positive in *both* regimes (+0.0499 / +0.0532 at
+5 sessions, +0.0357 / +0.0504 at 20 sessions). The earlier table was a measurement
+error on my part. See error E9.
+
+Also: `penetration` sits at percentile **0.0** for every gate-clearing name — the gate
+has already pinned it, so it contributes nothing while still consuming a seventh of the
+score.
+
+**I then tried the fix anyway, and it does not work** (`scripts/sign_experiment.py`,
+32,389 gate-clearers, 1,187 sessions, 20-session forward return of the top-ranked name):
+
+| Variant | top1 | top3 | top10 | t vs baseline | beat rate |
+|---|---|---|---|---|---|
+| **A — baseline (unchanged)** | **+1.47%** | +1.69% | +1.59% | — | 49.3% |
+| B — flip `atrpct` | +1.34% | +1.74% | +1.87% | −0.22 | 44.6% |
+| C — flip both | +1.34% | +1.74% | +1.87% | −0.22 | 44.6% |
+| D — flip both, drop `penetration` | +1.52% | +1.91% | +1.90% | −0.15 | 45.0% |
+
+**No variant is significantly different from the baseline**, and flipping `atrpct` makes
+the headline number slightly *worse*. The signs are unchanged in the code. A sign is a
+fitted parameter; re-measuring justifies changing it, and the measurement does not.
+
+Note the **49.3% beat rate**: the top-ranked name beats the same day's average
+gate-clearing name barely half the time.
 
 ---
 
@@ -394,11 +416,15 @@ Listed because a reviewer should assume more of these exist than I have listed.
 | E6 | Wrote off the user's Sep-2024 BAJAJ-AUTO read as wrong. | The panel began 3 days after the level was set, so I could not see it. | Fetched 2015+ history; the user was right. |
 | E7 | Stated the 1 Oct crash was "a −12% sales print" and framed support/resistance as the cause, then partially reversed myself. | Over-attributed a news event to a chart pattern. | §6 now separates the two explicitly. |
 | E8 | Committed a failing audit test. | Caught by CI. | Fixed in the next commit. |
+| E9 | Reported `atrpct` as flipping sign inside vs outside the gates. | Would have justified a sign change that **measurably hurts** (top1 +1.47% → +1.34%). | Re-measured on the rebuilt panel: it does not flip. The earlier table was wrong. |
+| E10 | In `sign_experiment.py`, selected the top-1 **score value** instead of the top-1 name's **forward return**. | Produced a mean of **+72.55%** and a **99.9%** beat rate. | Caught because the beat rate was absurd. Rewritten to take `nlargest(k, 'score')['fwd'].mean()`. |
 
-**Structural note.** E2, E3 and E4 all share a cause: reaching for a number before
-establishing it was computed correctly. Every one was found by a sanity check, not by
-the test suite. If you find a contradiction in this document, check my arithmetic
-first and my reasoning second.
+**Structural note.** E2, E3, E4, E9 and E10 all share a cause: **reaching for a number
+before establishing what it means.** Every one was caught by a sanity check — an
+impossible mean, a 99.9% hit rate, a t-statistic pointing the wrong way — and not by
+the test suite, which passed throughout. If you find a contradiction in this document,
+check my arithmetic first and my reasoning second, and treat any figure I did not
+sanity-check as unverified.
 
 ---
 
