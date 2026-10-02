@@ -28,16 +28,20 @@ What the same test DID find, ranked by |t|:
     ret60        IC +0.0049   t +0.90   nothing
 
 Version 2 scores the measured factors and drops retention, acceptance and
-closing range. Two consequences: scores are CROSS-SECTIONAL PERCENTILES,
-because a ranking is a rank and percentiles make outliers unscoreable rather
-than dominant; and there is NO DOUBLE COUNTING, since `efficiency` is
-result/volume and already carries the negative-volume effect.
+closing range. Scores are CROSS-SECTIONAL PERCENTILES, because a ranking is a
+rank; and there is NO DOUBLE COUNTING, since `efficiency` is result/volume and
+already carries the negative-volume effect.
 
-HONEST CAVEAT: these weights were set from information coefficients estimated on
-2018-2026. Setting weights from in-sample evidence is fitting to the sample,
-however measured. They describe what this data shows; they are not validated
-predictions. The only out-of-sample check is the walk-forward in
-`protocol/crosssec.py`, covering the momentum basket only.
+TWO CAVEATS, AND THE SECOND ONE IS THE SERIOUS ONE. These weights were set
+from information coefficients estimated on 2018-2026, so they are fitted to the
+sample and describe it rather than predict beyond it.
+
+More seriously: they were measured on 5-day FORWARD RETURNS and they do not
+survive a +15% target / -7% stop / 15-session strategy. `low_vol` -- whose
+factor has the single strongest IC we measured -- LOSES to the random null as a
+registered strategy, because calm names do not move enough to hit a +15% target.
+See `protocol/strategies_evidence.py`. The ranking is a cross-sectional ordering
+for holding periods measured in months; it is not a short-horizon entry signal.
 
 Preserved from v1: missing data is UNKNOWN, never a real zero (`coverage()`).
 """
