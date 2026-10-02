@@ -10,3 +10,11 @@ data/adhoc_*.parquet
 # ad-hoc verification scratch files
 data/_bhav_*.parquet
 data/_verdict_cache.parquet
+
+# Caches and scratch. `scored_panel.parquet` and `sign_raw_long.parquet` are
+# rebuilt in minutes by scripts/bar_coverage.py and scripts/sign_experiment.py;
+# keeping them out of git stops a 300MB binary churning the history.
+reports/*.parquet
+reports/*.bak
+reports/trades_*.csv
+*.bak

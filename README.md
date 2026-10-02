@@ -1,3 +1,10 @@
+> **New to this repo? Read [`START_HERE.md`](START_HERE.md) first.**
+>
+> The short version: the engine does **not** have a proven edge. Most of what is
+> here is a record of ideas that were tested and rejected. That record is the point.
+> See also [`ENGINE_REVIEW.md`](ENGINE_REVIEW.md) for a self-critical review written
+> to be attacked.
+
 # screener-backtest
 
 Strategy-agnostic backtest & benchmarking engine for the NSE cash-equity
