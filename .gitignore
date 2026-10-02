@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.replit.user
+.protocol_state.json
+reports/
+.venv/
+.env

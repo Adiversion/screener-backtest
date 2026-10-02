@@ -1,0 +1,137 @@
+# ============================================================
+# protocol_v2.yaml
+# Acceptance-After-Expansion (AAE) backtest protocol
+# ------------------------------------------------------------
+# SINGLE SOURCE OF TRUTH for every threshold in Part A of
+# "ai research.txt". The backtest report embeds the SHA256 of the
+# canonical form of this file. Any edit here is a NEW protocol
+# version and invalidates previously frozen discovery runs.
+# ============================================================
+
+version: "2.0"
+
+run:
+  # Capital tiers to show cost sensitivity (A6).
+  capitals: [1000, 10000, 100000]
+  target_net: 0.15          # NET target P&L fraction
+  hold_sessions: 15         # time stop, sessions held
+  momentum_fail_mfe: 0.05   # if MFE < this by session N ...
+  momentum_fail_session: 5  # ... exit at close (flat-rotate)
+  gap_skip: 0.03            # skip if Open(E+1) > Close(E)*(1+gap_skip)
+  seed: 20261002            # all randomness seeded
+  bootstrap_n: 10000
+
+# ---- A4 STATE 0 : BREAKOUT_DAY (D0) ----
+state0:
+  r_ref: 20                 # reference window; R20 always excludes T
+  rvol_min: 2.0
+  closing_range_min: 0.60
+  retention_min: 0.50
+  deliv_pct_rel_min: 1.0    # ignored (flagged) when delivery data absent
+  base_range_max: 0.25
+  ret2_max: 0.10            # not-already-extended (measured at D0-1)
+  extension_max: 2.5        # not-already-extended (measured at D0-1)
+
+# ---- A4 STATE 1 : ACCEPTANCE_HOLD ----
+state1:
+  window: 5                 # D0+1 .. D0+5
+  undercut_atr: 0.5         # Low >= R20(D0) - k*ATR14(D0)
+
+# ---- A4 STATE 2 : ACCEPTED_EXPANSION_TRIGGER (E) ----
+state2:
+  closing_range_min: 0.5
+  stop_distance_max: 0.06   # CANDIDATE if StructuralStop distance <= this
+
+# ---- A5 trap filter thresholds ----
+filters:
+  disabled: []              # e.g. [F1, F5] to run an ablation
+  f1_ret2_max: 0.15
+  f2_extension_max: 3.0
+  f3_range_window: 5
+  f3_closing_range_min: 0.5
+  f4_deliv_pct_rel_min: 0.7
+  f5_atr_pct_max: 0.05
+  f5_atr_pct_min: 0.015
+  f7_min_price: 50.0
+  f8_min_turnover: 20000000.0   # Rs 2 crore (20d mean Close*Volume proxy)
+  f8_window: 20
+  f11_lookback: 5
+
+# ---- A6 cost model (delivery/CNC; parameterise per broker) ----
+costs:
+  brokerage: 0.0
+  stt: 0.001                 # both sides
+  stamp: 0.00015             # buy only
+  exch_txn: 0.0000297        # both sides
+  sebi: 0.000001             # both sides
+  gst: 0.18                  # on exch_txn + sebi
+  dp_charge: 15.93           # flat, per sell
+  slippage: 0.001            # per side
+
+# ---- A10 discovery / validation ----
+validation:
+  discovery_start: "2015-01-01"
+  discovery_end: "2020-12-31"
+  validation_start: "2021-01-01"
+  validation_end: "2026-09-25"   # demo cutoff; nothing after 2026-09-25 15:30 IST
+  min_validation_trades: 150
+
+# ---- A10 predeclared sensitivity grid (reported in full, BH-FDR) ----
+sensitivity:
+  rvol_min: [1.5, 2.0, 2.5]
+  closing_range_min: [0.5, 0.6, 0.7]
+  retention_min: [0.4, 0.5, 0.6]
+  stop_distance_max: [0.05, 0.06, 0.07]
+  target_net: [0.10, 0.15, 0.20]
+
+# ---- A5 F6 price-band / surveillance exclusion (needs external lists) ----
+universe:
+  require_price_band_20: true   # F6 enabled only if band data is available
+
+# ---- Pressure -> Response -> Acceptance (PRA) research block ----
+# From the ChatGPT-suggested protocol: event classification + horizon study.
+pra:
+  reference: 20              # structural reference window (previous-N high)
+  retention_strong: 0.60     # high vs weak retention cut
+  approach_atr: 0.5          # |Close-R|/ATR threshold for STRUCTURAL_APPROACH
+  penetration_min: 0.0       # High must exceed R by > this * ATR
+  high_effort_rvol: 2.5
+  low_result_atr: 0.5
+  low_effort_rvol: 1.0
+  high_result_atr: 1.5
+  resolution_window: 3       # sessions used to label rejected/accepted/recovered
+  horizons: [1, 2, 3, 5]     # forward outcome windows (T+n close-to-close)
+  # predeclared ablation ladder (Section 23), not tuned on outcomes
+  ablation:
+    rvol_min: 1.5
+    response_min: 0.5
+    retention_min: 0.5
+    closing_range_min: 0.5
+
+# ---- strategy params (tweakable; CLI --set strategies.<name>.<key>=v) ----
+strategies:
+  vol_breakout:
+    rvol_min: 1.5
+  trap:
+    ret2_min: 0.15
+  momentum_top:
+    n: 20
+  high_52w:
+    n: 20
+  fip_proxy:
+    n: 20
+  random:
+    n: 2000
+  pra_strong_retention:
+    retention_min: 0.60
+  pra_expansion_attempt:
+    rvol_min: 1.5
+
+# ---- candidate ranking key (frozen; not tuned) ----
+ranking:
+  primary: "stop_distance"        # ascending
+  secondary: "deliv_pct_rel_D0"   # descending
+
+red_flags:
+  winrate_too_good: 0.65
+  expectancy_too_good: 0.05

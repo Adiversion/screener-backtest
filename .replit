@@ -1,0 +1,16 @@
+run = "python scripts/run_backtest.py --strategies protocol"
+entrypoint = "README.md"
+modules = ["python-3.11:v18-20230807-322e88b"]
+
+[nix]
+channel = "stable-23_05"
+
+[deployment]
+run = ["sh", "-c", "python scripts/run_backtest.py --strategies protocol"]
+
+[[ports]]
+localPort = 8000
+externalPort = 80
+
+[languages.python3]
+pattern = "**/*.py"
