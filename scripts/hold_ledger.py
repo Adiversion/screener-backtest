@@ -90,9 +90,25 @@ def main() -> int:
     ap.add_argument("--mark", required=True, help="valuation date, e.g. 2026-10-01")
     ap.add_argument("--top", type=int, default=10, help="how many to hold")
     ap.add_argument("--stake", type=float, default=10000.0, help="rupees per name")
-    ap.add_argument("--stop", type=float, default=None,
-                    help="stop-loss fraction, e.g. 0.07 for 7%% off the entry")
+    ap.add_argument("--stop", default=None,
+                    help="'auto' for each stock's own structural stop below its "
+                         "10-session swing low, or a fraction like 0.07. "
+                         "Default is the structural stop, because a flat 7%% "
+                         "is narrower than the volatility of half the names "
+                         "it is applied to.")
+    ap.add_argument("--flat-stop", type=float, default=None,
+                    help="force a single fractional stop, for comparison")
     args = ap.parse_args()
+
+    stop_pct = None
+    if args.stop == "auto":
+        stop_pct = "auto"
+    elif args.stop is not None:
+        stop_pct = float(args.stop)
+    elif args.flat_stop is not None:
+        stop_pct = float(args.flat_stop)
+    if stop_pct is None:
+        stop_pct = "auto"
 
     cfg = load_config()
     history = load_history(str(ROOT / "data" / "nse_all_history.parquet"))
@@ -120,12 +136,13 @@ def main() -> int:
               f"position was cash")
         return 0
 
-    stop_txt = f" | {args.stop:.0%} stop, checked daily against the low" if args.stop else ""
+    stop_txt = (" | per-stock structural stop, checked daily against the low"
+                if stop_pct == "auto" else f" | {stop_pct:.0%} stop, daily, vs the low")
     print(f"verdict {pick.date()}  |  enter {entry.date()} at the open  |  "
           f"valued {exit_.date()}{stop_txt}\n")
     print(f"{'#':>2} {'symbol':<13}{'score':>7}{'entry':>10}{'out':>10}{'exit':>12}"
-          f"{'why':>7}{'P&L':>10}{'ret':>8}")
-    print("-" * 79)
+          f"{'stop':>7}{'why':>7}{'P&L':>10}{'ret':>8}")
+    print("-" * 87)
 
     by_symbol = {s: g.sort_values("Date").reset_index(drop=True)
                  for s, g in px.groupby("Symbol")}
@@ -141,15 +158,25 @@ def main() -> int:
         px_entry = float(bars.loc[bars["Date"] == entry, "Open"].iloc[0])
         if not px_entry:
             continue
+        # "auto" reads the stop the quality engine already computed for this
+        # name on the pick date: below its 10-session swing low, less a quarter
+        # ATR. It is wide for a volatile name and tight for a calm one, which
+        # is the whole point -- a flat 7% is narrower than the noise in half
+        # the universe and gets stopped out by ordinary movement.
+        use = stop_pct
+        if stop_pct == "auto":
+            sp = float(p.get("stop_proxy", np.nan)) if "stop_proxy" in cleared.columns else np.nan
+            use = sp if pd.notna(sp) and sp > 0 else None
         path = bars[bars["Date"] >= entry].reset_index(drop=True)
-        out_date, out_px, why = walk_to_stop(path, px_entry, entry, args.stop, exit_)
+        out_date, out_px, why = walk_to_stop(path, px_entry, entry, use, exit_)
         qty = args.stake / px_entry
         rows.append({"rank": rank, "symbol": sym,
                      "score": round(float(p["score"]), 4),
                      "entry": round(px_entry, 2), "qty": round(qty, 2),
                      "out_date": str(out_date.date()), "exit": round(out_px, 2),
                      "why": why, "pnl": round(qty * (out_px - px_entry), 2),
-                     "ret": round(out_px / px_entry - 1.0, 4)})
+                     "ret": round(out_px / px_entry - 1.0, 4),
+                     "stop": None if use is None else round(float(use), 4)})
     led = pd.DataFrame(rows)
     if led.empty:
         print("no priced entries on the entry date")
@@ -158,6 +185,7 @@ def main() -> int:
     for _, r in led.iterrows():
         print(f"{int(r['rank']):>2} {r['symbol']:<13}{r['score']:>7.4f}"
               f"{r['entry']:>10.2f}{r['qty']:>9.2f} {r['exit']:>9.2f} on {r['out_date']}"
+              f"{('  n/a' if r['stop'] is None else format(r['stop'], '.1%')):>7}"
               f"{r['why']:>7}{r['pnl']:>10.2f}{r['ret']:>8.2%}")
     print("-" * 79)
     invested = args.stake * len(led)
@@ -182,7 +210,7 @@ def main() -> int:
 
     out = ROOT / "reports"
     out.mkdir(parents=True, exist_ok=True)
-    tag = f"stop{args.stop:.0%}" if args.stop else "nostop"
+    tag = "structstop" if stop_pct == "auto" else f"stop{float(stop_pct):.0%}"
     path = out / f"hold_ledger_{pick.date()}_{exit_.date()}_{tag}.csv"
     led.to_csv(path, index=False)
     print(f"\nwrote {path.name}")
