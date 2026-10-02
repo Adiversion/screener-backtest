@@ -17,7 +17,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-from protocol.site_assets import CSS, JS
+from protocol.site_assets import CSS
+from protocol.site_js import JS
 
 
 def render(payload: dict[str, Any]) -> str:

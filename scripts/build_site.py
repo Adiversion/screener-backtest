@@ -111,6 +111,18 @@ def collect_evidence(cfg, reports: Path, n_reg: int) -> dict:
             "rows": g.to_dict("records"),
         }
 
+    deciles = reports / "verdict_deciles.csv"
+    if deciles.exists():
+        g = pd.read_csv(deciles, index_col=0)
+        ev["verdict"] = {
+            "note": "Does the ranking actually rank? Every symbol scored on every "
+                    "session, then what actually followed. D1 is the LOWEST "
+                    "scoring tenth of the universe and D10 the highest. This is "
+                    "the engine's central claim, measured rather than asserted.",
+            "rows": g.reset_index().rename(columns={"index": "decile"})
+                    .to_dict("records"),
+        }
+
     val = reports / "validation.json"
     if val.exists():
         v = json.loads(val.read_text(encoding="utf-8"))
