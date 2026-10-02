@@ -146,9 +146,43 @@ quality:
   rvol_max: 5.0             # above this is climactic, not accumulation
   trend_min: 0.0            # ret60 and ret120 must both exceed this
   max_risk_to_ref: 0.08     # distance from close back to the reference
-  min_coverage: 1.0           # every component must be computable to be ranked
-  thin_coverage: 0.5         # below this -> INSUFFICIENT_DATA, listed separately
+  min_coverage: 1.0         # every component must be computable to be ranked
+  thin_coverage: 0.5        # below this -> INSUFFICIENT, listed separately
 
+# ---- SUFFICIENCY LADDER ----------------------------------------------
+# Use the LEAST history that answers the question, escalating only when the
+# data cannot support the tier below. 38% of NSE EQ symbols are under 5
+# years old and 17% under 1 year, so a single 252-session gate would
+# silently discard most of a young universe instead of judging it.
+#
+# Each tier declares only the factors it can actually compute. Factors that do
+# not exist at that tier are dropped and the remaining weights renormalise,
+# so a thin name is scored on LESS evidence rather than on padded evidence --
+# and the tier used is always reported, never hidden.
+#
+# FULL is not redefined here: at 252 sessions the main evidence-weighted track
+# in protocol/quality.py becomes available and it takes over. One source of
+# truth per tier, no duplicated weights.
+#
+# Every tier below FULL is UNVALIDATED: the information coefficients behind
+# these factors were measured on the established universe, not on young
+# stocks. There is no young-stock panel to measure them on. Labels say so.
+sufficiency:
+  fetch_sessions: 90          # pull at most this much on demand
+  tiers:
+    - {name: RECENT,  min_sessions: 7,  label: PROVISIONAL,    evidence: "volatility and tradability only"}
+    - {name: SHORT,   min_sessions: 21, label: SHORT_HISTORY, evidence: "adds participation, effort/result, 20d reversal"}
+    - {name: MEDIUM,  min_sessions: 60, label: SHORT_HISTORY, evidence: "adds the 60-session trend"}
+    - {name: FULL,    min_sessions: 252, label: HISTORICAL_CANDIDATE, evidence: "the validated evidence-weighted track"}
+  factors:
+    RECENT:  {atrpct: 0.40, turnover7: 0.35, range_pct: 0.25}
+    SHORT:   {atrpct: 0.30, efficiency: 0.25, turnover20: 0.15, reversal20: 0.20, penetration: 0.10}
+    MEDIUM:  {atrpct: 0.25, efficiency: 0.25, turnover20: 0.10, reversal20: 0.20, penetration: 0.10, trend60: 0.10}
+  common_gates:
+    min_turnover20: 50000000.0
+    min_price: 20.0
+    max_atrpct: 0.075
+    min_atrpct: 0.005
 # ---- data integrity: split / corporate-action artefact scan -------------
 # yfinance auto-adjusts OHLC but does NOT split-adjust volume, so a 1:2 split
 # shows up as a flat price with a ~2x volume step. That silently corrupts

@@ -58,11 +58,24 @@ def build_features(bars: pd.DataFrame) -> pd.DataFrame:
     df["ema20"] = ema20
     df["extension"] = (close - ema20) / df["atr14"]
 
+
     for n in (2, 20, 60, 120):
         df[f"ret{n}"] = close / close.shift(n) - 1.0
 
     df["prox52"] = close / df["R252"]
     df["pos_day_freq60"] = (close > close.shift(1)).rolling(60, min_periods=60).mean()
+    # ---- ranking scores for the evidence-backed strategies ----------------
+    # Derived from features already computed at or before this bar, so they add
+    # no lookahead. Each is monotone such that a HIGHER score always means more
+    # of what the measured information coefficient says is good:
+    #   atrpct IC -0.0434, prox52 +0.0344, rvol20 -0.0289,
+    #   penetration -0.0174, ret20 -0.0128  (see protocol/strategies_evidence.py)
+    df["calm"] = -df["atrpct"]
+    df["calm_near_high"] = -df["atrpct"] * df["prox52"]
+    # exhaustion: heavy participation that went deep and did not hold
+    df["exhausted"] = df["rvol20"] * df["penetration"]
+    df["reversal"] = -df["ret20"]
+
     df["turnover20"] = (close * vol).rolling(20, min_periods=20).mean()
 
     # Delivery / trade-count features. Available only when a delivery_history

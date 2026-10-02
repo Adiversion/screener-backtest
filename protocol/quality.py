@@ -93,8 +93,12 @@ def panel_row(bar: pd.Series, cfg: dict) -> dict[str, Any]:
     close = _num(bar.get("Close"))
     ret20 = _num(bar.get("ret20")) or 0.0
     ret120 = _num(bar.get("ret120"))
+    # The stop distance only exists when price is ABOVE the reference. Below it
+    # the "distance" is negative, which is not a tighter stop -- it is a level
+    # that has already been lost. Scoring it as though it were a tight stop
+    # rewarded stocks trading below their structural high, which is backwards.
     stop = None
-    if r20 is not None and close:
+    if r20 is not None and close and close > r20:
         stop = round((close - r20) / close, 4)
     return {
         "close": close, "reference": r20,
