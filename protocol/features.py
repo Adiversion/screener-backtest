@@ -10,6 +10,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from protocol.levels import add_levels
+
 REF_WINDOWS = {"R5": 5, "R10": 10, "R20": 20, "R60": 60, "R252": 252}
 
 
@@ -62,6 +64,11 @@ def build_features(bars: pd.DataFrame) -> pd.DataFrame:
     # reaches it. Computed to and including the current bar -- a stop must sit
     # below the lows that have already printed.
     df["low10"] = df["Low"].rolling(10, min_periods=10).min()
+
+    # Levels older than the rolling R252 window. Added last so a short panel
+    # still produces every other feature, and reports its own absence instead
+    # of blocking the build. See protocol/levels.py.
+    add_levels(df)
 
 
     for n in (2, 20, 60, 120):
