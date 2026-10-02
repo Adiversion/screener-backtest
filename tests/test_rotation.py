@@ -28,17 +28,24 @@ CFG = load_config()
 
 
 def _panel(symbols=("AAA", "BBB", "CCC"), n=300, seed=7):
-    """A small panel with enough history for every ranking component."""
+    """A small panel with enough history for every ranking component.
+
+    The intraday range is deliberately NARROW (~0.8% ATR) against a positive
+    drift, so a close can sit a few percent above its prior 20-day high. That is
+    the only shape that clears the stop-width gate, which now requires the stop
+    to be at least 1x ATR wide and no wider than 8% -- a fixture with a wide
+    range and a gentle drift never clears it and would silently test nothing.
+    """
     rng = np.random.default_rng(seed)
     dates = pd.bdate_range("2023-01-02", periods=n)
     out = []
     for i, sym in enumerate(symbols):
-        drift = 0.0004 * (i + 1)
-        close = 100.0 * np.exp(np.cumsum(rng.normal(drift, 0.015, n)))
+        drift = 0.0022 * (i + 1)
+        close = 100.0 * np.exp(np.cumsum(rng.normal(drift, 0.010, n)))
         bars = pd.DataFrame({
             "Date": dates, "Symbol": sym,
-            "Open": close * (1 + rng.normal(0, 0.002, n)),
-            "High": close * 1.012, "Low": close * 0.988, "Close": close,
+            "Open": close * (1 + rng.normal(0, 0.0015, n)),
+            "High": close * 1.004, "Low": close * 0.996, "Close": close,
             "Volume": rng.integers(2e5, 2e6, n).astype(float),
         })
         out.append(build_features(bars).set_index("Date", drop=False))
@@ -97,6 +104,53 @@ class RankingEquivalenceTests(unittest.TestCase):
     def test_edge_is_zero_without_events(self):
         """A synthetic panel has no reclaim events, so nothing is 'edge'."""
         self.assertTrue((self.fast["edge"] == 0.0).all())
+
+
+class StopWidthGateTests(unittest.TestCase):
+    """A stop inside one day's normal range is a coin flip, not a tight stop.
+
+    Measured on the real panel: 84.8% of gate-clearing events carried a stop
+    narrower than 1x ATR, and those had the worst forward 20-session return
+    (+0.23% against +1.02% for the 1-2 ATR bucket). The gate is therefore a
+    FLOOR, not a ceiling.
+    """
+
+    def setUp(self):
+        self.long = ranking.build_long(_panel(), CFG)
+
+    def test_gate_requires_a_stop_at_least_one_atr_wide(self):
+        cfg = load_config()
+        frame = self.long.copy()
+        atr = float(cfg["quality"]["min_stop_atr"])
+        # a stop comfortably inside one ATR must NOT clear
+        frame["stop_proxy"] = frame["atrpct"] * (atr * 0.5)
+        frame["close"] = frame["reference"] * 1.01
+        frame["penetration"] = 0.5
+        mask = ranking._gate_mask(frame, cfg, pd.Series(1.0, index=frame.index))
+        self.assertFalse(mask.any(),
+                         "a stop narrower than 1x ATR must fail the gate")
+
+    def test_gate_accepts_a_stop_between_one_atr_and_the_cap(self):
+        cfg = load_config()
+        frame = self.long.copy()
+        mid = float(cfg["quality"]["max_risk_to_ref"]) * 0.5
+        frame["stop_proxy"] = mid
+        frame["atrpct"] = mid / 2.0  # stop is then exactly 2x ATR
+        frame["close"] = frame["reference"] * 1.01
+        frame["penetration"] = 0.5
+        mask = ranking._gate_mask(frame, cfg, pd.Series(1.0, index=frame.index))
+        self.assertTrue(mask.any(),
+                        "a stop of 2x ATR inside the cap must clear")
+
+    def test_gate_rejects_an_absurdly_wide_stop(self):
+        cfg = load_config()
+        frame = self.long.copy()
+        frame["stop_proxy"] = float(cfg["quality"]["max_risk_to_ref"]) * 2
+        frame["atrpct"] = 0.01
+        frame["close"] = frame["reference"] * 1.01
+        frame["penetration"] = 0.5
+        mask = ranking._gate_mask(frame, cfg, pd.Series(1.0, index=frame.index))
+        self.assertFalse(mask.any(), "a stop above the cap must fail")
 
 
 class RotationMechanicsTests(unittest.TestCase):

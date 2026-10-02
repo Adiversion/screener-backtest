@@ -57,6 +57,11 @@ def build_features(bars: pd.DataFrame) -> pd.DataFrame:
     ema20 = close.ewm(span=20, adjust=False).mean()
     df["ema20"] = ema20
     df["extension"] = (close - ema20) / df["atr14"]
+    # the recent swing low: where a stop would actually be placed, as opposed to
+    # the reference high, which nobody uses as a stop because ordinary noise
+    # reaches it. Computed to and including the current bar -- a stop must sit
+    # below the lows that have already printed.
+    df["low10"] = df["Low"].rolling(10, min_periods=10).min()
 
 
     for n in (2, 20, 60, 120):

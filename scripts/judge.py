@@ -87,8 +87,18 @@ def main() -> int:
     args = ap.parse_args()
 
     cfg = load_config(args.config)
-    asof = pd.Timestamp(args.asof or get(cfg, "validation.validation_end"))
     history = load_history(args.data)
+    # Default to the LATEST session in the data, not the protocol's
+    # validation_end. That cutoff is a backtest window boundary frozen for the
+    # discovery/validation split; using it here would answer "what do I think of
+    # this stock TODAY?" with a verdict from weeks ago and silently hide newer
+    # bars. Pass --asof to judge a specific session on purpose.
+    if args.asof:
+        asof = pd.Timestamp(args.asof)
+    else:
+        available = pd.Timestamp(history["Date"].max())
+        asof = max(available, pd.Timestamp(get(cfg, "validation.validation_end")))
+    history = history[history["Date"] <= asof]
     syms = [s.strip().upper() for s in args.symbols.split(",") if s.strip()]
 
     known = set(history["Symbol"].unique())

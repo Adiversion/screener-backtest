@@ -22,6 +22,7 @@ import numpy as np
 import pandas as pd
 
 from protocol import states
+from protocol.quality import STOP_BUFFER
 
 RAW = ("close", "reference", "rvol20", "ret20", "ret120", "atrpct", "prox52",
        "efficiency", "penetration", "turnover20", "stop_proxy", "sessions")
@@ -66,12 +67,18 @@ def build_long(panel: dict[str, pd.DataFrame], cfg: dict, lookback_days: int = 2
         close = pd.to_numeric(d["Close"], errors="coerce").to_numpy(float)
         r20 = pd.to_numeric(d[ref], errors="coerce").to_numpy(float)
         atr = pd.to_numeric(d["atrpct"], errors="coerce").to_numpy(float)
+        atr14 = pd.to_numeric(d["atr14"], errors="coerce").to_numpy(float)
+        low10 = (pd.to_numeric(d["low10"], errors="coerce").to_numpy(float)
+                 if "low10" in d.columns else np.full(len(d), np.nan))
         ret20 = pd.to_numeric(d["ret20"], errors="coerce").to_numpy(float)
         ret120 = pd.to_numeric(d["ret120"], errors="coerce").to_numpy(float)
-        # a stop distance only exists ABOVE the reference; below it the raw
-        # difference is negative, which is not a tight stop (see quality.py)
+        # The stop is where it would actually be placed -- below the recent swing
+        # low with a buffer -- not at the reference high. Measured to the
+        # reference, 84.8% of stops were under 1x ATR wide and those names had
+        # the WORST forward returns. Must stay identical to quality.panel_row.
         above = close > r20
-        stop = np.where(above, (close - r20) / close, np.nan)
+        stop_level = low10 - STOP_BUFFER * atr14
+        stop = np.where(above & (stop_level > 0), (close - stop_level) / close, np.nan)
         frames.append(pd.DataFrame({
             "date": dates, "symbol": symbol,
             "sessions": np.arange(1, len(d) + 1, dtype=float),
@@ -95,13 +102,21 @@ def build_long(panel: dict[str, pd.DataFrame], cfg: dict, lookback_days: int = 2
 def _gate_mask(long: pd.DataFrame, cfg: dict, coverage: pd.Series) -> pd.Series:
     """The seven hard gates, vectorised. Unknown never counts as a pass."""
     q = cfg["quality"]
+    # The stop must be survivable AND sane: at least `min_stop_atr` ATR wide so
+    # ordinary noise cannot take it out, and no wider than `max_risk_to_ref` so
+    # the risk per position stays ordinary. A stop inside one day's range is not
+    # a tight stop, it is a coin flip.
+    stop = long["stop_proxy"]
+    atr = long["atrpct"]
+    stop_ok = ((stop >= float(q["min_stop_atr"]) * atr)
+               & (stop <= float(q["max_stop_atr"]) * atr))
     return (
         (long["turnover20"] >= float(q["min_turnover20"]))
         & (long["close"] >= float(q["min_price"]))
         & (long["ret120"] > float(q["trend_min"]))
         & (long["close"] > long["reference"])
         & (long["penetration"] > 0)
-        & (long["stop_proxy"] <= float(q["max_risk_to_ref"]))
+        & stop_ok
         & (long["sessions"] >= float(q["min_sessions"]))
         & (coverage >= float(q["min_coverage"]))
     )

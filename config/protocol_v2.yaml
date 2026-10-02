@@ -145,7 +145,20 @@ quality:
   rvol_min: 0.8             # too little interest to act on
   rvol_max: 5.0             # above this the move is climactic, not orderly
   trend_min: 0.0            # ret60 and ret120 must both exceed this
-  max_risk_to_ref: 0.08     # distance from close back to the reference (only above it)
+  max_risk_to_ref: 0.08     # legacy percent cap; superseded by max_stop_atr
+  # MEASURED FIX (2026-10): 84.8% of gate-clearing events carried a stop narrower
+  # than 1x ATR, and those had the WORST forward 20-session return (+0.23% vs
+  # +1.02% for the 1-2 ATR bucket, on 7,953 events). A stop inside one day's
+  # normal range is a coin flip, not a tight stop.
+  #
+  # Both bounds are now in ATR, not percent, so they scale with the stock. The
+  # stop is measured below the 10-session swing low (features.low10) minus a
+  # 0.25 ATR buffer -- where a trader would actually place it, not at the
+  # 20-session high, which ordinary noise reaches. Measured on the real panel,
+  # the median such stop sits about 4 ATR below the close, so a percent cap
+  # rejects almost every genuine setup.
+  min_stop_atr: 1.0
+  max_stop_atr: 5.0
   min_coverage: 1.0         # every component must be computable to be ranked
   thin_coverage: 0.5        # below this -> INSUFFICIENT, listed separately
 

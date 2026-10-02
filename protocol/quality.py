@@ -3,42 +3,37 @@
 Answers the question the strategy tables cannot: *which stocks are worth
 looking at right now?*
 
-Version 2 (2026-10). Version 1 scored a hand-weighted blend of the
-Pressure-Response-Acceptance framework because those were the ideas the
-protocol proposed. `scripts/validate.py` then measured their information
-coefficients against the 5-day forward return on 108,742 breakout events, and
-the verdict was `NO_INCREMENTAL_INFORMATION`:
+Version 1 scored a hand-weighted blend of the Pressure-Response-Acceptance
+framework because those were the ideas the protocol proposed.
+`scripts/validate.py` then measured their information coefficients against the
+5-day forward return on 108,742 breakout events, and the verdict was
+`NO_INCREMENTAL_INFORMATION`: retention IC +0.00009 (t +0.02), closing_range
+-0.0086 (t -1.72), closing_disp -0.0033 (t -0.65). So the protocol's own
+instruction applies: discard the complexity.
 
-    retention      IC +0.00009  t +0.02  <- indistinguishable from noise
-    closing_range  IC -0.0086   t -1.72
-    closing_disp   IC -0.0033   t -0.65
-
-so the protocol's own instruction applies: discard the complexity.
-
-What the same test DID find, ranked by |t|:
-
-    atrpct       IC -0.0434  t -7.35  low volatility wins
-    prox52       IC +0.0344  t +6.03  near the 52-week high wins
-    rvol20       IC -0.0289  t -5.79  LOW relative volume (exhaustion)
-    efficiency   IC +0.0178  t +3.73  effort per unit participation
-    penetration  IC -0.0174  t -3.57  shallow beats deep
-    ret120 +0.0147 / ret20 -0.0128  slow trend works, recent burst reverses
-
-Version 2 scores the measured factors and drops retention, acceptance and
-closing range. Scores are CROSS-SECTIONAL PERCENTILES, because a ranking is a
-rank; and there is NO DOUBLE COUNTING, since `efficiency` is result/volume and
-already carries the negative-volume effect.
+What the same test DID find, ranked by |t|: atrpct IC -0.0434 (t -7.35) low
+volatility wins; prox52 +0.0344 (t 6.03) near the 52-week high wins; rvol20
+-0.0289 (t -5.79) LOW relative volume wins; efficiency +0.0178 (t 3.73);
+penetration -0.0174 (t -3.57) shallow beats deep; ret120 +0.0147 with ret20
+-0.0128, so slow trend works and a recent burst reverses. Version 2 scores
+those and drops the rest. Scores are CROSS-SECTIONAL PERCENTILES, because a
+ranking is a rank; and there is NO DOUBLE COUNTING, since `efficiency` is
+result/volume and already carries the negative-volume effect.
 
 TWO CAVEATS. These weights were set from information coefficients estimated on
 2018-2026, so they are fitted to the sample and describe it rather than predict
 beyond it. More seriously, they were measured on 5-day FORWARD RETURNS and do
-NOT survive a +15% target / -7% stop / 15-session strategy: `low_vol`, whose
-factor has the strongest IC we measured, LOSES to the random null as a
-registered strategy because calm names do not move enough to hit a +15% target
-(see `protocol/strategies_evidence.py`). This ranking is a cross-sectional
-ordering for holding periods in months, not a short-horizon entry signal.
+NOT survive a +15% target / -7% stop strategy: `low_vol`, whose factor has the
+strongest IC we measured, LOSES to the random null as a registered strategy
+because calm names cannot travel far enough to reach a +15% target.
 
-Preserved from v1: missing data is UNKNOWN, never a real zero (`coverage()`).
+VERSION 3 (2026-10), found by chasing a false positive. The stop gate was a
+CEILING, so the TIGHTER stop always passed, and the component scored tightness
+as a virtue. Measured: 84.8% of gate-clearing events carried a stop narrower
+than 1x ATR and those had the WORST forward 20-session return (+0.23% against
++1.02% for the 1-2 ATR bucket, 7,953 events). It is now a floor AND a ceiling
+in ATR, measured below the recent swing low rather than at the 20-session high,
+which ordinary noise reaches. Missing data stays UNKNOWN.
 """
 from __future__ import annotations
 
@@ -65,14 +60,18 @@ COMPONENTS: dict[str, tuple[str, int, str, str]] = {
                     "IC -0.0174, t -3.57 - deep penetration is exhaustion"),
     "turnover20": ("Liquidity", 1, "20-session average rupee turnover",
                    "tradability, not a return signal"),
-    "stop_proxy": ("Tight stop", -1,
+    "stop_proxy": ("Stop room", 1,
                    "distance from the close back to the structural reference",
-                   "a normal stop, not an absurdly wide one"),
+                   "MEASURED: stops narrower than 1x ATR were the WORST bucket "
+                   "(+0.23% fwd20) against +1.02% for 1-2 ATR, so tightness is "
+                   "not a virtue -- a stop inside one day's noise gets taken out"),
 }
 
 # Kept separate and small: `recovered_after_rej` is the only registered rule that
 # ever beat the random null, but was never independently validated.
 EDGE_WEIGHT = 0.05
+# a stop goes a little below the swing low, not exactly at it
+STOP_BUFFER = 0.25
 
 
 def _num(x: Any) -> float | None:
@@ -89,22 +88,23 @@ def panel_row(bar: pd.Series, cfg: dict) -> dict[str, Any]:
     close = _num(bar.get("Close"))
     ret20 = _num(bar.get("ret20")) or 0.0
     ret120 = _num(bar.get("ret120"))
-    # The stop distance only exists when price is ABOVE the reference. Below it
-    # the "distance" is negative, which is not a tighter stop -- it is a level
-    # that has already been lost. Scoring it as though it were a tight stop
-    # rewarded stocks trading below their structural high, which is backwards.
+    atr = _num(bar.get("atr14"))
+    low10 = _num(bar.get("low10"))
+    # The stop is where it would ACTUALLY be placed: below the recent swing low
+    # with a buffer, not at the reference high. Nobody stops out exactly at a
+    # 20-day high, because ordinary noise reaches it. Below the reference the
+    # distance is not a tighter stop but a level already lost, so UNKNOWN.
     stop = None
-    if r20 is not None and close and close > r20:
-        stop = round((close - r20) / close, 4)
+    if low10 is not None and atr is not None and close and close > 0 \
+            and r20 is not None and close > r20:
+        stop = round((close - (low10 - STOP_BUFFER * atr)) / close, 4)
     return {
-        "close": close, "reference": r20,
+        "close": close, "reference": r20, "ret120": ret120, "stop_proxy": stop,
         "rvol20": _num(bar.get("rvol20")), "ret20": _num(bar.get("ret20")),
-        "ret120": ret120,
         "atrpct": _num(bar.get("atrpct")), "prox52": _num(bar.get("prox52")),
         "efficiency": _num(bar.get("efficiency")),
         "penetration": _num(bar.get("penetration")),
         "turnover20": _num(bar.get("turnover20")),
-        "stop_proxy": stop,
         # slow trend with the recent burst explicitly backed off
         "trend_raw": None if ret120 is None else round(ret120 - 0.5 * ret20, 6),
     }
@@ -127,8 +127,8 @@ def coverage(scores: pd.Series) -> tuple[float, str]:
     """Fraction of components computable, and a FULL/THIN/INSUFFICIENT label."""
     total = len(COMPONENTS)
     frac = float(scores.notna().sum()) / total if total else 0.0
-    return round(frac, 4), ("FULL" if frac >= 1.0 else
-                            "THIN" if frac >= 0.5 else "INSUFFICIENT")
+    return round(frac, 4), ("FULL" if frac >= 1.0 else "THIN" if frac >= 0.5
+                            else "INSUFFICIENT")
 
 
 def gates(row: pd.Series, cfg: dict) -> list[dict[str, Any]]:
@@ -141,29 +141,34 @@ def gates(row: pd.Series, cfg: dict) -> list[dict[str, Any]]:
     turnover, close = _num(row.get("turnover20")), _num(row.get("close"))
     r120, ref = _num(row.get("ret120")), _num(row.get("reference"))
     pen, stop = _num(row.get("penetration")), _num(row.get("stop_proxy"))
-    cov = float(row.get("coverage") or 0.0)
+    atr, cov = _num(row.get("atrpct")), float(row.get("coverage") or 0.0)
+
+    def ok(v, test):  # lazy, so a None input never reaches the comparison
+        return v is not None and bool(test(v))
+
     return [
         {"criterion": "20-day average turnover", "value": turnover,
          "threshold": f">= INR {q['min_turnover20']:,.0f}",
-         "passed": turnover is not None and turnover >= q["min_turnover20"],
+         "passed": ok(turnover, lambda v: v >= q["min_turnover20"]),
          "meaning": "large enough to trade"},
         {"criterion": "Closing price", "value": close,
          "threshold": f">= INR {q['min_price']}",
-         "passed": close is not None and close >= q["min_price"],
+         "passed": ok(close, lambda v: v >= q["min_price"]),
          "meaning": "not a sub-penny lottery ticket"},
         {"criterion": "120-day return", "value": r120,
          "threshold": f"> {q['trend_min']}",
-         "passed": r120 is not None and r120 > q["trend_min"],
+         "passed": ok(r120, lambda v: v > q["trend_min"]),
          "meaning": "the slow trend is working"},
         {"criterion": "Close above the prior 20-session high", "value": ref,
          "threshold": "Close > R20",
          "passed": (ref is not None and close is not None and close > ref
                     and (pen or 0) > 0),
          "meaning": "at its structural high right now"},
-        {"criterion": "Risk to reference", "value": stop,
-         "threshold": f"<= {q['max_risk_to_ref']}",
-         "passed": stop is not None and stop <= q["max_risk_to_ref"],
-         "meaning": "a normal stop distance"},
+        {"criterion": "Stop width", "value": stop,
+         "threshold": f"{q['min_stop_atr']:.1f}x to {q['max_stop_atr']:.1f}x ATR",
+         "passed": ok(stop, lambda v: atr is not None and atr > 0
+                      and q["min_stop_atr"] * atr <= v <= q["max_stop_atr"] * atr),
+         "meaning": "wide enough to survive normal noise, not absurdly wide"},
         {"criterion": "History available", "value": row.get("sessions"),
          "threshold": f">= {q['min_sessions']} sessions",
          "passed": (row.get("sessions") or 0) >= q["min_sessions"],
@@ -192,7 +197,6 @@ def edge_dates(panel: dict[str, pd.DataFrame], cfg: dict) -> dict[str, pd.Timest
 
 def _frames(panel, cfg, asof, lookback_days):
     """One row per symbol with every field the ranking and gates need."""
-    #
     edges = edge_dates(panel, cfg)
     rows = []
     for symbol, feat in panel.items():
@@ -201,9 +205,8 @@ def _frames(panel, cfg, asof, lookback_days):
         if upto.empty:
             continue
         bar = upto.iloc[-1]
-        age = None
-        if symbol in edges:
-            age = (pd.Timestamp(asof) - edges[symbol]).days
+        age = ((pd.Timestamp(asof) - edges[symbol]).days
+               if symbol in edges else None)
         row = panel_row(bar, cfg)
         row.update({"symbol": symbol, "date": str(pd.Timestamp(bar["Date"]).date()),
                     "sessions": int(len(upto)), "edge_age_days": age})
@@ -262,28 +265,25 @@ def data_sufficiency_report(panel: dict[str, pd.DataFrame], cfg: dict,
     IPOs are the population this matters for; in a 2300-name universe they are
     a real slice of the market.
     """
-    min_cov = float(cfg["quality"]["min_coverage"])
-    thin_cov = float(cfg["quality"]["thin_coverage"])
+    q = cfg["quality"]
+    min_cov, thin_cov = float(q["min_coverage"]), float(q["thin_coverage"])
+    note = ("Excluded for lack of data is NOT the same as rejected on merit. "
+            "These names are unknown to the ranking, not judged bad by it.")
     frame = _frames(panel, cfg, asof, 20)
     if frame.empty:
         return {"full": 0, "thin": 0, "insufficient": 0, "thin_symbols": [],
                 "insufficient_symbols": [], "note": "no panel data"}
     scored = rank_components(frame)
     cov = pd.Series({i: coverage(scored.loc[i])[0] for i in frame.index})
-    buckets = {"FULL": [], "THIN": [], "INSUFFICIENT": []}
+    buckets: dict[str, list] = {"FULL": [], "THIN": [], "INSUFFICIENT": []}
     for sym, frac in zip(frame["symbol"], cov.to_numpy()):
-        key = ("FULL" if frac >= min_cov else "THIN" if frac >= thin_cov
-               else "INSUFFICIENT")
-        buckets[key].append(sym)
-    return {
-        "min_coverage": min_cov, "thin_coverage": thin_cov,
-        "full": len(buckets["FULL"]), "thin": len(buckets["THIN"]),
-        "insufficient": len(buckets["INSUFFICIENT"]),
-        "thin_symbols": sorted(buckets["THIN"]),
-        "insufficient_symbols": sorted(buckets["INSUFFICIENT"]),
-        "note": "Excluded for lack of data is NOT the same as rejected on merit. "
-                "These names are unknown to the ranking, not judged bad by it.",
-    }
+        buckets["FULL" if frac >= min_cov
+                else "THIN" if frac >= thin_cov else "INSUFFICIENT"].append(sym)
+    return {"min_coverage": min_cov, "thin_coverage": thin_cov,
+            "full": len(buckets["FULL"]), "thin": len(buckets["THIN"]),
+            "insufficient": len(buckets["INSUFFICIENT"]),
+            "thin_symbols": sorted(buckets["THIN"]),
+            "insufficient_symbols": sorted(buckets["INSUFFICIENT"]), "note": note}
 
 
 def reason(row: pd.Series, cfg: dict) -> str:

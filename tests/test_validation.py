@@ -208,7 +208,8 @@ class DataSufficiencyTests(unittest.TestCase):
 
     def _bar(self, **over):
         """A synthetic latest-bar with every field the v2 ranking reads."""
-        base = {"Close": 500.0, "R20": 480.0, "atrpct": 0.02, "prox52": 0.98,
+        base = {"Close": 500.0, "R20": 480.0, "atrpct": 0.02, "atr14": 10.0,
+                "low10": 460.0, "prox52": 0.98,
                 "efficiency": 0.8, "ret20": 0.03, "ret120": 0.25,
                 "penetration": 0.4, "rvol20": 1.5, "turnover20": 2e8,
                 "retention": 0.8, "closing_range": 0.8}
