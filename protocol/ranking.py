@@ -25,7 +25,11 @@ from protocol import states
 from protocol.quality import STOP_BUFFER
 
 RAW = ("close", "reference", "rvol20", "ret20", "ret120", "atrpct", "prox52",
-       "efficiency", "penetration", "turnover20", "stop_proxy", "sessions")
+       "efficiency", "penetration", "turnover20", "stop_proxy", "sessions",
+       # levels older than R252, from protocol/levels.py. Carried through so a
+       # verdict can report them; they are not scored until the evidence says so.
+       "durable_high", "durable_low", "level_gap", "level_touch",
+       "level_reject", "level_break")
 
 
 def edge_dates(panel: dict[str, pd.DataFrame], cfg: dict) -> dict[str, np.ndarray]:
@@ -63,6 +67,17 @@ def build_long(panel: dict[str, pd.DataFrame], cfg: dict, lookback_days: int = 2
     frames = []
     for symbol, feat in panel.items():
         d = feat.reset_index(drop=True)
+
+        def _col(name: str, n: int) -> np.ndarray:
+            """A panel column as float, or NaN when the history is too short.
+
+            The level block is deliberately optional: a panel without 760
+            sessions has no durable levels, and that must read as absent rather
+            than as a zero that would quietly join the ranking.
+            """
+            if name not in d.columns:
+                return np.full(n, np.nan)
+            return pd.to_numeric(d[name], errors="coerce").to_numpy(float)
         dates = pd.DatetimeIndex(d["Date"]).to_numpy()
         close = pd.to_numeric(d["Close"], errors="coerce").to_numpy(float)
         r20 = pd.to_numeric(d[ref], errors="coerce").to_numpy(float)
@@ -92,6 +107,12 @@ def build_long(panel: dict[str, pd.DataFrame], cfg: dict, lookback_days: int = 2
             "penetration": pd.to_numeric(d["penetration"], errors="coerce").to_numpy(float),
             "turnover20": pd.to_numeric(d["turnover20"], errors="coerce").to_numpy(float),
             "stop_proxy": stop,
+            "durable_high": _col("durable_high", len(d)),
+            "durable_low": _col("durable_low", len(d)),
+            "level_gap": _col("level_gap", len(d)),
+            "level_touch": _col("level_touch", len(d)),
+            "level_reject": _col("level_reject", len(d)),
+            "level_break": _col("level_break", len(d)),
             "trend_raw": np.where(np.isfinite(ret120), ret120 - 0.5 * ret20, np.nan),
             "edge": _edge_asof(edges.get(symbol, np.array([], dtype="datetime64[ns]")),
                                dates, lookback_days),
