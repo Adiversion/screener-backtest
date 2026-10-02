@@ -20,49 +20,44 @@ def classify_events(feat: pd.DataFrame, cfg: dict, symbol: str) -> pd.DataFrame:
     p = cfg["pra"]
     ref = f"R{int(p['reference'])}"
     d = feat.reset_index(drop=True)
-    rows = []
-    for i in range(len(d)):
-        r = d[ref].iloc[i]
-        if np.isnan(r):
-            continue
-        high, low, close = d["High"].iloc[i], d["Low"].iloc[i], d["Close"].iloc[i]
-        atr = d["atr14"].iloc[i]
-        if np.isnan(atr) or atr <= 0:
-            continue
+    if d.empty:
+        return pd.DataFrame()
+    r = d[ref].to_numpy(float)
+    atr = d["atr14"].to_numpy(float)
+    high, low, close = d["High"].to_numpy(float), d["Low"].to_numpy(float), d["Close"].to_numpy(float)
+    rvol, result = d["rvol20"].to_numpy(float), d["result_atr"].to_numpy(float)
+    rng = high - low
+    with np.errstate(divide="ignore", invalid="ignore"):
         pen = (high - r) / atr
         cdisp = (close - r) / atr
-        rng = high - low
-        cr = (close - low) / rng if rng > 0 else np.nan
-        ret = (close - r) / (high - r) if high > r else np.nan
-        rvol = d["rvol20"].iloc[i]
-        result = d["result_atr"].iloc[i]
-        cls = _classify(pen, high, close, r, atr, ret, rvol, result, p)
-        if cls is None:
-            continue
-        rows.append({
-            "symbol": symbol, "date": d["Date"].iloc[i], "reference": ref, "R": r,
-            "RVOL20": rvol, "ATR14": atr, "atrpct": d["atrpct"].iloc[i],
-            "result_atr": result, "penetration": pen, "closing_disp": cdisp,
-            "closing_range": cr, "retention": ret, "efficiency": d["efficiency"].iloc[i],
-            "event_class": cls,
-            "high_effort_low_result": bool(rvol >= p["high_effort_rvol"] and result <= p["low_result_atr"]),
-            "low_effort_high_result": bool(rvol <= p["low_effort_rvol"] and result >= p["high_result_atr"]),
-        })
-    return pd.DataFrame(rows)
-
-
-def _classify(pen, high, close, r, atr, ret, rvol, result, p):
-    if pen > p["penetration_min"]:
-        if close > r:
-            return "STRONG_RETENTION" if ret >= p["retention_strong"] else "WEAK_RETENTION"
-        return "EXPANSION_ATTEMPT"
-    if (r - high) <= p["approach_atr"] * atr:
-        return "STRUCTURAL_APPROACH"
-    if rvol >= p["high_effort_rvol"] and result <= p["low_result_atr"]:
-        return "HIGH_EFFORT_LOW_RESULT"
-    if rvol <= p["low_effort_rvol"] and result >= p["high_result_atr"]:
-        return "LOW_EFFORT_HIGH_RESULT"
-    return None
+        cr = np.where(rng > 0, (close - low) / rng, np.nan)
+        ret = np.where(high > r, (close - r) / (high - r), np.nan)
+    valid = (~np.isnan(r)) & (~np.isnan(atr)) & (atr > 0)
+    pen_hit = valid & (pen > p["penetration_min"])
+    above = close > r
+    strong = ret >= p["retention_strong"]
+    near = valid & (~pen_hit) & ((r - high) <= p["approach_atr"] * atr)
+    c5 = valid & (~pen_hit) & (~near) & (rvol >= p["high_effort_rvol"]) & (result <= p["low_result_atr"])
+    c6 = valid & (~pen_hit) & (~near) & (~c5) & (rvol <= p["low_effort_rvol"]) & (result >= p["high_result_atr"])
+    state = np.select(
+        [pen_hit & above & strong, pen_hit & above & (~strong), pen_hit & (~above),
+         near, c5, c6],
+        ["STRONG_RETENTION", "WEAK_RETENTION", "EXPANSION_ATTEMPT",
+         "STRUCTURAL_APPROACH", "HIGH_EFFORT_LOW_RESULT", "LOW_EFFORT_HIGH_RESULT"],
+        default="")
+    idx = np.where(state != "")[0]
+    if len(idx) == 0:
+        return pd.DataFrame()
+    return pd.DataFrame({
+        "symbol": symbol, "date": d["Date"].to_numpy()[idx], "reference": ref,
+        "R": r[idx], "RVOL20": rvol[idx], "ATR14": atr[idx],
+        "atrpct": d["atrpct"].to_numpy(float)[idx], "result_atr": result[idx],
+        "penetration": pen[idx], "closing_disp": cdisp[idx], "closing_range": cr[idx],
+        "retention": ret[idx], "efficiency": d["efficiency"].to_numpy(float)[idx],
+        "event_class": state[idx],
+        "high_effort_low_result": (rvol[idx] >= p["high_effort_rvol"]) & (result[idx] <= p["low_result_atr"]),
+        "low_effort_high_result": (rvol[idx] <= p["low_effort_rvol"]) & (result[idx] >= p["high_result_atr"]),
+    })
 
 
 def attach_outcomes(feat: pd.DataFrame, events: pd.DataFrame, cfg: dict) -> pd.DataFrame:

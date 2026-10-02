@@ -13,30 +13,42 @@ from protocol.strategies import REGISTRY, register
 
 
 def _weekly_topn(panel, score_col, n, name, extra_filter=None):
-    rows = []
+    """First session of each ISO week per symbol -> top-N by score each week."""
+    rows: list[tuple] = []
     for symbol, feat in panel.items():
         d = feat.reset_index(drop=True)
         if extra_filter is not None:
             d = d[extra_filter(d)]
-        d = d.assign(_week=d["Date"].dt.isocalendar().week.astype(int),
-                     _year=d["Date"].dt.isocalendar().year.astype(int))
-        first = d.groupby(["_year", "_week"], sort=False).head(1)
-        for _, r in first.iterrows():
-            if not np.isnan(r[score_col]):
-                rows.append((r["Date"], symbol, float(r[score_col])))
+        if d.empty:
+            continue
+        iso = d["Date"].dt.isocalendar()
+        wk = iso["year"].to_numpy() * 100 + iso["week"].to_numpy()
+        _, first = np.unique(wk, return_index=True)  # first row of each week
+        score = d[score_col].to_numpy(float)
+        dates = d["Date"].to_numpy()
+        for i in first:
+            if not np.isnan(score[i]):
+                rows.append((dates[i], symbol, float(score[i])))
     if not rows:
         return []
     frame = pd.DataFrame(rows, columns=["date", "symbol", "score"])
+    cache: dict[str, tuple[dict, object]] = {}
     out: list[TradeSignal] = []
-    for date, grp in frame.groupby("date"):
+    for date, grp in frame.groupby("date", sort=True):
+        day = pd.Timestamp(date)
         for _, r in grp.nlargest(n, "score").iterrows():
-            d = panel[r["symbol"]].reset_index(drop=True)
-            hits = d.index[d["Date"] == date]
-            if len(hits) == 0 or int(hits[0]) + 1 >= len(d):
+            symbol = r["symbol"]
+            hit = cache.get(symbol)
+            if hit is None:
+                d = panel[symbol].reset_index(drop=True)
+                hit = ({ts: i for i, ts in enumerate(d["Date"])}, d)
+                cache[symbol] = hit
+            pos, d = hit
+            i = pos.get(day)
+            if i is None or i + 1 >= len(d):
                 continue
-            idx = int(hits[0])
-            out.append(TradeSignal(name, r["symbol"], date, d["Date"].iloc[idx + 1],
-                                   float(d["Close"].iloc[idx]), stop_pct=0.07, meta={}))
+            out.append(TradeSignal(name, symbol, day, d["Date"].iloc[i + 1],
+                                   float(d["Close"].iloc[i]), stop_pct=0.07, meta={}))
     return out
 
 

@@ -23,20 +23,35 @@ def _exit_policy(cfg: dict) -> dict[str, float]:
     }
 
 
+def prepare(bars: pd.DataFrame) -> dict[str, np.ndarray]:
+    """Numpy view of one symbol's bars (assumes sorted by Date)."""
+    return {
+        "date": bars["Date"].to_numpy(),
+        "open": bars["Open"].to_numpy(float),
+        "high": bars["High"].to_numpy(float),
+        "low": bars["Low"].to_numpy(float),
+        "close": bars["Close"].to_numpy(float),
+    }
+
+
 def simulate(
     signal: TradeSignal,
     bars: pd.DataFrame,
     cfg: dict,
     model: CostModel,
     capital: float,
+    arrays: dict[str, np.ndarray] | None = None,
 ) -> dict[str, Any]:
     pol = _exit_policy(cfg)
-    b = bars.sort_values("Date").reset_index(drop=True)
-    hits = b.index[b["Date"] == signal.entry_date]
-    if len(hits) == 0:
+    if arrays is None:
+        arrays = prepare(bars.sort_values("Date").reset_index(drop=True))
+    dts, op, hi, lo, cl = (arrays["date"], arrays["open"], arrays["high"],
+                           arrays["low"], arrays["close"])
+    entry_day = np.datetime64(pd.Timestamp(signal.entry_date))
+    e0 = int(np.searchsorted(dts, entry_day))
+    if e0 >= len(cl) or dts[e0] != entry_day:
         return _skip(signal, "SKIP_NO_ENTRY_BAR")
-    e0 = int(hits[0])
-    entry_px = float(b["Open"].iloc[e0])
+    entry_px = float(op[e0])
     if entry_px <= 0 or np.isnan(entry_px):
         return _skip(signal, "SKIP_NO_ENTRY_BAR")
     if entry_px > signal.expected_entry * (1.0 + pol["gap"]):
@@ -49,38 +64,35 @@ def simulate(
     target = model.target_price(entry_px, shares, pol["target_net"])
 
     mae, mfe = 0.0, 0.0
-    last = min(e0 + pol["hold"], len(b) - 1)
+    last = min(e0 + pol["hold"], len(cl) - 1)
     for k in range(e0, last + 1):
-        row = b.iloc[k]
-        hi, lo, op, cl = float(row["High"]), float(row["Low"]), float(row["Open"]), float(row["Close"])
+        o, h, l, c = op[k], hi[k], lo[k], cl[k]
         if k > e0:
-            mae = min(mae, (lo - entry_px) / entry_px)
-            mfe = max(mfe, (hi - entry_px) / entry_px)
+            mae = min(mae, (l - entry_px) / entry_px)
+            mfe = max(mfe, (h - entry_px) / entry_px)
         if k > e0 and k - e0 == pol["mf_session"] and mfe < pol["mf_mfe"]:
-            return _result(signal, e0, k, cl, shares, entry_px, "MOMENTUM_FAIL", model, mae, mfe, b)
-        hit_stop = op <= stop or lo <= stop
-        hit_target = op >= target or hi >= target
+            return _result(signal, e0, k, c, shares, entry_px, "MOMENTUM_FAIL", model, mae, mfe, arrays)
+        hit_stop = o <= stop or l <= stop
+        hit_target = o >= target or h >= target
         if hit_stop:  # same-day stop & target -> stop first (conservative)
-            px = op if op <= stop else stop
-            return _result(signal, e0, k, px, shares, entry_px, "GAP_STOP" if op <= stop else "STOP", model, mae, mfe, b)
+            px = o if o <= stop else stop
+            return _result(signal, e0, k, px, shares, entry_px, "GAP_STOP" if o <= stop else "STOP", model, mae, mfe, arrays)
         if hit_target:
-            px = op if op >= target else target
-            return _result(signal, e0, k, px, shares, entry_px, "TARGET", model, mae, mfe, b)
-    row = b.iloc[last]
-    return _result(signal, e0, last, float(row["Close"]), shares, entry_px, "TIME", model, mae, mfe, b)
+            px = o if o >= target else target
+            return _result(signal, e0, k, px, shares, entry_px, "TARGET", model, mae, mfe, arrays)
+    return _result(signal, e0, last, float(cl[last]), shares, entry_px, "TIME", model, mae, mfe, arrays)
 
 
-def _result(signal, e0, k, exit_px, shares, entry_px, reason, model, mae, mfe, b) -> dict[str, Any]:
+def _result(signal, e0, k, exit_px, shares, entry_px, reason, model, mae, mfe, a) -> dict[str, Any]:
     buy_value = entry_px * shares
     buy_cost = model.buy_cost(entry_px, shares)
     net_proceeds = model.sell_net(exit_px, shares)
     net_pnl = net_proceeds - (buy_value + buy_cost)
     net_pct = net_pnl / (buy_value + buy_cost)
-    row = b.iloc[k]
     return {
         "strategy": signal.strategy, "symbol": signal.symbol,
         "signal_date": signal.signal_date, "entry_date": signal.entry_date,
-        "entry_px": round(entry_px, 4), "exit_date": row["Date"],
+        "entry_px": round(entry_px, 4), "exit_date": pd.Timestamp(a["date"][k]),
         "exit_px": round(float(exit_px), 4), "exit_reason": reason,
         "shares": int(shares), "gross_pnl": round(exit_px * shares - buy_value, 4),
         "costs": round(buy_cost + (exit_px * shares * model.sell_rate) + model.dp_charge, 4),

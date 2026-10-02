@@ -20,11 +20,15 @@ def cohort_metrics(trades: list[dict[str, Any]], target_net: float, seed: int, n
     safe = np.array([r not in STOP_REASONS for r in reasons], dtype=float)
     win = (pct >= target_net).astype(float)
     rng = np.random.default_rng(seed)
-    idx = rng.integers(0, len(pct), size=(n_boot, len(pct)))
+    chunk = max(1, int(2_000_000 // max(len(pct), 1)))  # bounded bootstrap memory
 
     def ci(arr: np.ndarray) -> list[float]:
-        b = arr[idx].mean(axis=1)
-        return [round(float(np.percentile(b, 2.5)), 4), round(float(np.percentile(b, 97.5)), 4)]
+        boots = np.empty(n_boot)
+        for start in range(0, n_boot, chunk):
+            k = min(chunk, n_boot - start)
+            idx = rng.integers(0, len(pct), size=(k, len(pct)))
+            boots[start:start + k] = arr[idx].mean(axis=1)
+        return [round(float(np.percentile(boots, 2.5)), 4), round(float(np.percentile(boots, 97.5)), 4)]
 
     gross_win = pct[pct > 0].sum()
     gross_loss = -pct[pct < 0].sum()

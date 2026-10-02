@@ -108,6 +108,24 @@ pra:
     retention_min: 0.5
     closing_range_min: 0.5
 
+# ---- Price-Acceptance (PA) state machine ----
+# From "Price Acceptance Strategy Origins" (lineage/taxonomy/audit of PRA):
+# each session is classified into State A/B/C/D using data through T only.
+pa:
+  reference: 20              # structural reference R (swing-high window)
+  penetration_min: 0.0       # High must exceed R by > this * ATR
+  rvol_min: 1.5              # "elevated effort" floor
+  accepted_retention: 0.60   # State A retention cut
+  accepted_closing_range: 0.50
+  rejection_disp_atr: -0.25  # close-vs-R in ATR: above -> State C, below -> State D
+  rejection_closing_range: 0.40
+
+# ---- PDF liquidity gate (applies to the PA / M1 / N1-N4 strategies) ----
+liquidity:
+  min_turnover20: 50000000.0  # >= Rs 5 crore 20-day mean Close*Volume
+  min_price: 20.0
+  min_sessions: 252           # enough prior history to form the state
+
 # ---- strategy params (tweakable; CLI --set strategies.<name>.<key>=v) ----
 strategies:
   vol_breakout:
@@ -126,6 +144,21 @@ strategies:
     retention_min: 0.60
   pra_expansion_attempt:
     rvol_min: 1.5
+  m1_momentum_composite:
+    n: 20
+  n1_eod_momentum:
+    gap_min: 0.01
+    rvol_min: 1.5
+  n2_consolidation_breakout:
+    max_band: 0.08
+    rvol_min: 1.2
+  n3_absorption:
+    rvol_min: 2.0
+    max_result_atr: 0.5
+    near_high: 0.98
+  n4_effort_result_discrepancy:
+    rvol_min: 2.0
+    max_closing_range: 0.35
 
 # ---- candidate ranking key (frozen; not tuned) ----
 ranking:

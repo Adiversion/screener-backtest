@@ -9,7 +9,7 @@ import pandas as pd
 from protocol import metrics
 from protocol.costs import CostModel
 from protocol.features import build_panel
-from protocol.simulator import simulate
+from protocol.simulator import prepare, simulate
 from protocol.strategies import REGISTRY
 
 
@@ -43,6 +43,16 @@ def _split_by_date(signals, start, end):
     return out
 
 
+def build_signals(
+    name: str,
+    panel: dict[str, pd.DataFrame],
+    cfg: dict,
+    window: tuple[str | None, str | None] = (None, None),
+) -> list[Any]:
+    """Generate a strategy's signals once; capital only affects simulation."""
+    return _split_by_date(REGISTRY[name](panel, cfg), *window)
+
+
 def run_strategy(
     name: str,
     panel: dict[str, pd.DataFrame],
@@ -50,9 +60,11 @@ def run_strategy(
     cfg: dict,
     capital: float,
     window: tuple[str | None, str | None] = (None, None),
+    signals: list[Any] | None = None,
+    arrays_by_symbol: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    signals = REGISTRY[name](panel, cfg)
-    signals = _split_by_date(signals, *window)
+    if signals is None:
+        signals = build_signals(name, panel, cfg, window)
     model = CostModel.from_config(cfg)
     trades: list[dict[str, Any]] = []
     skipped = 0
@@ -60,7 +72,8 @@ def run_strategy(
         bars = bars_by_symbol.get(sig.symbol)
         if bars is None:
             continue
-        out = simulate(sig, bars, cfg, model, capital)
+        arrays = (arrays_by_symbol or {}).get(sig.symbol)
+        out = simulate(sig, bars, cfg, model, capital, arrays)
         if out.get("skipped"):
             skipped += 1
         trades.append(out)
@@ -81,13 +94,16 @@ def run_comparison(cfg, history, strategies, capitals, window=(None, None)) -> d
     panel = build_panel(history)
     bars_by_symbol = {s: b.sort_values("Date").reset_index(drop=True)
                       for s, b in history.groupby("Symbol")}
+    arrays_by_symbol = {s: prepare(b) for s, b in bars_by_symbol.items()}
     results: dict[str, Any] = {}
     for name in strategies:
         if name not in REGISTRY:
             results[name] = {"error": f"unknown strategy: {name}"}
             continue
+        signals = build_signals(name, panel, cfg, window)  # computed once, reused per capital
         results[name] = {
-            _cap_key(cap): run_strategy(name, panel, bars_by_symbol, cfg, float(cap), window)
+            _cap_key(cap): run_strategy(name, panel, bars_by_symbol, cfg, float(cap), window,
+                                        signals, arrays_by_symbol)
             for cap in capitals
         }
     return {
