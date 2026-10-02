@@ -4,18 +4,17 @@ Answers the question the strategy tables cannot: *which stocks are worth
 looking at right now?*
 
 Version 2 (2026-10). Version 1 scored a hand-weighted blend of the
-Pressure-Response-Acceptance framework -- retention, closing range, effort,
-penetration -- because those were the ideas the research protocol proposed.
-`scripts/validate.py` then measured their information coefficients against the
-5-day forward return on 108,742 breakout events, and the result was
-`NO_INCREMENTAL_INFORMATION`:
+Pressure-Response-Acceptance framework because those were the ideas the
+protocol proposed. `scripts/validate.py` then measured their information
+coefficients against the 5-day forward return on 108,742 breakout events, and
+the verdict was `NO_INCREMENTAL_INFORMATION`:
 
     retention      IC +0.00009   t +0.02   <- indistinguishable from noise
     efficiency     IC -0.00000   t -0.46
     closing_range  IC -0.0086    t -1.72
     closing_disp   IC -0.0033    t -0.65
 
-so the framework's own instruction applies: discard the complexity.
+so the protocol's own instruction applies: discard the complexity.
 
 What the same test DID find, ranked by |t|:
 
@@ -29,25 +28,18 @@ What the same test DID find, ranked by |t|:
     ret60        IC +0.0049   t +0.90   nothing
 
 Version 2 scores the measured factors and drops retention, acceptance and
-closing range entirely. Two design consequences:
+closing range. Two consequences: scores are CROSS-SECTIONAL PERCENTILES,
+because a ranking is a rank and percentiles make outliers unscoreable rather
+than dominant; and there is NO DOUBLE COUNTING, since `efficiency` is
+result/volume and already carries the negative-volume effect.
 
-  * **Cross-sectional percentile, not raw values.** A score is a stock's rank
-    against today's other candidates, not an absolute number. That is what a
-    ranking means, and it makes outliers unscoreable rather than dominant.
-  * **No double counting.** `efficiency` is result/volume, so it already
-    carries the negative-volume effect; a separate "calm volume" component
-    would count the same signal twice.
+HONEST CAVEAT: these weights were set from information coefficients estimated on
+2018-2026. Setting weights from in-sample evidence is fitting to the sample,
+however measured. They describe what this data shows; they are not validated
+predictions. The only out-of-sample check is the walk-forward in
+`protocol/crosssec.py`, covering the momentum basket only.
 
-HONEST CAVEAT, and it matters: these weights were set from information
-coefficients estimated on 2018-2026. Setting weights from in-sample evidence
-is fitting to the sample, however measured. They describe what this data
-shows; they are not validated predictions. The only out-of-sample check in the
-repo is the walk-forward in `protocol/crosssec.py`, and it covers the
-momentum basket only. Treat this as a research ranking.
-
-Preserved from version 1: missing data is UNKNOWN, never a real zero, so a
-stock with insufficient history cannot masquerade as a bad-but-investable
-name. See `coverage()`.
+Preserved from v1: missing data is UNKNOWN, never a real zero (`coverage()`).
 """
 from __future__ import annotations
 
@@ -62,28 +54,23 @@ from protocol import states
 # sign -1 means a LOWER raw value scores HIGHER.
 COMPONENTS: dict[str, tuple[str, int, str, str]] = {
     "atrpct": ("Low volatility", -1, "ATR as a % of price",
-               "IC -0.0434, t -7.35 - the strongest measured effect; wild names "
-               "mean-revert against you"),
+               "IC -0.0434, t -7.35 - the strongest measured effect"),
     "prox52": ("Near the 52-week high", 1, "close vs the prior 252-session high",
-               "IC +0.0344, t +6.03 - momentum is real and proximity to the "
-               "extreme is its cleanest form"),
+               "IC +0.0344, t +6.03 - momentum, in its cleanest form"),
     "efficiency": ("Effort per result", 1,
                    "ATR-normalised result divided by relative volume",
-                   "IC +0.0178, t +3.73 - the one surviving piece of the "
-                   "pressure/response framework"),
+                   "IC +0.0178, t +3.73 - the one surviving piece of the framework"),
     "trend_raw": ("Slow trend, no recent chase", 1,
                   "120-day return minus half the last 20 days",
-                  "ret120 IC +0.0147 but ret20 IC -0.0128: the slow trend works "
-                  "and the recent burst reverses"),
+                  "ret120 +0.0147 but ret20 -0.0128: slow trend, recent burst reverses"),
     "penetration": ("Not extended", -1,
                     "how far price pushed past the reference, in ATR",
-                    "IC -0.0174, t -3.57 - deep penetration is exhaustion, which "
-                    "is why `trap` is the worst rule in the engine"),
+                    "IC -0.0174, t -3.57 - deep penetration is exhaustion"),
     "turnover20": ("Liquidity", 1, "20-session average rupee turnover",
-                   "not a return signal - you must be able to get out"),
+                   "tradability, not a return signal"),
     "stop_proxy": ("Tight stop", -1,
                    "distance from the close back to the structural reference",
-                   "a normal stop distance, not an absurdly wide one"),
+                   "a normal stop, not an absurdly wide one"),
 }
 
 # Kept separate and small: `recovered_after_rej` is the only registered rule

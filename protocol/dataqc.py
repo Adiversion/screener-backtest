@@ -4,54 +4,46 @@ The spec (`chatgpt.txt`, DATA QUALITY) demands checks for splits, zero
 volume, abnormal prices, and "do not silently mix adjusted and unadjusted
 prices".
 
-THE ORIGINAL CONCERN, AND WHAT IS ACTUALLY TRUE
-------------------------------------------------
+THE CONCERN, AND WHAT IS ACTUALLY EVIDENCED
+------------------------------------------
 `yfinance` is called with `auto_adjust=True` (see `protocol/ingest.py`). It
 back-adjusts OHLC for splits and dividends but does **not** split-adjust
-Volume. A 1:2 split would therefore leave the price series continuous while
-raw volume doubles for every prior bar -- a permanent level shift that
-corrupts `rvol20`, `efficiency` and every pressure/response feature from
-that date onward, silently.
+Volume, so a 1:2 split would leave the price series continuous while raw
+volume doubles for every prior bar -- corrupting `rvol20`, `efficiency` and
+every pressure/response feature from that date onward, silently.
 
 **That defect could not be demonstrated in this dataset, and this module does
-not claim to have found it.** Measured empirically on the stored panel, the
-level shifts detected here do NOT cluster at plausible split ratios
-(2.0 / 3.0 / 4.0 / 5.0); most imply ratios no NSE issuer would ever use.
-They are overwhelmingly *genuine* volume regime changes -- a name moving
-from illiquid to liquid after index inclusion or a rebalance, which is
-routine in a current-constituent universe. Separate price-continuity testing
-finds **zero** discontinuities, which is consistent with price adjustment
-working correctly.
+not claim to have found it.** Measured here, most detected level shifts do NOT
+cluster at plausible split ratios; price-continuity testing finds zero
+discontinuities, consistent with price adjustment working correctly. The shifts
+that are found are mostly genuine liquidity regime changes -- a name going from
+illiquid to liquid after index inclusion, routine in a current-constituent
+universe.
 
-So this module reports what it can actually evidence:
+So this reports what it can evidence: a volume regime-shift diagnostic (still
+worth having, because ANY persistent shift breaks `rvol20` comparability), a
+price-discontinuity scan, and a confirmed-split sub-count gated on the detected
+ratio matching a real split/bonus ratio.
 
-  * a **volume regime shift** diagnostic -- still worth having, because ANY
-    persistent level shift, whatever its cause, breaks the comparability of
-    `rvol20` across the shift date and should be visible rather than buried
-  * a **price discontinuity** scan for unadjusted corporate actions
-  * a **confirmed-split** sub-count, gated on the detected ratio actually
-    matching a real split ratio, so splits are separable from noise
+Detecting a volume spike is trivial and nearly useless -- results days and the
+March-2020 crash all print 8-50x normal and are valid data. A corporate action
+is distinguished by persistence, significance, and being one event:
 
-A split is distinguished from a one-off spike by three properties:
-
-  1. PERSISTENCE  - volume stays at a new level, it does not come back down
-  2. SIGNIFICANCE - the shift is large relative to its own noise
+  1. PERSISTENCE  - volume stays at a new level
+  2. SIGNIFICANCE - large relative to its own noise
   3. UNIQUENESS   - one event, not fifty overlapping window pairs
 
-Each is tested as a Welch two-sample t-test on log volume across fixed
-windows either side of a candidate bar, gated on persistence and price
-continuity, then de-duplicated with non-maximum suppression.
+Each is a Welch two-sample t-test on log volume across fixed windows either
+side, gated on persistence and price continuity, then de-duplicated with
+non-maximum suppression.
 
-THE TEST IS TWO-SIDED, and that matters more than it sounds. An unadjusted
+The test is TWO-SIDED, and that matters more than it sounds. An unadjusted
 1:2 SPLIT doubles volume. A 1:1 BONUS halves it. Bonus issues are far more
-common than splits on the Indian market, and a volume *drop* is exactly what
-a one-sided "ratio >= 1.25" detector is blind to -- so the first version of
-this module could not see the most likely corporate action it was written to
-find.
+common than splits on the Indian market, and a volume *drop* is exactly what a
+one-sided "ratio >= 1.25" detector cannot see.
 
-Because thousands of candidate dates are tested across the universe, the
-t-threshold is deliberately severe; the honest number of discoveries is
-small, and most of them are not splits.
+Because thousands of candidate dates are tested per universe, the t-threshold
+is deliberately severe; the honest number of discoveries is small.
 """
 from __future__ import annotations
 
