@@ -36,8 +36,24 @@ python scripts/pa_study.py
 python -m unittest discover -s tests -v
 ```
 
-Reports are written to `reports/` (`REPORT.md`, `report.json`, `comparison.csv`,
-per-strategy trade CSVs) and `reports/pra/`.
+## Report bundle
+
+Every run writes the same story in three formats to `reports/`:
+
+| File | Format | For |
+|---|---|---|
+| `REPORT.html` | dynamic, self-contained | humans — KPI cards, sortable/filterable table, expectancy bars, audit block. Just open it in a browser (no server). |
+| `REPORT.md` | Markdown | quick reading / diffs |
+| `report.json` | slim JSON (metrics only, **no** per-trade rows) | AI agents |
+| `comparison.csv` | CSV | spreadsheets |
+| `trades_<strategy>_<cap>.csv` | CSV | per-trade forensics |
+
+Re-render the bundle from an existing `report.json` without re-running the
+strategies (also strips trade rows):
+
+```bash
+python scripts/build_report.py
+```
 
 ## Running on Replit
 
@@ -45,6 +61,18 @@ per-strategy trade CSVs) and `reports/pra/`.
 2. The default run is `python scripts/run_backtest.py --strategies protocol`.
 3. To backtest the full Nifty 500, run `python scripts/fetch_data.py --source nifty500 --start 2018-01-01`
    once — it downloads adjusted OHLCV into `data/universe_history.parquet`, then rerun the backtest.
+
+## What to rotate into today
+
+```bash
+python scripts/screen_candidates.py            # latest session
+python scripts/screen_candidates.py --asof 2026-09-25 --top 5
+```
+
+Tags every symbol `ORGANIC` / `PENDING` / `TRAP_RISK` / `REJECTED` /
+`NO_SETUP` / `ILLIQUID`, names the stock to rotate into, and writes
+`reports/ROTATION.md`, `reports/rotation.csv` and a self-contained,
+filterable **`reports/dashboard.html`** (open it in any browser — no server).
 
 ## Tweaking a strategy
 

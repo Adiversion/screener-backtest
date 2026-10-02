@@ -100,24 +100,43 @@ def to_markdown(data: dict[str, Any], cfg: dict) -> str:
     return "\n".join(lines)
 
 
+def summary_payload(data: dict[str, Any]) -> dict[str, Any]:
+    """The agent-readable payload: metrics only, never per-trade rows."""
+    results: dict[str, Any] = {}
+    for name, per_cap in data.get("results", {}).items():
+        if not isinstance(per_cap, dict) or "error" in per_cap:
+            results[name] = {"error": (per_cap or {}).get("error", "error")}
+            continue
+        results[name] = {
+            cap: {"strategy": run.get("strategy"), "capital": run.get("capital"),
+                  "metrics": run.get("metrics"), "portfolio": run.get("portfolio"),
+                  "n_trades": len(run.get("trades") or [])}
+            for cap, run in per_cap.items()
+        }
+    return {k: v for k, v in data.items() if k != "results"} | {"results": results}
+
+
 def write_outputs(data: dict[str, Any], cfg: dict, out_dir: str | Path) -> dict[str, str]:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
-    (out / "report.json").write_text(json.dumps(data, default=str, indent=2), encoding="utf-8")
+    payload = summary_payload(data)
+    (out / "report.json").write_text(json.dumps(payload, default=str, indent=2), encoding="utf-8")
     (out / "REPORT.md").write_text(to_markdown(data, cfg), encoding="utf-8")
+    from protocol import report_html
+    (out / "REPORT.html").write_text(report_html.render(data), encoding="utf-8")
     rows = comparison_table(data)
     with open(out / "comparison.csv", "w", newline="", encoding="utf-8") as fh:
         writer = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
         writer.writeheader()
         writer.writerows(rows)
-    # per-strategy trade logs
+    # per-strategy trade logs (default capital only)
     for name, per_cap in data["results"].items():
-        if "error" in per_cap:
+        if not isinstance(per_cap, dict) or "error" in per_cap:
             continue
         for cap, run in per_cap.items():
-            if run["trades"]:
+            if run.get("trades"):
                 import pandas as pd
                 pd.DataFrame(run["trades"]).to_csv(out / f"trades_{name}_{cap}.csv", index=False)
             break
     return {"json": str(out / "report.json"), "md": str(out / "REPORT.md"),
-            "csv": str(out / "comparison.csv")}
+            "html": str(out / "REPORT.html"), "csv": str(out / "comparison.csv")}

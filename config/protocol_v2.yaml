@@ -120,6 +120,13 @@ pa:
   rejection_disp_atr: -0.25  # close-vs-R in ATR: above -> State C, below -> State D
   rejection_closing_range: 0.40
 
+# ---- end-of-day rotation screen (scripts/screen_candidates.py) ----
+screen:
+  stale_days: 3                # ignore symbols with no session this recent
+  organic_rvol_max: 5.0        # contained volume -> "organic" demand
+  trap_rvol_min: 8.0           # climactic spike ...
+  trap_closing_range_max: 0.45 # ... that also closed weak -> trap risk
+
 # ---- PDF liquidity gate (applies to the PA / M1 / N1-N4 strategies) ----
 liquidity:
   min_turnover20: 50000000.0  # >= Rs 5 crore 20-day mean Close*Volume

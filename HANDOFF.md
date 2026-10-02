@@ -50,9 +50,12 @@ protocol/                   engine internals (one responsibility per file)
   metrics.py    cohort stats, seeded bootstrap CIs, single-position portfolio
   audit.py      no-lookahead audit (truncation, shuffle, static scan, ordering, cutoff)
   engine.py     orchestration: build_signals once per strategy, simulate per capital
-  report.py     REPORT.md / report.json / comparison.csv / trade CSVs
+  report.py     REPORT.md / slim report.json / comparison.csv / trade CSVs
+  report_html.py  dynamic self-contained REPORT.html (KPI cards, chart, audit)
+  screen.py     EOD rotation screen: ORGANIC/PENDING/TRAP_RISK/... tags + ranking
   ingest.py     optional free-data fetch (yfinance, NSE bhavdata, Nifty500 list)
-scripts/       run_backtest.py, pra_study.py, pa_study.py, fetch_data.py
+scripts/       run_backtest.py, pra_study.py, pa_study.py, screen_candidates.py,
+               build_report.py, fetch_data.py
 tests/         unittest suite (no network required)
 data/          universe_history.parquet (full), small_universe_history.parquet
 reports/       outputs (git-ignored)
@@ -109,7 +112,18 @@ make test                              # python -m unittest discover -s tests -v
 python scripts/run_backtest.py --strategies all --capital 1000
 python scripts/pra_study.py            # PRA event study
 python scripts/pa_study.py             # PA State A/B/C/D event study
+python scripts/screen_candidates.py    # "what to rotate into" + dashboard.html
+python scripts/build_report.py         # re-render md/html/slim json from report.json
 ```
+
+**Output formats for each run** (`reports/`): `REPORT.html` (dynamic,
+self-contained, human-friendly), `REPORT.md`, `report.json` (**slim** — metrics
+only, no per-trade rows, so an agent can read the whole thing),
+`comparison.csv`, and `trades_<strategy>_<cap>.csv`. The rotation screen adds
+`ROTATION.md`, `rotation.csv` and `dashboard.html`.
+
+> **Do not** put per-trade rows back into `report.json` — it ballooned to
+> 251 MB for the full universe before `report.summary_payload` stripped them.
 
 Key CLI flags (`scripts/run_backtest.py`):
 
@@ -220,21 +234,57 @@ report embeds `audit.passed`. Reporting labels are `HISTORICAL_CANDIDATE` /
 
 ## 9. Current results
 
-Full 499-symbol NSE (Nifty-500 constituents) run, 2018-01-01 → 2026-09-25,
-₹1000 capital, costs included, `--strategies all`:
+Full **499-symbol Nifty-500** run, 2018-01-01 → 2026-09-25 (2,162 sessions),
+₹1000 capital, all costs included, `--strategies all`, audit PASS.
+Regenerate with `python scripts/run_backtest.py --strategies all --capital 1000`.
+Live table: **`reports/REPORT.md`** / **`reports/comparison.csv`**; event
+studies in `reports/pa/PA_REPORT.md` and `reports/pra/PRA_REPORT.md`.
 
-See **`reports/REPORT.md`** for the live table (regenerate with
-`python scripts/run_backtest.py --strategies all --capital 1000`) and
-`reports/pa/PA_REPORT.md` / `reports/pra/PRA_REPORT.md` for the event studies.
+Head of the comparison (Expectancy = mean net P&L % per trade):
 
-**Honest summary:** after realistic ₹1000 position costs, essentially no
-strategy beats the null/random baseline with statistical confidence on this
-data. Individual states separate risk (State A has the best next-day skew,
-State D the worst), but that is a risk-control signal, not standalone alpha —
-consistent with the PDF's own verdict of **PARTIALLY SUPPORTED**.
+| Strategy | N | WinRate | SafeRate | Expectancy | PF | TailBreach |
+|---|---|---|---|---|---|---|
+| **recovered_after_rej** | 1126 | 0.202 | 0.857 | **+0.0126** | 1.44 | 0.176 |
+| pra_retention_r252 | 4546 | 0.159 | 0.721 | −0.0130 | 0.70 | 0.331 |
+| trend | 156624 | 0.121 | 0.781 | −0.0151 | 0.62 | 0.277 |
+| pa_state_a | 7769 | 0.126 | 0.745 | −0.0175 | 0.59 | 0.319 |
+| random (null) | 1368 | 0.110 | 0.780 | −0.0177 | 0.57 | 0.284 |
+| pa_state_d | 8510 | 0.120 | 0.760 | −0.0181 | 0.58 | 0.312 |
+| aae_acceptance | 862 | 0.073 | 0.527 | −0.0221 | 0.44 | **0.143** |
+| trap (B1) | 2381 | 0.195 | 0.450 | **−0.0274** | 0.55 | **0.588** |
+| cash (B0) | 0 | — | — | — | — | — |
+
+**The whole story, honestly:**
+
+1. **`recovered_after_rej` (B9) is the only strategy with positive expectancy**
+   (~+1.3% net per trade, PF 1.44, SafeRate 86%) — and it clears the seeded
+   random null at ~−1.8%. In words: *a breakout that is rejected, then
+   reclaims its reference level, is where the edge lives on this data.* Its
+   MaxDD is still brutal (−93%) because the portfolio model is one position
+   at a time at ₹1000.
+2. **The trap baseline is the worst strategy** (Exp −2.7%, TailBreach 59%) —
+   buying stocks already up ≥15% over two sessions loses, exactly the fear the
+   protocol was built to test.
+3. **The PA state machine is a risk descriptor, not alpha.** States A/B/C/D
+   all land within ~0.2% expectancy of each other; State A's separation shows
+   up only in next-day *skew* (PDF's own verdict: PARTIALLY SUPPORTED).
+4. **High-trade-count strategies (trend, N-counts in the 10k–150k range) are
+   cost-dominated** — ₹1000 positions pay a flat ₹15.93 DP charge plus
+   slippage, which eats the edge.
+5. `aae_acceptance` has the **lowest TailBreach (0.143)** and the best drawdown
+   profile among the AAE cohorts — a risk filter, not a return generator.
 
 Always re-read the `DEGRADED-DATA` banner and the audit block before quoting
-any number.
+any number. The `random` row is the honest null; anything at or below it is
+noise.
+
+### Rotation output (`scripts/screen_candidates.py`)
+
+Scans the latest session and names the stock to rotate into, tagging every
+symbol ORGANIC / PENDING / TRAP_RISK / REJECTED / NO_SETUP / ILLIQUID, and
+writes `reports/ROTATION.md`, `reports/rotation.csv` and a self-contained
+`reports/dashboard.html`. Last run (as-of 2026-10-01): one ORGANIC candidate
+(STLTECH), trap-risk flagged LEMONTREE / MTARTECH / KOTAKBANK / DMART.
 
 ---
 

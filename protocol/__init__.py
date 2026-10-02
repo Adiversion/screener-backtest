@@ -6,4 +6,4 @@ from protocol import strategies_pa as _pa  # noqa: F401  (registers PA strategie
 
 __all__ = ["config", "features", "states", "filters", "simulator",
            "metrics", "strategies", "strategies_pra", "strategies_pa", "pra",
-           "pa", "engine", "report", "audit", "data"]
+           "pa", "screen", "engine", "report", "report_html", "audit", "data"]
