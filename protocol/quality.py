@@ -196,6 +196,7 @@ def edge_dates(panel: dict[str, pd.DataFrame], cfg: dict) -> dict[str, pd.Timest
 
 def _frames(panel, cfg, asof, lookback_days):
     """One row per symbol with every field the ranking and gates need."""
+    #
     edges = edge_dates(panel, cfg)
     rows = []
     for symbol, feat in panel.items():

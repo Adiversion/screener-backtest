@@ -145,7 +145,7 @@ quality:
   rvol_min: 0.8             # too little interest to act on
   rvol_max: 5.0             # above this is climactic, not accumulation
   trend_min: 0.0            # ret60 and ret120 must both exceed this
-  max_risk_to_ref: 0.08     # distance from close back to the reference
+  max_risk_to_ref: 0.08     # distance from close back to the reference (only above it)
   min_coverage: 1.0         # every component must be computable to be ranked
   thin_coverage: 0.5        # below this -> INSUFFICIENT, listed separately
 
