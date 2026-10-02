@@ -18,14 +18,12 @@ so the protocol's own instruction applies: discard the complexity.
 
 What the same test DID find, ranked by |t|:
 
-    atrpct       IC -0.0434   t -7.35   low volatility wins
-    prox52       IC +0.0344   t +6.03   near the 52-week high wins
-    rvol20       IC -0.0289   t -5.79   LOW relative volume wins (exhaustion)
-    efficiency   IC +0.0178   t +3.73   effort-per-unit-of-participation wins
-    penetration  IC -0.0174   t -3.57   shallow beats deep
-    ret120       IC +0.0147   t +2.58   slow trend works
-    ret20        IC -0.0128   t -2.49   recent winners REVERSE
-    ret60        IC +0.0049   t +0.90   nothing
+    atrpct       IC -0.0434  t -7.35  low volatility wins
+    prox52       IC +0.0344  t +6.03  near the 52-week high wins
+    rvol20       IC -0.0289  t -5.79  LOW relative volume (exhaustion)
+    efficiency   IC +0.0178  t +3.73  effort per unit participation
+    penetration  IC -0.0174  t -3.57  shallow beats deep
+    ret120 +0.0147 / ret20 -0.0128  slow trend works, recent burst reverses
 
 Version 2 scores the measured factors and drops retention, acceptance and
 closing range. Scores are CROSS-SECTIONAL PERCENTILES, because a ranking is a
