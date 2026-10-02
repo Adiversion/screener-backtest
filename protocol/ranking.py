@@ -83,6 +83,8 @@ def build_long(panel: dict[str, pd.DataFrame], cfg: dict, lookback_days: int = 2
             "date": dates, "symbol": symbol,
             "sessions": np.arange(1, len(d) + 1, dtype=float),
             "close": close, "reference": r20,
+            "low": pd.to_numeric(d["Low"], errors="coerce").to_numpy(float)
+            if "Low" in d.columns else close,
             "rvol20": pd.to_numeric(d["rvol20"], errors="coerce").to_numpy(float),
             "ret20": ret20, "ret120": ret120, "atrpct": atr,
             "prox52": pd.to_numeric(d["prox52"], errors="coerce").to_numpy(float),

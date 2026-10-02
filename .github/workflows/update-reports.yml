@@ -23,7 +23,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 75
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -45,6 +45,15 @@ jobs:
         continue-on-error: true
         run: python scripts/fetch_delivery.py --days 40
 
+      # The site scores EVERY listed NSE cash equity, so it needs the wide file,
+      # not the 499-name Nifty-500 one. yfinance is the single price source on
+      # purpose: NSE bhavcopy prices are RAW, and appending raw bars onto an
+      # adjusted series corrupts every price factor. bhavcopy contributes
+      # delivery columns only -- see scripts/fetch_universe.py.
+      - name: Refresh the full NSE equity universe
+        continue-on-error: true
+        run: python scripts/fetch_universe.py --years 2 --prices-only
+
       - name: Backtest
         run: |
           if [ "${{ inputs.full_backtest }}" = "true" ]; then
@@ -64,16 +73,34 @@ jobs:
       - name: Candidate screen and dashboard
         run: python scripts/screen_candidates.py
 
+      # The static research site: a 0.5 MB index plus one lazily-fetched detail
+      # file per symbol, so the search box works on a phone with no backend.
+      - name: Build the research site
+        continue-on-error: true
+        run: python scripts/build_site.py
+
+      # Does the ranking actually rank? Measured over every scored observation.
+      - name: Verdict audit (deciles vs forward outcomes)
+        continue-on-error: true
+        run: python scripts/verdict_audit.py
+
+      - name: Run the test suite
+        run: python -m unittest discover -s tests -v
+
       - name: Publish reports to the live branch
         run: |
+          set -e
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           rm -rf /tmp/live && mkdir -p /tmp/live
+          # the site is the front door: it must land at the repository ROOT of
+          # the live branch, not under reports/
           cp -r reports/. /tmp/live/
+          if [ -d reports/site ]; then cp -r reports/site/. /tmp/live/; fi
           cd /tmp/live
           git init -q -b live
           git add -A
-          git commit -q -m "live reports $(date -u +%FT%TZ)"
+          git commit -q -m "live reports + site $(date -u +%FT%TZ)"
           git remote add origin "${{ github.server_url }}/${{ github.repository }}.git"
           git push --force origin live
 
