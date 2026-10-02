@@ -3,7 +3,7 @@
 Classifies every symbol's most recent session into human-readable buckets so
 the engine can answer "which stocks are worth looking at today?":
 
-  ORGANIC    accepted expansion with contained volume -> genuine demand
+  ORGANIC    accepted expansion with contained volume
   PENDING    accepted expansion but effort/close not confirmed yet
   TRAP_RISK  failed acceptance, or a climactic exhaustion spike
   REJECTED   penetration that closed back below the reference
@@ -12,6 +12,12 @@ the engine can answer "which stocks are worth looking at today?":
 
 Every tag is derived from data through the session close only (no lookahead);
 the ranking is a frozen, configurable heuristic, not a tuned fit.
+
+The tag names describe what the PRICE AND VOLUME did, never what the
+participants intended. `ORGANIC` means an accepted expansion on contained
+volume -- it does not claim anyone was accumulating, and OHLCV cannot
+establish intent. Words like accumulation, distribution, absorption and supply
+are conclusions about intent that require evidence this data does not contain.
 """
 from __future__ import annotations
 

@@ -20,6 +20,25 @@ from protocol.features import build_features
 FORBIDDEN = ["shift(-", "center=True", "center = True", "bfill", "backfill"]
 SOURCE_DIR = Path(__file__).resolve().parent
 
+# Modules that need a forbidden pattern for a declared, non-trading reason.
+#
+# An exemption is NOT a way to make the audit pass quietly. The pattern is still
+# reported, with its reason, in every audit block, and an exemption that no
+# longer matches anything is itself flagged as stale -- so a module cannot keep
+# a permanent silent pass after the code that justified it is deleted.
+DECLARED_EXEMPTIONS: dict[str, str] = {
+    "participation.py": (
+        "Reads the future on purpose, to LABEL a cohort: 'participation later "
+        "expanded back through the level' is not knowable until it has happened. "
+        "The label is descriptive only and is never an entry signal; cohorts A, "
+        "B and D are all point-in-time. See label_cohorts's docstring."),
+}
+
+
+def _exemption_for(module: str, pattern: str) -> str | None:
+    """The declared reason for a pattern in a module, if there is one."""
+    return DECLARED_EXEMPTIONS.get(module) if pattern.startswith("shift(") else None
+
 
 def truncation_test(history: pd.DataFrame, n_samples: int, seed: int) -> dict[str, Any]:
     rng = np.random.default_rng(seed)
@@ -67,15 +86,25 @@ def shuffle_future_test(history: pd.DataFrame, n_samples: int, seed: int) -> dic
 
 
 def static_scan() -> dict[str, Any]:
-    hits = []
-    for path in SOURCE_DIR.glob("*.py"):
+    hits, exempt, seen = [], [], set()
+    for path in sorted(SOURCE_DIR.glob("*.py")):
         if path.name == Path(__file__).name:  # this module holds the pattern list
             continue
         text = path.read_text(encoding="utf-8")
         for pat in FORBIDDEN:
-            if pat in text:
+            if pat not in text:
+                continue
+            seen.add(path.name)
+            reason = _exemption_for(path.name, pat)
+            if reason:
+                exempt.append({"module": path.name, "pattern": pat, "reason": reason})
+            else:
                 hits.append(f"{path.name}:{pat}")
-    return {"test": "static_scan", "hits": hits, "pass": not hits}
+    stale = sorted(set(DECLARED_EXEMPTIONS) - seen)
+    for module in stale:
+        hits.append(f"{module}: stale exemption -- the pattern it excused is gone")
+    return {"test": "static_scan", "hits": hits, "exemptions": exempt,
+            "pass": not hits}
 
 
 def ordering_test(trades: list[dict[str, Any]]) -> dict[str, Any]:

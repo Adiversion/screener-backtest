@@ -143,7 +143,7 @@ quality:
   min_price: 20.0
   min_sessions: 252
   rvol_min: 0.8             # too little interest to act on
-  rvol_max: 5.0             # above this is climactic, not accumulation
+  rvol_max: 5.0             # above this the move is climactic, not orderly
   trend_min: 0.0            # ret60 and ret120 must both exceed this
   max_risk_to_ref: 0.08     # distance from close back to the reference (only above it)
   min_coverage: 1.0         # every component must be computable to be ranked
@@ -245,6 +245,22 @@ rotation:
   hold_sessions: 60      # ~1 quarter; the "do not get stuck for years" rule
   cooldown_sessions: 5   # do not re-enter a stopped-out name immediately
   picks: [rank, random]  # `random` is the null this mode has to beat
+
+# ---- PARTICIPATION DECAY STUDY (scripts/participation_study.py) ------
+# Falling volume after a large advance is ambiguous between accumulation and
+# distribution, and OHLCV cannot say which -- both look identical on a volume
+# chart. What the data CAN answer is what PRICE did while participation
+# decayed. These thresholds split that one state into cohorts and measure the
+# forward returns of each against the universe.
+participation:
+  reference: 20              # structural reference window (prior-N high)
+  rvol_low: 0.8              # participation below this is "decaying"
+  rvol_high: 1.5             # above this is "high participation" (control)
+  decay_window: 10           # sessions in each volume average
+  decay_lookback: 10         # the window before that one must also be falling
+  expand_within: 5           # sessions in which participation may expand back
+  expand_rvol: 1.5           # ...and the level of expansion that counts
+  horizons: [5, 10, 20, 40]  # forward close-to-close sessions
 
 # ---- end-of-day candidate screen (scripts/screen_candidates.py) ----
 screen:
