@@ -20,9 +20,14 @@ BAVCOPY_URL = "https://archives.nseindia.com/products/content/sec_bhavdata_full_
 NIFTY500_URL = "https://archives.nseindia.com/content/indices/ind_nifty500list.csv"
 HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; screener-backtest/1.0)"}
 
+# Accept both the legacy (OPEN/HIGH/...) and current (OPEN_PRICE/...) NSE headers.
 _NSE_COLS = {
-    "SYMBOL": "Symbol", "OPEN": "Open", "HIGH": "High", "LOW": "Low",
-    "CLOSE": "Close", "TTL_TRD_QNTY": "Volume", "DELIV_QTY": "DelivQty",
+    "SYMBOL": "Symbol",
+    "OPEN": "Open", "OPEN_PRICE": "Open",
+    "HIGH": "High", "HIGH_PRICE": "High",
+    "LOW": "Low", "LOW_PRICE": "Low",
+    "CLOSE": "Close", "CLOSE_PRICE": "Close",
+    "TTL_TRD_QNTY": "Volume", "DELIV_QTY": "DelivQty",
     "DELIV_PER": "DelivPct", "NO_OF_TRADES": "Trades", "SERIES": "Series",
 }
 
@@ -35,11 +40,19 @@ def fetch_bhavdata(day: date | str, session: requests.Session | None = None) -> 
     df = pd.read_csv(io.StringIO(resp.text))
     df.columns = [c.strip().upper() for c in df.columns]
     df = df.rename(columns=_NSE_COLS)
-    keep = [c for c in _NSE_COLS.values() if c in df.columns]
-    df = df[keep]
+    df = df.loc[:, ~df.columns.duplicated()]  # legacy + current aliases can collide
+    keep = list(dict.fromkeys(c for c in _NSE_COLS.values() if c in df.columns))
+    df = df[keep].copy()
     df["Date"] = pd.to_datetime(day)
+    if "Symbol" in df.columns:
+        df["Symbol"] = df["Symbol"].astype(str).str.strip().str.upper()
     if "Series" in df.columns:
+        df["Series"] = df["Series"].astype(str).str.strip()
         df = df[df["Series"].isin(["EQ", "BE", "BZ"])]
+    # numeric hygiene: NSE CSVs pad values with spaces
+    for col in ("Open", "High", "Low", "Close", "Volume", "DelivQty", "DelivPct", "Trades"):
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
     return df.reset_index(drop=True)
 
 

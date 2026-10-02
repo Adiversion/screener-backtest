@@ -41,6 +41,7 @@ def simulate(
     model: CostModel,
     capital: float,
     arrays: dict[str, np.ndarray] | None = None,
+    target_gross: float | None = None,
 ) -> dict[str, Any]:
     pol = _exit_policy(cfg)
     if arrays is None:
@@ -61,7 +62,11 @@ def simulate(
         return _skip(signal, "SKIP_UNAFFORDABLE")
 
     stop = signal.stop if signal.stop is not None else entry_px * (1.0 - float(signal.stop_pct or 0.07))
-    target = model.target_price(entry_px, shares, pol["target_net"])
+    if target_gross is not None:
+        # gpt6 rotation rule: target is a gross move from the actual fill price.
+        target = entry_px * (1.0 + float(target_gross))
+    else:
+        target = model.target_price(entry_px, shares, pol["target_net"])
 
     mae, mfe = 0.0, 0.0
     last = min(e0 + pol["hold"], len(cl) - 1)
@@ -76,14 +81,17 @@ def simulate(
         hit_target = o >= target or h >= target
         if hit_stop:  # same-day stop & target -> stop first (conservative)
             px = o if o <= stop else stop
-            return _result(signal, e0, k, px, shares, entry_px, "GAP_STOP" if o <= stop else "STOP", model, mae, mfe, arrays)
+            return _result(signal, e0, k, px, shares, entry_px,
+                           "GAP_STOP" if o <= stop else "STOP", model, mae, mfe, arrays,
+                           ambiguous=bool(hit_target))
         if hit_target:
             px = o if o >= target else target
             return _result(signal, e0, k, px, shares, entry_px, "TARGET", model, mae, mfe, arrays)
     return _result(signal, e0, last, float(cl[last]), shares, entry_px, "TIME", model, mae, mfe, arrays)
 
 
-def _result(signal, e0, k, exit_px, shares, entry_px, reason, model, mae, mfe, a) -> dict[str, Any]:
+def _result(signal, e0, k, exit_px, shares, entry_px, reason, model, mae, mfe, a,
+            ambiguous: bool = False) -> dict[str, Any]:
     buy_value = entry_px * shares
     buy_cost = model.buy_cost(entry_px, shares)
     net_proceeds = model.sell_net(exit_px, shares)
@@ -98,6 +106,7 @@ def _result(signal, e0, k, exit_px, shares, entry_px, reason, model, mae, mfe, a
         "costs": round(buy_cost + (exit_px * shares * model.sell_rate) + model.dp_charge, 4),
         "net_pnl": round(net_pnl, 4), "net_pnl_pct": round(net_pct, 6),
         "mae": round(mae, 6), "mfe": round(mfe, 6), "sessions_held": int(k - e0 + 1),
+        "ambiguous": bool(ambiguous),
         **signal.meta_row(),
     }
 

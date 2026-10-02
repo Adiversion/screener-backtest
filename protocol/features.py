@@ -65,9 +65,21 @@ def build_features(bars: pd.DataFrame) -> pd.DataFrame:
     df["pos_day_freq60"] = (close > close.shift(1)).rolling(60, min_periods=60).mean()
     df["turnover20"] = (close * vol).rolling(20, min_periods=20).mean()
 
-    # Delivery / trade-count features: unavailable in the free feed -> NA.
-    for col in ("deliv_pct", "deliv_rvol20", "deliv_pct_rel", "avg_trade_size", "ats_rel"):
-        df[col] = np.nan
+    # Delivery / trade-count features. Available only when a delivery_history
+    # file has been merged (scripts/fetch_delivery.py); otherwise they stay NA
+    # so filter F4 is honestly reported as unavailable, never zero-filled.
+    if "DelivPct" in df.columns and df["DelivPct"].notna().any():
+        dp = pd.to_numeric(df["DelivPct"], errors="coerce") / 100.0
+        df["deliv_pct"] = dp
+        df["deliv_pct_rel"] = dp / dp.rolling(20, min_periods=20).mean().shift(1)
+        dq = pd.to_numeric(df["DelivQty"], errors="coerce") if "DelivQty" in df.columns else pd.Series(np.nan, index=df.index)
+        df["deliv_rvol20"] = dq / dq.rolling(20, min_periods=20).mean().shift(1)
+        trades = pd.to_numeric(df["Trades"], errors="coerce").replace(0, np.nan) if "Trades" in df.columns else pd.Series(np.nan, index=df.index)
+        df["avg_trade_size"] = vol / trades
+        df["ats_rel"] = df["avg_trade_size"] / df["avg_trade_size"].rolling(20, min_periods=20).mean().shift(1)
+    else:
+        for col in ("deliv_pct", "deliv_rvol20", "deliv_pct_rel", "avg_trade_size", "ats_rel"):
+            df[col] = np.nan
     return df
 
 

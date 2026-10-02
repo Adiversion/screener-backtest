@@ -120,6 +120,15 @@ pa:
   rejection_disp_atr: -0.25  # close-vs-R in ATR: above -> State C, below -> State D
   rejection_closing_range: 0.40
 
+# ---- INR 1,000 one-position rotation experiment (gpt6 protocol, Part B) ----
+rotation:
+  initial_capital: 1000
+  max_holding_sessions: 20    # proposed design choice, NOT optimised
+  target_fraction: 0.15       # gross move from the actual fill price
+  stop_fraction: 0.07         # gross move from the actual fill price
+  candidate_tag: ORGANIC      # frozen screening rule (protocol/screen.py)
+  rolling_step_sessions: 252  # rolling-start experiments
+
 # ---- end-of-day rotation screen (scripts/screen_candidates.py) ----
 screen:
   stale_days: 3                # ignore symbols with no session this recent

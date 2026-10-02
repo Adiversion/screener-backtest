@@ -80,6 +80,54 @@ Tags every symbol `ORGANIC` / `PENDING` / `TRAP_RISK` / `REJECTED` /
 `reports/ROTATION.md`, `reports/rotation.csv` and a self-contained,
 filterable **`reports/dashboard.html`** (open it in any browser — no server).
 
+## The ₹1,000 one-position rotation backtest
+
+This is the *actual capital* experiment (gpt6 protocol, Part B) — not the
+compounded return of every winning event. One chronological portfolio, whole
+shares, target +15% / stop −7% from the real fill, 20-session time stop,
+reinvesting only remaining net cash.
+
+```bash
+python scripts/rotation_backtest.py                # full history
+python scripts/rotation_backtest.py --rolling      # rolling-start experiments
+python scripts/rotation_backtest.py --start 2026-09-21 --end 2026-09-25
+```
+
+Outputs go to `reports/rotation/` (`ROTATION_BACKTEST.html`, `.md`, `rotation.json`,
+trade + equity CSVs, rolling starts).
+
+> **Result (2018-01 → 2026-09, Nifty 500):** the rotation **loses money** —
+> ₹1,000 → ₹5.10 (−99.5%, CAGR −56%, max drawdown −99.6%) over 103 trades,
+> because ₹1,904 of fees were paid on ₹1,000 of capital. Target-first 24%,
+> stop-first 48%. Of the rolling starts (2018…2026) only the most recent one
+> is positive. That is the honest answer to "does this ₹1,000 rotation work?"
+
+## Delivery data (activates filter F4)
+
+```bash
+python scripts/fetch_delivery.py --days 40     # one NSE request per session
+```
+
+Writes `data/delivery_history.parquet`. `load_history` merges it automatically
+when it sits next to the price file, and `features.py` then computes
+`deliv_pct`, `deliv_pct_rel`, `deliv_rvol20`, `avg_trade_size`, `ats_rel` —
+which is what trap filter **F4** needs. Without it these stay `NA` and F4 is
+reported as *unavailable*, never zero-filled. NSE exposes no bulk delivery
+endpoint, so this is a bounded recent window, not 2018-2026.
+
+## Run it daily, automatically
+
+```bat
+REM double-click, or:
+schedule_daily.bat install 19:00     :: create a daily Windows task
+schedule_daily.bat run               :: run the job now
+schedule_daily.bat remove            :: delete the task
+```
+
+The task calls `RUN_BACKTEST.bat auto`, which refreshes data, rebuilds the
+rotation screen and the dashboard, and logs to `reports\scheduled_run.log`.
+It runs only while the PC is on and you are logged in.
+
 ## Tweaking a strategy
 
 Thresholds live in `config/protocol_v2.yaml` (single source of truth; every

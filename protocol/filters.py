@@ -35,7 +35,7 @@ def evaluate(feat: pd.DataFrame, event: dict[str, Any], cfg: dict) -> dict[str, 
         "F1": ret2 >= f["f1_ret2_max"],
         "F2": ext > f["f2_extension_max"],
         "F3": _exhaustion_candle(d, e_idx, f),
-        "F4": None,
+        "F4": _delivery_weak(d, e_idx, f),
         "F5": (atrpct > f["f5_atr_pct_max"]) or (atrpct < f["f5_atr_pct_min"]),
         "F6": None,
         "F7": close < f["f7_min_price"],
@@ -61,6 +61,16 @@ def _exhaustion_candle(d: pd.DataFrame, e_idx: int, f: dict) -> bool:
     w["rng"] = w["High"] - w["Low"]
     big = w.loc[w["rng"].idxmax()]
     return bool(big["closing_range"] < f["f3_closing_range_min"])
+
+
+def _delivery_weak(d: pd.DataFrame, e_idx: int, f: dict) -> bool | None:
+    """F4: delivery % weak vs its own trailing mean. None when data is absent."""
+    if "deliv_pct_rel" not in d.columns:
+        return None
+    val = d["deliv_pct_rel"].iloc[e_idx]
+    if val is None or (isinstance(val, float) and np.isnan(val)):
+        return None
+    return bool(val < f["f4_deliv_pct_rel_min"])
 
 
 def _illiquid(d: pd.DataFrame, e_idx: int, f: dict) -> bool:

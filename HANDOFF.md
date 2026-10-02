@@ -53,9 +53,13 @@ protocol/                   engine internals (one responsibility per file)
   report.py     REPORT.md / slim report.json / comparison.csv / trade CSVs
   report_html.py  dynamic self-contained REPORT.html (KPI cards, chart, audit)
   screen.py     EOD rotation screen: ORGANIC/PENDING/TRAP_RISK/... tags + ranking
+  rotation.py   INR 1,000 one-position rotation ledger + metrics + rolling starts
   ingest.py     optional free-data fetch (yfinance, NSE bhavdata, Nifty500 list)
 scripts/       run_backtest.py, pra_study.py, pa_study.py, screen_candidates.py,
-               build_report.py, fetch_data.py
+               rotation_backtest.py, build_report.py, fetch_data.py,
+               fetch_delivery.py
+RUN_BACKTEST.bat    one-click launcher (also `auto` / `full` / `screen` modes)
+schedule_daily.bat  install/remove the daily Windows scheduled task
 tests/         unittest suite (no network required)
 data/          universe_history.parquet (full), small_universe_history.parquet
 reports/       outputs (git-ignored)
@@ -113,8 +117,15 @@ python scripts/run_backtest.py --strategies all --capital 1000
 python scripts/pra_study.py            # PRA event study
 python scripts/pa_study.py             # PA State A/B/C/D event study
 python scripts/screen_candidates.py    # "what to rotate into" + dashboard.html
+python scripts/rotation_backtest.py    # the INR 1,000 one-position rotation
+python scripts/fetch_delivery.py --days 40   # NSE delivery data (activates F4)
 python scripts/build_report.py         # re-render md/html/slim json from report.json
 ```
+
+On Windows: double-click `RUN_BACKTEST.bat` (interactive), or use
+`RUN_BACKTEST.bat auto|full|screen` for unattended runs. `schedule_daily.bat
+install 19:00` registers a daily Windows task that runs the `auto` mode and
+logs to `reports\scheduled_run.log`.
 
 **Output formats for each run** (`reports/`): `REPORT.html` (dynamic,
 self-contained, human-friendly), `REPORT.md`, `report.json` (**slim** — metrics
@@ -212,9 +223,13 @@ report embeds `audit.passed`. Reporting labels are `HISTORICAL_CANDIDATE` /
 
 ## 8. Known gaps / TODO for the next agent
 
-1. **Delivery data**: ingest `bhavdata` delivery columns into `features.py`
-   (`deliv_pct`, `deliv_pct_rel`, `deliv_rvol20`) so filter F4 and the ATS
-   study activate. This is the biggest honesty win available.
+1. **Delivery data — DONE but shallow.** `scripts/fetch_delivery.py` fetches
+   the official NSE full bhavcopy and `data.py`/`features.py` now merge and use
+   it (filter F4 returns a real bool when data exists, `None` otherwise).
+   Limitation: NSE has **no bulk delivery endpoint**, so only a recent window
+   (~29 sessions at time of writing) is loaded. To extend, re-run
+   `fetch_delivery.py --days N --append`. Full-history delivery would need a
+   paid vendor.
 2. **History depth**: bundled history starts 2018; the protocol's 2015–2020
    discovery window is under-covered. Extend via `fetch_data.py`.
 3. **Surveillance/price-band lists (F6), results calendar (F9), circuit locks
@@ -280,6 +295,27 @@ Head of the comparison (Expectancy = mean net P&L % per trade):
 Always re-read the `DEGRADED-DATA` banner and the audit block before quoting
 any number. The `random` row is the honest null; anything at or below it is
 noise.
+
+### INR 1,000 one-position rotation (`scripts/rotation_backtest.py`)
+
+The actual-capital experiment (gpt6 Part B), 2018-01 → 2026-09, 499 symbols:
+
+| Metric | Value |
+|---|---|
+| Final value | **₹5.10** (from ₹1,000) |
+| Total return / CAGR | **−99.5% / −56%** |
+| Max drawdown | −99.6% |
+| Trades | 103 |
+| Target-first / stop-first / time | 24% / 48% / 28% |
+| Expectancy / profit factor | −4.6% / 0.40 |
+| **Total fees on ₹1,000** | **₹1,904** |
+| Longest losing streak | 10 |
+
+**The rotation does not work, and the reason is costs**: the ₹15.93 DP charge
+plus slippage on every trade means ~₹1,904 of fees were paid while the account
+started at ₹1,000. Only the most recent rolling start (2026-02-27) is positive;
+every earlier start is deeply negative. Report this as-is — do not "fix" it by
+changing the capital or dropping costs.
 
 ### Rotation output (`scripts/screen_candidates.py`)
 
