@@ -70,9 +70,8 @@ COMPONENTS: dict[str, tuple[str, int, str, str]] = {
                    "a normal stop, not an absurdly wide one"),
 }
 
-# Kept separate and small: `recovered_after_rej` is the only registered rule
-# that ever beat the seeded random null, but it has NOT survived independent
-# validation, so it must not carry much weight.
+# Kept separate and small: `recovered_after_rej` is the only registered rule that
+# ever beat the random null, but was never independently validated.
 EDGE_WEIGHT = 0.05
 
 
