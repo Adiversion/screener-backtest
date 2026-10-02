@@ -32,6 +32,11 @@ DECLARED_EXEMPTIONS: dict[str, str] = {
         "expanded back through the level' is not knowable until it has happened. "
         "The label is descriptive only and is never an entry signal; cohorts A, "
         "B and D are all point-in-time. See label_cohorts's docstring."),
+    "verdict.py": (
+        "Computes forward returns, which are OUTCOMES measured after the "
+        "verdict. The score at each session is built by ranking.build_long from "
+        "data through that session only, so no outcome can flow backwards into "
+        "a verdict. See the module docstring."),
 }
 
 
