@@ -1,12 +1,12 @@
 @echo off
 setlocal enabledelayedexpansion
-title NSE Strategy Backtest and Rotation Engine
+title NSE Backtest and Stock-Quality Engine
 cd /d "%~dp0"
 
 REM  Usage:  RUN_BACKTEST.bat            -> interactive menu (double-click)
-REM          RUN_BACKTEST.bat auto       -> refresh data + rotation screen, no UI
+REM          RUN_BACKTEST.bat auto       -> refresh data + stock picks, no UI
 REM          RUN_BACKTEST.bat full       -> everything, unattended
-REM          RUN_BACKTEST.bat screen     -> rotation screen only, unattended
+REM          RUN_BACKTEST.bat screen     -> stock picks only, unattended
 set "ARG=%~1"
 set "NOUI="
 set "choice="
@@ -20,7 +20,7 @@ if /i "%ARG%"=="full" set "choice=4"
 if defined NOUI goto setup
 
 echo ============================================================
-echo    NSE Strategy Backtest + Rotation Engine
+echo    NSE Backtest + Stock-Quality Engine
 echo    folder: %CD%
 echo ============================================================
 echo.
@@ -49,8 +49,8 @@ echo.
 echo [3/4] What should I run?
 echo    1  Quick backtest   - protocol strategies only  (about 5 min)
 echo    2  Full backtest    - ALL strategies, full universe  (about 15 min)
-echo    3  Rotation screen  - "what to hold today" + dashboard
-echo    4  Everything       - full backtest + rotation screen  (recommended)
+echo    3  Stock picks     - ranked quality shortlist + evidence  (recommended)
+echo    4  Everything       - full backtest + stock picks  (recommended)
 echo.
 set "choice=4"
 set /p "choice=Enter 1-4 [4]: "
@@ -67,7 +67,8 @@ if /i "!choice!"=="4" %PY% scripts\build_report.py
 
 :screen
 echo.
-echo [4/4] Building the rotation screen...
+echo [4/4] Ranking stocks and building the candidate board...
+%PY% scripts\decisions.py --top 10
 %PY% scripts\screen_candidates.py
 
 if defined NOUI goto finished
@@ -82,7 +83,8 @@ echo    REPORT.html    - strategy comparison (dynamic)
 echo    REPORT.md      - same, in text
 echo    report.json    - machine readable (metrics only)
 echo    dashboard.html - trap / safe / organic board
-echo    ROTATION.md    - what to rotate into
+echo    DECISIONS.md   - ranked good stocks + why + historical evidence
+echo    CANDIDATES.md  - full session tag board
 echo ============================================================
 echo.
 pause

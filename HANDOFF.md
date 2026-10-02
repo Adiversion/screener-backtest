@@ -13,7 +13,8 @@ cash-equity universe. Any universe size, pluggable strategies, tweakable
 parameters, side-by-side comparison with a buy-and-hold benchmark.
 
 It is deliberately separate from the main `GSheetScreener` app so it can live
-in its own GitHub repo (`Adiversion/screener-backtest`) and run on Replit.
+in its own GitHub repo (`Adiversion/screener-backtest`) and run unattended on
+GitHub Actions.
 
 Three research protocols are implemented as strategy families:
 
@@ -22,7 +23,13 @@ Three research protocols are implemented as strategy families:
 | **AAE** — Acceptance-After-Expansion | `ai research.txt` (= `claude-fable-5.1-search.txt`, AAE v2.0) | volume breakout → acceptance hold → expansion trigger, trap filters F1–F11, baselines B0–B9 |
 | **PRA** — Pressure→Response→Acceptance | `chatgpt.txt` | effort/response event classes, forward T+1..T+5 outcomes, ablation ladder A–F |
 | **PA** — Price-Acceptance states | `Price Acceptance Strategy Origins.pdf` (Gemini) | 4-state A/B/C/D machine + M1–M4 mainstream & N1–N4 community baselines + liquidity gate |
-| **Rotation / reference variants** | `gpt 6 astar search max.txt` | cash (no-trade) B0 baseline + STRONG_RETENTION on references 5/10/20/60/252 as separately registered variants |
+| **Reference variants** | `gpt 6 astar search max.txt` | cash (no-trade) B0 baseline + STRONG_RETENTION on references 5/10/20/60/252 as separately registered variants |
+
+> **Direction (current):** the ₹1,000 rotation experiment was **deleted** — its
+> result was an honest loss (see §9). The engine's job is now to **find good,
+> quality stocks to invest in**: `protocol/quality.py` blends the surviving
+> signals into one ranked shortlist, `protocol/evidence.py` supplies the
+> historical evidence, and `scripts/decisions.py` is the headline CLI.
 
 ---
 
@@ -52,18 +59,19 @@ protocol/                   engine internals (one responsibility per file)
   engine.py     orchestration: build_signals once per strategy, simulate per capital
   report.py     REPORT.md / slim report.json / comparison.csv / trade CSVs
   report_html.py  dynamic self-contained REPORT.html (KPI cards, chart, audit)
-  screen.py     EOD rotation screen: ORGANIC/PENDING/TRAP_RISK/... tags + ranking
-  rotation.py   INR 1,000 one-position rotation ledger + metrics + rolling starts
+  screen.py     EOD candidate screen: ORGANIC/PENDING/TRAP_RISK/... tags + ranking
+  quality.py    blended stock-quality score, hard gates, per-stock reason
+  evidence.py   strategy catalogue, cohort stats, beats-null comparison, caveats
   ingest.py     optional free-data fetch (yfinance, NSE bhavdata, Nifty500 list)
-scripts/       run_backtest.py, pra_study.py, pa_study.py, screen_candidates.py,
-               rotation_backtest.py, build_report.py, fetch_data.py,
-               fetch_delivery.py
+scripts/       run_backtest.py, decisions.py, screen_candidates.py,
+               pra_study.py, pa_study.py, build_report.py, strategy_index.py,
+               fetch_data.py, fetch_delivery.py
 RUN_BACKTEST.bat    one-click launcher (also `auto` / `full` / `screen` modes)
 schedule_daily.bat  install/remove the daily Windows scheduled task
 tests/         unittest suite (no network required)
 data/          universe_history.parquet (full), small_universe_history.parquet
 reports/       outputs (git-ignored)
-.replit, replit.nix, Makefile, requirements.txt, README.md
+Makefile, requirements.txt, README.md
 ```
 
 **HARD RULE from the parent repo's `AGENTS.md`: no source file may exceed 300
@@ -116,8 +124,8 @@ make test                              # python -m unittest discover -s tests -v
 python scripts/run_backtest.py --strategies all --capital 1000
 python scripts/pra_study.py            # PRA event study
 python scripts/pa_study.py             # PA State A/B/C/D event study
-python scripts/screen_candidates.py    # "what to rotate into" + dashboard.html
-python scripts/rotation_backtest.py    # the INR 1,000 one-position rotation
+python scripts/decisions.py --top 10   # ranked good stocks + reason + evidence
+python scripts/screen_candidates.py    # session tag board + dashboard.html
 python scripts/fetch_delivery.py --days 40   # NSE delivery data (activates F4)
 python scripts/build_report.py         # re-render md/html/slim json from report.json
 ```
@@ -139,8 +147,9 @@ Actions schedule are **independent** — disable whichever you do not want.
 **Output formats for each run** (`reports/`): `REPORT.html` (dynamic,
 self-contained, human-friendly), `REPORT.md`, `report.json` (**slim** — metrics
 only, no per-trade rows, so an agent can read the whole thing),
-`comparison.csv`, and `trades_<strategy>_<cap>.csv`. The rotation screen adds
-`ROTATION.md`, `rotation.csv` and `dashboard.html`.
+`comparison.csv`, and `trades_<strategy>_<cap>.csv`. `scripts/decisions.py` adds
+`DECISIONS.md` + `decisions.json`; the candidate screen adds `CANDIDATES.md`,
+`candidates.csv` and `dashboard.html`.
 
 > **Do not** put per-trade rows back into `report.json` — it ballooned to
 > 251 MB for the full universe before `report.summary_payload` stripped them.
@@ -305,9 +314,11 @@ Always re-read the `DEGRADED-DATA` banner and the audit block before quoting
 any number. The `random` row is the honest null; anything at or below it is
 noise.
 
-### INR 1,000 one-position rotation (`scripts/rotation_backtest.py`)
+### Deleted: the INR 1,000 one-position rotation
 
-The actual-capital experiment (gpt6 Part B), 2018-01 → 2026-09, 499 symbols:
+`protocol/rotation.py`, `scripts/rotation_backtest.py` and
+`tests/test_rotation.py` were **git rm`'d**. The experiment was the actual-capital
+one (gpt6 Part B), 2018-01 → 2026-09 over 499 symbols, and it lost:
 
 | Metric | Value |
 |---|---|
@@ -320,27 +331,98 @@ The actual-capital experiment (gpt6 Part B), 2018-01 → 2026-09, 499 symbols:
 | **Total fees on ₹1,000** | **₹1,904** |
 | Longest losing streak | 10 |
 
-**The rotation does not work, and the reason is costs**: the ₹15.93 DP charge
-plus slippage on every trade means ~₹1,904 of fees were paid while the account
-started at ₹1,000. Only the most recent rolling start (2026-02-27) is positive;
-every earlier start is deeply negative. Report this as-is — do not "fix" it by
-changing the capital or dropping costs.
+**The reason is costs**: the ₹15.93 DP charge plus slippage on every trade means
+~₹1,904 of fees were paid while the account started at ₹1,000. Only the most
+recent rolling start was positive. Kept here as a finding, not as code — do not
+re-add it, and do not "fix" the numbers by changing the capital or the costs.
 
-### Rotation output (`scripts/screen_candidates.py`)
+### Finding good stocks (`protocol/quality.py` + `scripts/decisions.py`)
 
-Scans the latest session and names the stock to rotate into, tagging every
-symbol ORGANIC / PENDING / TRAP_RISK / REJECTED / NO_SETUP / ILLIQUID, and
-writes `reports/ROTATION.md`, `reports/rotation.csv` and a self-contained
-`reports/dashboard.html`. Last run (as-of 2026-10-01): one ORGANIC candidate
-(STLTECH), trap-risk flagged LEMONTREE / MTARTECH / KOTAKBANK / DMART.
+`decisions.py` is now the headline command. It scores every symbol on six
+components, applies hard gates, and ranks what clears them. Weights and gates
+live in `config/protocol_v2.yaml` under `quality:` — a **frozen judgement, not
+a fit**; changing them is a new experiment, not a tweak.
+
+| Component | Weight | Measures |
+|---|---|---|
+| acceptance | 0.30 | retention into the close + closing range vs the prior 20-day high |
+| trend | 0.20 | 60-day and 120-day return |
+| liquidity | 0.15 | 20-day average rupee turnover (log) |
+| volume_sanity | 0.15 | RVOL vs its 20-session mean — a tent, fades when too quiet or too frantic |
+| risk | 0.10 | distance from close back to the structural reference |
+| edge | 0.10 | the reclaimed-reference pattern fired in the last 20 sessions |
+
+Gates (all must pass): 20-day turnover ≥ ₹5 crore, close ≥ ₹20, 60d > 0,
+120d > 0, close > R20 with positive penetration, risk-to-ref ≤ 8%, ≥ 252
+sessions of history.
+
+The `edge` component exists because **exactly one rule beats the seeded random
+null** — `recovered_after_rej`, +0.0125 net/trade vs −0.0177 for the null,
+bootstrap CI 0.0074 → 0.0177. Everything else is at or below the null.
+
+Every name is labelled a **HISTORICAL_CANDIDATE**, never "BUY". No participant
+identity is inferred anywhere in the output.
+
+### Candidate board (`scripts/screen_candidates.py`)
+
+Scans the latest session, tagging every symbol ORGANIC / PENDING / TRAP_RISK /
+REJECTED / NO_SETUP / ILLIQUID, and writes `reports/CANDIDATES.md`,
+`reports/candidates.csv` and a self-contained `reports/dashboard.html`.
+This is the raw unranked board; `decisions.py` is the ranked shortlist.
 
 ---
 
-## 10. Replit
+## 9b. Validation milestone (`scripts/validate.py`)
 
-`.replit` runs `python scripts/run_backtest.py --strategies protocol`; `replit.nix`
-pins the Python deps. First Replit run should do `pip install -r requirements.txt`
-(then optionally `python scripts/fetch_data.py --source nifty500` to refresh data).
+Four tests the research protocol demanded and that had never been run. Writes
+`reports/VALIDATION.md` + `validation.json`. Consumes `reports/report.json`, so
+run `run_backtest.py` first.
+
+| # | Module | Question |
+|---|---|---|
+| 1 | `dataqc.py` | Volume regime shifts / unadjusted price gaps? |
+| 2 | `redundancy.py` | Is the signal just repackaged momentum? |
+| 3 | `inference.py` | How many strategies survive BH-FDR? |
+| 4 | `crosssec.py` | Do top-5/10/20 baskets beat the equal-weight universe? |
+
+**Rules learned the hard way — do not undo these:**
+
+- The FDR p-values must test against the **seeded `random` expectancy**, never
+  against 0. Nearly every strategy here is negative, so a zero-null flags all
+  27 as "significant" and means nothing.
+- `closing_disp == retention x penetration` **exactly**, by definition. Those
+  pairs are excluded as definitional identities (`DEFINITIONAL_PAIRS`) — a high
+  correlation there is arithmetic, not a finding.
+- "Not repackaged" is **not** a pass. A feature that is uncorrelated with
+  momentum but explains nothing either gets `NO_INCREMENTAL_INFORMATION`, and
+  the spec says discard the complexity.
+- In `dataqc`, persistence must compare the PRE-shift window to a window two
+  periods later. Comparing the two post-shift windows tests whether volume kept
+  *rising*, which silently undercounts real shifts.
+- `NaN < threshold` is `False`, so unfiltered NaNs pass a threshold gate. Every
+  NaN check must be explicit (`np.isfinite`).
+- Constant volume has zero variance, so the Welch t-stat is 0/0. Synthetic test
+  fixtures need noisy volume.
+- Missing feature data must return `None`, not `0.0` (`quality.components`).
+
+---
+
+## 10. Running it in the cloud
+
+GitHub Actions is the primary route — the repo is pure Python on
+pandas/numpy/PyYAML, so nothing needs a cloud IDE.
+
+- `.github/workflows/update-reports.yml` runs daily at 19:00 IST and on demand
+  (**Actions → Update live reports → Run workflow**), then force-publishes
+  `reports/` to the `live` branch and uploads an artifact.
+- `.github/workflows/pages.yml` deploys the same content to GitHub Pages. Enable
+  once: **Settings → Pages → Source: GitHub Actions**.
+- `Colab_Backtest.ipynb` runs the whole engine from a browser tab as a
+  convenience fallback.
+- `schedule_daily.bat` (local Windows task) is **independent** of the GitHub
+  schedule — disable whichever you do not want.
+
+`.replit` / `replit.nix` are no longer a documented route.
 
 ## 11. Git
 
@@ -366,8 +448,9 @@ user. Double-click it and it:
 1. finds Python (`py` then `python`),
 2. `pip install -r requirements.txt`,
 3. refreshes data with `fetch_data.py --source nifty500`,
-4. asks *1 quick / 2 full / 3 rotation-screen / 4 everything*,
-5. runs the backtest, rebuilds the report bundle, runs the rotation screen,
+4. asks *1 quick / 2 full / 3 stock-picks / 4 everything*,
+5. runs the backtest, rebuilds the report bundle, then runs `decisions.py`
+   (ranked shortlist) and `screen_candidates.py` (tag board),
 6. opens `reports\dashboard.html` and `reports\REPORT.html` in the browser.
 
 Keep it CRLF-encoded (it was written with `sed -i 's/$/\r/'`). If you add

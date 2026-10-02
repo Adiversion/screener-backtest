@@ -1,5 +1,5 @@
 @echo off
-REM  Unattended daily job: refresh data, rebuild the rotation screen/dashboard.
+REM  Unattended daily job: refresh data, rebuild the stock-pick report and dashboard.
 REM  Appends to reports\scheduled_run.log so you can see what happened.
 cd /d "%~dp0"
 echo ============================================================ >> "%~dp0reports\scheduled_run.log"

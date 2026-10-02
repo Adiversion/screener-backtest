@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""End-of-day rotation screen + interactive dashboard.
+"""End-of-day candidate screen + interactive dashboard.
 
   python scripts/screen_candidates.py                      # latest session
   python scripts/screen_candidates.py --asof 2026-09-25 --top 5
@@ -7,8 +7,11 @@
   python scripts/screen_candidates.py --no-html
 
 Tags every symbol ORGANIC / PENDING / TRAP_RISK / REJECTED / NO_SETUP /
-ILLIQUID and names the stock to rotate into. Writes reports/ROTATION.md,
-reports/rotation.csv and a self-contained reports/dashboard.html.
+ILLIQUID and surfaces the shortlist worth studying. Writes reports/CANDIDATES.md,
+reports/candidates.csv and a self-contained reports/dashboard.html.
+
+For the *ranked, evidence-backed* shortlist of good stocks to invest in use
+`python scripts/decisions.py` instead - this script is the raw session board.
 """
 from __future__ import annotations
 
@@ -65,7 +68,7 @@ def _dashboard(rows: pd.DataFrame, picks: pd.DataFrame, story: list[str],
 
 
 _HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
-<title>NSE Rotation Dashboard</title>
+<title>NSE Candidate Dashboard</title>
 <style>
  body{font:14px/1.5 system-ui,Segoe UI,sans-serif;margin:0;background:#0d1117;color:#e6edf3}
  header{padding:18px 24px;background:#161b22;border-bottom:1px solid #30363d}
@@ -81,7 +84,7 @@ _HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
  input,select{background:#0d1117;color:#e6edf3;border:1px solid #30363d;border-radius:6px;padding:6px 9px}
  .num{text-align:right;font-variant-numeric:tabular-nums}
 </style></head><body>
-<header><h1>NSE Rotation Dashboard</h1><div class="sub" id="sub"></div></header>
+<header><h1>NSE Candidate Dashboard</h1><div class="sub" id="sub"></div></header>
 <main>
  <div class="call" id="call"></div>
  <h2>Candidate board</h2>
@@ -103,7 +106,7 @@ const D = __DATA__;
 const CO = {ORGANIC:'#1a7f37',PENDING:'#9a6700',TRAP_RISK:'#b42318',REJECTED:'#8250df',NO_SETUP:'#57606a',ILLIQUID:'#8c959f'};
 const f = v => (v===null||v===undefined) ? '-' : v;
 document.getElementById('sub').textContent = 'Session ' + f(D.asof) + ' | ' +
-  (D.picks.length ? 'rotate into ' + D.picks[0].symbol : 'stay in cash');
+  (D.picks.length ? 'top candidate ' + D.picks[0].symbol : 'no candidate today');
 document.getElementById('call').innerHTML = D.story.map(s=>'<div>'+s+'</div>').join('');
 const tags = [...new Set(D.rows.map(r=>r.tag))];
 const sel = document.getElementById('tagf');
@@ -129,7 +132,7 @@ document.querySelector('#strat tbody').innerHTML = D.strategies.map(s=>`<tr>
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="End-of-day rotation screen")
+    ap = argparse.ArgumentParser(description="End-of-day candidate screen")
     ap.add_argument("--config", default=None)
     ap.add_argument("--data", default=str(ROOT / "data" / "universe_history.parquet"))
     ap.add_argument("--asof", default=None)
@@ -153,21 +156,21 @@ def main() -> int:
 
     rows = screen.screen(build_panel(_trim(history, args.lookback)), cfg, asof)
     rows = rows[rows["tag"] != "ILLIQUID"].copy() if not rows.empty else rows
-    picks = screen.rank_rotation(rows, cfg, top=args.top)
+    picks = screen.rank_candidates(rows, cfg, top=args.top)
     lines = screen.story(rows, cfg)
 
     out = Path(args.outdir)
     out.mkdir(parents=True, exist_ok=True)
-    rows.sort_values("tag").to_csv(out / "rotation.csv", index=False)
+    rows.sort_values("tag").to_csv(out / "candidates.csv", index=False)
     counts = rows["tag"].value_counts().to_dict() if not rows.empty else {}
-    md = ["# Rotation Screen", "", f"- as-of: {asof.date()}",
+    md = ["# Candidate Screen", "", f"- as-of: {asof.date()}",
           f"- tags: {counts}", "", "## Call", ""]
     md += [f"- {ln}" for ln in lines]
     md += ["", "## Shortlist", "",
            picks[["rank", "symbol", "tag", "close", "reference", "rvol20", "retention",
                   "penetration", "stop_proxy"]].to_markdown(index=False)
            if not picks.empty else "_(no ORGANIC candidate)_"]
-    (out / "ROTATION.md").write_text("\n".join(md), encoding="utf-8")
+    (out / "CANDIDATES.md").write_text("\n".join(md), encoding="utf-8")
     if not args.no_html:
         (out / "dashboard.html").write_text(
             _dashboard(rows, picks, lines, out / "report.json"), encoding="utf-8")
@@ -175,11 +178,11 @@ def main() -> int:
     for ln in lines:
         print(ln)
     if not picks.empty:
-        print("\nRotation shortlist:")
+        print("\nShortlist:")
         for _, r in picks.iterrows():
             print(f"  {int(r['rank'])}. {r['symbol']:<12} close={r['close']} "
                   f"ref={r['reference']} rvol={r['rvol20']} risk={r['stop_proxy']}")
-    print(f"\nwrote {out / 'ROTATION.md'}, {out / 'rotation.csv'}"
+    print(f"\nwrote {out / 'CANDIDATES.md'}, {out / 'candidates.csv'}"
           + ("" if args.no_html else f", {out / 'dashboard.html'}"))
     return 0
 

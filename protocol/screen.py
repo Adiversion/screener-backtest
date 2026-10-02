@@ -1,7 +1,7 @@
-"""End-of-day rotation screen.
+"""End-of-day candidate screen.
 
 Classifies every symbol's most recent session into human-readable buckets so
-the engine can answer "what should I rotate into next?":
+the engine can answer "which stocks are worth looking at today?":
 
   ORGANIC    accepted expansion with contained volume -> genuine demand
   PENDING    accepted expansion but effort/close not confirmed yet
@@ -91,11 +91,17 @@ def screen(panel: dict[str, pd.DataFrame], cfg: dict, asof: pd.Timestamp) -> pd.
     return pd.DataFrame(rows)
 
 
-def rank_rotation(rows: pd.DataFrame, cfg: dict, top: int = 1) -> pd.DataFrame:
-    """ORGANIC candidates, least-extended and best-retained first."""
+def rank_candidates(rows: pd.DataFrame, cfg: dict, top: int = 1) -> pd.DataFrame:
+    """ORGANIC candidates whose risk-to-reference is inside the protocol's
+    stop-distance limit, least-extended and best-retained first."""
     if rows.empty or "tag" not in rows.columns:
         return rows.iloc[0:0] if not rows.empty else rows
     cand = rows[rows["tag"] == "ORGANIC"].copy()
+    if cand.empty:
+        return cand
+    max_risk = float(cfg["state2"]["stop_distance_max"])
+    risk = pd.to_numeric(cand["stop_proxy"], errors="coerce")
+    cand = cand[risk.isna() | (risk <= max_risk)]
     if cand.empty:
         return cand
     cand = cand.sort_values(by=["penetration", "retention"], ascending=[True, False])
@@ -112,13 +118,13 @@ def story(rows: pd.DataFrame, cfg: dict) -> list[str]:
         f"Session scanned: {rows['date'].max()} over {len(rows)} symbols.",
         "  ".join(f"{t}={counts.get(t, 0)}" for t in TAGS),
     ]
-    picks = rank_rotation(rows, cfg, top=3)
+    picks = rank_candidates(rows, cfg, top=3)
     if picks.empty:
-        lines.append("Rotation call: STAY IN CASH - no ORGANIC candidate today.")
+        lines.append("Watchlist: empty - no ORGANIC candidate cleared the gates today.")
     else:
         best = picks.iloc[0]
         lines.append(
-            f"Rotation call: {best['symbol']} (close {best['close']}, "
+            f"Top candidate: {best['symbol']} (close {best['close']}, "
             f"reference {best['reference']}, RVOL20 {best['rvol20']}, "
             f"retention {best['retention']}, risk-to-ref {best['stop_proxy']}).")
         others = ", ".join(picks["symbol"].tolist()[1:]) or "none"

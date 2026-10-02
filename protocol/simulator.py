@@ -63,7 +63,7 @@ def simulate(
 
     stop = signal.stop if signal.stop is not None else entry_px * (1.0 - float(signal.stop_pct or 0.07))
     if target_gross is not None:
-        # gpt6 rotation rule: target is a gross move from the actual fill price.
+        # gpt6 protocol rule: target is a gross move from the actual fill price.
         target = entry_px * (1.0 + float(target_gross))
     else:
         target = model.target_price(entry_px, shares, pol["target_net"])

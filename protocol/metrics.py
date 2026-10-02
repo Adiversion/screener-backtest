@@ -52,9 +52,24 @@ def cohort_metrics(trades: list[dict[str, Any]], target_net: float, seed: int, n
 
 
 def portfolio(trades: list[dict[str, Any]], initial_capital: float, target_net: float) -> dict[str, Any]:
-    """One position at a time; rotate the entire net proceeds."""
+    """One position at a time; rotate the entire net proceeds.
+
+    Only meaningful when trades do NOT overlap in time. Event-level backtests
+    allow many simultaneous trades, so compounding them into a single account
+    would be fictional (the gpt6 protocol forbids representing overlapping
+    hypothetical trades as one executable portfolio). When overlap is detected
+    every compounded figure is reported as None and `overlapping` is True.
+    """
     done = [t for t in trades if not t.get("skipped")]
     done.sort(key=lambda t: (t["entry_date"], t["exit_date"]))
+    if not done:
+        return {"trades": 0, "final": initial_capital, "max_dd": 0.0, "applicable": True}
+    overlapping = any(done[i]["entry_date"] <= done[i - 1]["exit_date"]
+                      for i in range(1, len(done)))
+    if overlapping:
+        return {"trades": len(done), "overlapping": True, "applicable": False,
+                "final": None, "total_return": None, "max_dd": None, "CAGR": None,
+                "longest_losing_streak": None, "trades_per_year": None}
     capital = initial_capital
     equity, peak, max_dd = [], capital, 0.0
     streak = worst_streak = 0
@@ -68,11 +83,12 @@ def portfolio(trades: list[dict[str, Any]], initial_capital: float, target_net: 
         streak = streak + 1 if t["net_pnl_pct"] < 0 else 0
         worst_streak = max(worst_streak, streak)
     if not equity:
-        return {"trades": 0, "final": initial_capital, "max_dd": 0.0}
+        return {"trades": 0, "final": initial_capital, "max_dd": 0.0, "applicable": True}
     years = max((done[-1]["exit_date"] - done[0]["entry_date"]).days / 365.25, 1e-9)
     cagr = (capital / initial_capital) ** (1.0 / years) - 1.0
     return {
-        "trades": taken, "final": round(capital, 2),
+        "trades": taken, "overlapping": False, "applicable": True,
+        "final": round(capital, 2),
         "total_return": round(capital / initial_capital - 1.0, 4),
         "max_dd": round(max_dd, 4), "longest_losing_streak": worst_streak,
         "trades_per_year": round(taken / years, 1), "CAGR": round(cagr, 4),

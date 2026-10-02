@@ -120,16 +120,69 @@ pa:
   rejection_disp_atr: -0.25  # close-vs-R in ATR: above -> State C, below -> State D
   rejection_closing_range: 0.40
 
-# ---- INR 1,000 one-position rotation experiment (gpt6 protocol, Part B) ----
-rotation:
-  initial_capital: 1000
-  max_holding_sessions: 20    # proposed design choice, NOT optimised
-  target_fraction: 0.15       # gross move from the actual fill price
-  stop_fraction: 0.07         # gross move from the actual fill price
-  candidate_tag: ORGANIC      # frozen screening rule (protocol/screen.py)
-  rolling_step_sessions: 252  # rolling-start experiments
+# ---- blended stock-quality ranking (scripts/decisions.py) ----
+# Every component uses data through the decision bar only. Weights are a frozen
+# judgement, NOT fitted to outcomes - changing them is a new experiment.
+quality:
+  weights:
+    acceptance: 0.30        # PA State A: retention + closing range (has evidence)
+    trend: 0.20             # 60d and 120d return, positive and rising
+    liquidity: 0.15         # 20d average rupee turnover
+    volume_sanity: 0.15     # RVOL in a band; no climactic spike
+    risk: 0.10              # tight distance from the structural reference
+    edge: 0.10              # recovered_after_rej fired (the only rule beating the null)
+  min_turnover20: 50000000.0   # Rs 5 crore 20-day mean
+  min_price: 20.0
+  min_sessions: 252
+  rvol_min: 0.8             # too little interest to act on
+  rvol_max: 5.0             # above this is climactic, not accumulation
+  trend_min: 0.0            # ret60 and ret120 must both exceed this
+  max_risk_to_ref: 0.08     # distance from close back to the reference
+  min_coverage: 1.0           # every component must be computable to be ranked
+  thin_coverage: 0.5         # below this -> INSUFFICIENT_DATA, listed separately
 
-# ---- end-of-day rotation screen (scripts/screen_candidates.py) ----
+# ---- data integrity: split / corporate-action artefact scan -------------
+# yfinance auto-adjusts OHLC but does NOT split-adjust volume, so a 1:2 split
+# shows up as a flat price with a ~2x volume step. That silently corrupts
+# RVOL20, efficiency and every pressure/response feature on that date.
+dataqc:
+  shift_window: 20            # sessions either side of the candidate boundary
+  t_min: 6.0                  # Welch t on log volume; severe because we test
+                              # thousands of candidate dates across the universe
+  shift_ratio_min: 1.25       # post/pre mean log-volume ratio -> a real step
+  persist_ratio_min: 1.15     # and it must STILL be elevated 2 windows later
+  max_events_per_symbol: 5    # one split is one event, not forty windows
+  gap_atr_max: 3.0            # price must be continuous across the bar
+  price_gap_atr_min: 12.0     # an unadjusted price discontinuity (limit ~20%)
+  gap_hold_sessions: 5        # the new price level must persist this long
+
+# ---- redundancy control (spec: "CONTROL FOR REDUNDANCY") ---------------
+# "Is there information here that simpler models do not already contain?"
+# If retention correlates with momentum above `rho_warn`, it is repackaged.
+redundancy:
+  rho_warn: 0.60              # |spearman| above this = suspicious redundancy
+  min_obs: 500                # fewer events -> report INCONCLUSIVE
+  controls: [ret60, ret120, prox52, rvol20, atrpct, penetration]
+  proposed: [retention, closing_disp, efficiency, closing_range]
+  outcome: fwd_ret_5          # forward 5-session return
+  market_proxy: ew_ret1       # cross-sectional mean 1-day return = regime
+
+# ---- cross-sectional basket test (spec: "CROSS-SECTIONAL TEST") --------
+# Top 5 / 10 / 20 baskets per rebalance date. Never cherry-pick the N.
+crosssec:
+  tops: [5, 10, 20]
+  rebalance: W                # weekly
+  hold_sessions: 20           # basket holding period
+  min_eligible: 20            # skip a date with too few candidates
+  horizon: 20                 # forward sessions used to score the basket
+  scores: [momentum, prox52, breakout, acceptance]
+
+# ---- multiple-testing control (spec: Benjamini-Hochberg FDR) ----------
+inference:
+  alpha: 0.05                 # FDR level
+  min_n_for_test: 50          # below this, no p-value is claimed
+
+# ---- end-of-day candidate screen (scripts/screen_candidates.py) ----
 screen:
   stale_days: 3                # ignore symbols with no session this recent
   organic_rvol_max: 5.0        # contained volume -> "organic" demand

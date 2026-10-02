@@ -1,4 +1,4 @@
-"""Offline tests for the end-of-day rotation screen."""
+"""Offline tests for the end-of-day candidate screen."""
 import os
 import sys
 import unittest
@@ -30,16 +30,26 @@ class TagTests(unittest.TestCase):
 
     def test_rank_prefers_least_extended(self):
         rows = pd.DataFrame([
-            {"symbol": "AAA", "tag": "ORGANIC", "penetration": 2.0, "retention": 0.8},
-            {"symbol": "BBB", "tag": "ORGANIC", "penetration": 0.5, "retention": 0.7},
-            {"symbol": "CCC", "tag": "TRAP_RISK", "penetration": 0.1, "retention": 0.9},
+            {"symbol": "AAA", "tag": "ORGANIC", "penetration": 2.0, "retention": 0.8, "stop_proxy": 0.02},
+            {"symbol": "BBB", "tag": "ORGANIC", "penetration": 0.5, "retention": 0.7, "stop_proxy": 0.03},
+            {"symbol": "CCC", "tag": "TRAP_RISK", "penetration": 0.1, "retention": 0.9, "stop_proxy": 0.01},
         ])
-        picks = screen.rank_rotation(rows, CFG, top=2)
+        picks = screen.rank_candidates(rows, CFG, top=2)
         self.assertEqual(picks["symbol"].tolist(), ["BBB", "AAA"])
 
-    def test_story_stays_in_cash_without_candidates(self):
+    def test_rank_drops_candidates_with_too_wide_a_stop(self):
+        rows = pd.DataFrame([
+            {"symbol": "WIDE", "tag": "ORGANIC", "penetration": 0.1, "retention": 0.9,
+             "stop_proxy": 0.25},
+            {"symbol": "TIGHT", "tag": "ORGANIC", "penetration": 0.4, "retention": 0.7,
+             "stop_proxy": 0.04},
+        ])
+        picks = screen.rank_candidates(rows, CFG, top=5)
+        self.assertEqual(picks["symbol"].tolist(), ["TIGHT"])
+
+    def test_story_is_empty_without_candidates(self):
         rows = pd.DataFrame([{"symbol": "X", "tag": "NO_SETUP", "date": "2026-10-01"}])
-        self.assertTrue(any("STAY IN CASH" in ln for ln in screen.story(rows, CFG)))
+        self.assertTrue(any("Watchlist: empty" in ln for ln in screen.story(rows, CFG)))
 
 
 if __name__ == "__main__":

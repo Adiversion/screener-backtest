@@ -53,11 +53,15 @@ jobs:
             python scripts/run_backtest.py --strategies protocol --capital 1000 --set run.bootstrap_n=2000
           fi
 
-      - name: INR 1000 rotation backtest
+      - name: Validation milestone (data integrity, redundancy, FDR, baskets)
         continue-on-error: true
-        run: python scripts/rotation_backtest.py
+        run: python scripts/validate.py
 
-      - name: Rotation screen and dashboard
+      - name: Rank good stocks (blended quality score + evidence)
+        continue-on-error: true
+        run: python scripts/decisions.py --top 10
+
+      - name: Candidate screen and dashboard
         run: python scripts/screen_candidates.py
 
       - name: Publish reports to the live branch
