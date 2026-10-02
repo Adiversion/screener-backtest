@@ -296,10 +296,32 @@ pins the Python deps. First Replit run should do `pip install -r requirements.tx
 
 ## 11. Git
 
-Repo root for this project is `nse-backtest-engine/` (not the parent
-`GSheetScreener` repo). Remote is expected to be
-`https://github.com/Adiversion/screener-backtest.git`. `.gitignore` excludes
-`reports/`, `.protocol_state.json`, `__pycache__/`.
+The project lives at **`D:\screener-backtest`**. It was deliberately MOVED OUT
+of `D:\GSheetScreener` so the two git repos cannot absorb each other
+(GSheetScreener saw it as an untracked nested repo and would have committed it
+as a broken embedded repo on the next `git add -A`).
 
-> Large `data/*.parquet` files are committed. If the repo grows, switch them to
-> Git LFS or re-fetch on clone.
+- `origin = https://github.com/Adiversion/screener-backtest.git`, branch `main`.
+- `.gitignore` excludes `reports/`, `.protocol_state.json`, `__pycache__/`.
+- All scripts derive paths from `Path(__file__)`, so they work from any folder.
+
+> Large `data/*.parquet` files are committed (32 MB). If the repo grows,
+> switch them to Git LFS or re-fetch on clone.
+
+---
+
+## 12. One-click Windows launcher
+
+`RUN_BACKTEST.bat` (at the repo root) is the whole product for a non-technical
+user. Double-click it and it:
+
+1. finds Python (`py` then `python`),
+2. `pip install -r requirements.txt`,
+3. refreshes data with `fetch_data.py --source nifty500`,
+4. asks *1 quick / 2 full / 3 rotation-screen / 4 everything*,
+5. runs the backtest, rebuilds the report bundle, runs the rotation screen,
+6. opens `reports\dashboard.html` and `reports\REPORT.html` in the browser.
+
+Keep it CRLF-encoded (it was written with `sed -i 's/$/\r/'`). If you add
+steps, do not break the `%~dp0` `cd /d` — it is what makes double-click work
+from any working directory.

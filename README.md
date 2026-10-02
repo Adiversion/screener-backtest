@@ -14,6 +14,12 @@ Two research protocols are implemented as strategies:
 | **PA** — Price-Acceptance states | `Price Acceptance Strategy Origins.pdf` | 4-state A/B/C/D machine + M1–M4 mainstream and N1–N4 community baselines + the PDF's liquidity gate |
 | **Rotation / reference variants** | `gpt 6 astar search max.txt` | cash (no-trade) baseline + STRONG_RETENTION on references 5/10/20/60/252 as separately registered variants |
 
+## One click (Windows)
+
+Double-click **`RUN_BACKTEST.bat`**. It installs the dependencies, refreshes
+the Nifty-500 data, asks whether you want a quick/full backtest or just the
+rotation screen, then opens the HTML reports in your browser.
+
 ## Quick start
 
 ```bash
