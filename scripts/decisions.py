@@ -66,10 +66,10 @@ def main() -> int:
     today = []
     for _, r in picks.iterrows():
         item = {k: r[k] for k in (
-            "rank", "symbol", "date", "close", "reference", "rvol20", "closing_range",
-            "retention", "penetration", "ret60", "ret120", "turnover20", "stop_proxy",
-            "score", "acceptance", "trend", "liquidity", "volume_sanity", "risk",
-            "edge", "edge_age_days") if k in picks.columns}
+            "rank", "symbol", "date", "close", "reference", "rvol20", "atrpct",
+            "prox52", "efficiency", "ret20", "ret120", "turnover20",
+            "penetration", "stop_proxy", "score", "coverage", "data_status",
+            "candidates", "edge", "edge_age_days") if k in picks.columns}
         item["reason"] = quality.reason(r, cfg)
         item["gates"] = list(r["gates"])
         today.append(item)
@@ -105,9 +105,16 @@ def main() -> int:
                     "the engine is saying there is nothing worth buying right now.")
 
     components_meta = [{
-        "name": name, "label": label, "measures": measures, "why": why,
-        "weight": cfg["quality"]["weights"].get(name),
-    } for name, (label, measures, why) in quality.COMPONENTS.items()]
+        "name": field, "label": label, "measures": measures, "why": why,
+        "sign": sign, "weight": cfg["quality"]["weights"].get(field),
+    } for field, (label, sign, measures, why) in quality.COMPONENTS.items()]
+    components_meta.append({
+        "name": "edge", "label": "Reclaimed-reference pattern", "sign": 1,
+        "measures": "the recovered_after_rej pattern fired recently",
+        "why": "the only registered rule that ever beat the random null, but "
+               "never independently validated, so the weight is held small",
+        "weight": quality.EDGE_WEIGHT,
+    })
 
     payload = {
         "asof": str(asof.date()), "config_hash": cfg["_hash"],
@@ -118,7 +125,8 @@ def main() -> int:
         "audit_passed": bool(audit.static_scan()["pass"]),
         "data_quality": data_quality_report(history),
         "headline": headline, "today": today, "components": components_meta,
-        "rule_chain": today[0]["gates"] if today else quality.gates(pd.Series(dtype=object), cfg, None),
+        "rule_chain": today[0]["gates"] if today else quality.gates(pd.Series(dtype=object), cfg),
+        "sufficiency": quality.data_sufficiency_report(panel, cfg, asof),
         "strategies": evidence.STRATEGIES, "evidence": ev_rows,
         "caveats": evidence.CAVEATS,
     }

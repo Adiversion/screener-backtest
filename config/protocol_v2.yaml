@@ -124,13 +124,21 @@ pa:
 # Every component uses data through the decision bar only. Weights are a frozen
 # judgement, NOT fitted to outcomes - changing them is a new experiment.
 quality:
+  # EVIDENCE-WEIGHTED v2 (2026-10). Weights are set from the cross-sectional
+  # information coefficients measured by scripts/validate.py on 108,742
+  # breakout events. This is fitting to the sample -- see protocol/quality.py.
+  # Components are panel field names; quality.py ranks them cross-sectionally.
   weights:
-    acceptance: 0.30        # PA State A: retention + closing range (has evidence)
-    trend: 0.20             # 60d and 120d return, positive and rising
-    liquidity: 0.15         # 20d average rupee turnover
-    volume_sanity: 0.15     # RVOL in a band; no climactic spike
-    risk: 0.10              # tight distance from the structural reference
-    edge: 0.10              # recovered_after_rej fired (the only rule beating the null)
+    atrpct: 0.25          # IC -0.0434, t -7.35  (low volatility)
+    prox52: 0.20          # IC +0.0344, t +6.03  (near the 52-week high)
+    efficiency: 0.20      # IC +0.0178, t +3.73  (effort per unit participation)
+    trend_raw: 0.15       # ret120 +0.0147 net of ret20 -0.0128 (reversal)
+    penetration: 0.10     # IC -0.0174, t -3.57  (shallow beats deep)
+    turnover20: 0.05      # tradability, not a return signal
+    stop_proxy: 0.05      # a normal stop distance
+  # `edge` (the recovered_after_rej pattern) is added at a fixed EDGE_WEIGHT
+  # in code, not here: it beat the random null once but has never been
+  # independently validated, so it must stay small.
   min_turnover20: 50000000.0   # Rs 5 crore 20-day mean
   min_price: 20.0
   min_sessions: 252
@@ -171,11 +179,16 @@ redundancy:
 # Top 5 / 10 / 20 baskets per rebalance date. Never cherry-pick the N.
 crosssec:
   tops: [5, 10, 20]
-  rebalance: W                # weekly
+  rebalance: W                # weekly calendar of candidate rebalance dates
   hold_sessions: 20           # basket holding period
   min_eligible: 20            # skip a date with too few candidates
   horizon: 20                 # forward sessions used to score the basket
   scores: [momentum, prox52, breakout, acceptance]
+  non_overlapping: true       # only take a basket once the last one finished;
+                              # otherwise four overlapping baskets count the
+                              # same market move four times
+  walk_forward_folds: 5       # contiguous IS/OOS folds for era-dependence
+  cost_capital: 10000.0       # account size the flat DP charge is charged to
 
 # ---- multiple-testing control (spec: Benjamini-Hochberg FDR) ----------
 inference:

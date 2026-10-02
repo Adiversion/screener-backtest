@@ -103,12 +103,13 @@ def to_markdown(payload: dict[str, Any]) -> str:
         "## 2. What you would buy today", "",
     ]
     if payload["today"]:
-        L += ["| Rank | Stock | Score | Close | 60d | 120d | RVOL20 | Turnover (20d) | Why |",
-              "|---|---|---|---|---|---|---|---|---|"]
+        L += ["| Rank | Stock | Score | Close | 52w high | ATR% | 120d | RVOL20 | Turnover (20d) | Why |",
+              "|---|---|---|---|---|---|---|---|---|---|"]
         for t in payload["today"]:
             L.append(f"| {t['rank']} | **{t['symbol']}** | {t['score']} | {t['close']} | "
-                     f"{t['ret60']} | {t['ret120']} | {t['rvol20']} | "
-                     f"{round(float(t['turnover20'] or 0)):,} | {t['reason']} |")
+                     f"{t.get('prox52')} | {t.get('atrpct')} | "
+                     f"{t.get('ret120')} | {t.get('rvol20')} | "
+                     f"{round(float(t.get('turnover20') or 0)):,} | {t['reason']} |")
     else:
         L.append("_No stock cleared every hard gate today._")
     L += ["", "## 3. What each name is made of", "",
@@ -119,6 +120,11 @@ def to_markdown(payload: dict[str, Any]) -> str:
           "| Gate | Threshold | Why |", "|---|---|---|"]
     for g in payload["rule_chain"]:
         L.append(f"| {g['criterion']} | `{g['threshold']}` | {g['meaning']} |")
+    s = payload.get("sufficiency") or {}
+    if s:
+        L += ["", f"Excluded for **lack of data**: {s.get('insufficient', 0)} symbols; "
+                  f"**partial data** (ranked, flagged THIN): {s.get('thin', 0)}; "
+                  f"full data: {s.get('full', 0)}. {s.get('note', '')}"]
     L += ["", "## 4. Strategies in this engine", "",
           "| Strategy | Family | Baseline | Rule |", "|---|---|---|---|"]
     for name, fam, base, rule in payload["strategies"]:

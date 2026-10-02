@@ -206,39 +206,56 @@ class CrossSectionalTests(unittest.TestCase):
 class DataSufficiencyTests(unittest.TestCase):
     """Missing data must read as UNKNOWN, never as a real zero."""
 
-    def _row(self, **over):
-        base = {"retention": 0.8, "closing_range": 0.8, "rvol20": 1.5,
-                "turnover20": 1e8, "ret60": 0.2, "ret120": 0.3,
-                "stop_proxy": 0.02}
+    def _bar(self, **over):
+        """A synthetic latest-bar with every field the v2 ranking reads."""
+        base = {"Close": 500.0, "R20": 480.0, "atrpct": 0.02, "prox52": 0.98,
+                "efficiency": 0.8, "ret20": 0.03, "ret120": 0.25,
+                "penetration": 0.4, "rvol20": 1.5, "turnover20": 2e8,
+                "retention": 0.8, "closing_range": 0.8}
         base.update(over)
         return pd.Series(base)
 
-    def test_complete_row_is_full_coverage(self):
-        frac, status = quality.coverage(quality.components(self._row(), CFG, None))
+    def test_complete_bar_is_full_coverage(self):
+        raws = quality.panel_row(self._bar(), CFG)
+        scored = quality.rank_components(pd.DataFrame([raws])).iloc[0]
+        frac, status = quality.coverage(scored)
         self.assertEqual(frac, 1.0)
         self.assertEqual(status, "FULL")
 
-    def test_missing_history_is_none_not_zero(self):
-        comps = quality.components(self._row(ret120=None), CFG, None)
-        self.assertIsNone(comps["trend"])
-        self.assertNotEqual(comps["trend"], 0.0)
+    def test_missing_history_is_nan_not_zero(self):
+        """A stock with no 120-day history is UNKNOWN, not 'flat'."""
+        raws = quality.panel_row(self._bar(ret120=None), CFG)
+        self.assertIsNone(raws["trend_raw"])
+        self.assertNotEqual(raws["trend_raw"], 0.0)
+        scored = quality.rank_components(pd.DataFrame([raws]))
+        self.assertTrue(pd.isna(scored["trend_raw"].iloc[0]))
 
-    def test_edge_zero_is_a_real_value(self):
-        """Not firing within the window is a fact, not missing data."""
-        comps = quality.components(self._row(), CFG, None)
-        self.assertEqual(comps["edge"], 0.0)
+    def test_low_volatility_inverts_the_ranking(self):
+        """sign -1 means the LOWEST raw value must score HIGHEST."""
+        frame = pd.DataFrame([{"atrpct": 0.01}, {"atrpct": 0.05}, {"atrpct": 0.09}])
+        pct = quality.rank_components(frame)["atrpct"]
+        self.assertGreater(pct.iloc[0], pct.iloc[-1])
 
-    def test_partial_coverage_is_thin(self):
-        comps = quality.components(self._row(ret120=None, rvol20=None), CFG, None)
-        frac, status = quality.coverage(comps)
+    def test_partial_coverage_is_not_full(self):
+        raws = quality.panel_row(self._bar(ret120=None, efficiency=None), CFG)
+        scored = quality.rank_components(pd.DataFrame([raws])).iloc[0]
+        frac, status = quality.coverage(scored)
         self.assertLess(frac, 1.0)
         self.assertIn(status, ("THIN", "INSUFFICIENT"))
 
     def test_data_gate_rejects_insufficient_coverage(self):
-        row = self._row(coverage=0.4)
-        checks = quality.gates(row, CFG, None)
+        raws = quality.panel_row(self._bar(), CFG)
+        raws.update({"close": 500.0, "reference": 480.0, "coverage": 0.4,
+                     "sessions": 300, "turnover20": 2e8, "ret120": 0.25,
+                     "penetration": 0.4, "stop_proxy": 0.02})
+        checks = quality.gates(pd.Series(raws), CFG)
         cov_gate = [c for c in checks if c["criterion"] == "Data coverage"][0]
         self.assertFalse(cov_gate["passed"])
+
+    def test_unsupported_framework_features_are_gone(self):
+        """retention and closing_range were dropped for lack of evidence."""
+        for dropped in ("retention", "closing_range", "acceptance", "closing_disp"):
+            self.assertNotIn(dropped, quality.COMPONENTS)
 
 
 if __name__ == "__main__":

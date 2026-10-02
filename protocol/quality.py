@@ -1,13 +1,53 @@
-"""Blended stock-quality ranking.
+"""Evidence-weighted stock ranking.
 
-Answers the question the strategy tables cannot: *which good stocks could I
-invest in right now?* Every symbol is scored on six point-in-time components
-and the ones that clear every hard gate are ranked.
+Answers the question the strategy tables cannot: *which stocks are worth
+looking at right now?*
 
-Nothing here is fitted to outcomes. The weights live in `config/protocol_v2.yaml`
-under `quality:` and are a frozen judgement — changing them is a new experiment,
-not a tweak. Every component reads data through the decision bar only, so the
-ranking is reproducible and passes the no-lookahead audit like everything else.
+Version 2 (2026-10). Version 1 scored a hand-weighted blend of the
+Pressure-Response-Acceptance framework -- retention, closing range, effort,
+penetration -- because those were the ideas the research protocol proposed.
+`scripts/validate.py` then measured their information coefficients against the
+5-day forward return on 108,742 breakout events, and the result was
+`NO_INCREMENTAL_INFORMATION`:
+
+    retention      IC +0.00009   t +0.02   <- indistinguishable from noise
+    efficiency     IC -0.00000   t -0.46
+    closing_range  IC -0.0086    t -1.72
+    closing_disp   IC -0.0033    t -0.65
+
+so the framework's own instruction applies: discard the complexity.
+
+What the same test DID find, ranked by |t|:
+
+    atrpct       IC -0.0434   t -7.35   low volatility wins
+    prox52       IC +0.0344   t +6.03   near the 52-week high wins
+    rvol20       IC -0.0289   t -5.79   LOW relative volume wins (exhaustion)
+    efficiency   IC +0.0178   t +3.73   effort-per-unit-of-participation wins
+    penetration  IC -0.0174   t -3.57   shallow beats deep
+    ret120       IC +0.0147   t +2.58   slow trend works
+    ret20        IC -0.0128   t -2.49   recent winners REVERSE
+    ret60        IC +0.0049   t +0.90   nothing
+
+Version 2 scores the measured factors and drops retention, acceptance and
+closing range entirely. Two design consequences:
+
+  * **Cross-sectional percentile, not raw values.** A score is a stock's rank
+    against today's other candidates, not an absolute number. That is what a
+    ranking means, and it makes outliers unscoreable rather than dominant.
+  * **No double counting.** `efficiency` is result/volume, so it already
+    carries the negative-volume effect; a separate "calm volume" component
+    would count the same signal twice.
+
+HONEST CAVEAT, and it matters: these weights were set from information
+coefficients estimated on 2018-2026. Setting weights from in-sample evidence
+is fitting to the sample, however measured. They describe what this data
+shows; they are not validated predictions. The only out-of-sample check in the
+repo is the walk-forward in `protocol/crosssec.py`, and it covers the
+momentum basket only. Treat this as a research ranking.
+
+Preserved from version 1: missing data is UNKNOWN, never a real zero, so a
+stock with insufficient history cannot masquerade as a bad-but-investable
+name. See `coverage()`.
 """
 from __future__ import annotations
 
@@ -18,28 +58,38 @@ import pandas as pd
 
 from protocol import states
 
-# name -> (label, what it measures, why it matters)
-COMPONENTS = {
-    "acceptance": ("Price acceptance",
-                   "Retention into the close and closing range vs the prior 20-day high",
-                   "buyers defended the new territory instead of selling into it"),
-    "trend": ("Trend", "60-day and 120-day return",
-             "quality names are already going up, not being fished out of a decline"),
-    "liquidity": ("Liquidity", "20-day average rupee turnover",
-                  "you must be able to get in and out at your size"),
-    "volume_sanity": ("Volume sanity", "Relative volume vs its 20-session mean",
-                      "interest, but not the climactic spike that marks exhaustion"),
-    "risk": ("Risk to reference", "Distance from close back to the structural reference",
-             "a normal stop, not an absurdly wide one"),
-    "edge": ("Evidence edge", "The reclaimed-reference pattern fired recently",
-             "the only rule in this engine that beat the random null"),
+# field -> (label, sign, what it measures, why it earns its weight)
+# sign -1 means a LOWER raw value scores HIGHER.
+COMPONENTS: dict[str, tuple[str, int, str, str]] = {
+    "atrpct": ("Low volatility", -1, "ATR as a % of price",
+               "IC -0.0434, t -7.35 - the strongest measured effect; wild names "
+               "mean-revert against you"),
+    "prox52": ("Near the 52-week high", 1, "close vs the prior 252-session high",
+               "IC +0.0344, t +6.03 - momentum is real and proximity to the "
+               "extreme is its cleanest form"),
+    "efficiency": ("Effort per result", 1,
+                   "ATR-normalised result divided by relative volume",
+                   "IC +0.0178, t +3.73 - the one surviving piece of the "
+                   "pressure/response framework"),
+    "trend_raw": ("Slow trend, no recent chase", 1,
+                  "120-day return minus half the last 20 days",
+                  "ret120 IC +0.0147 but ret20 IC -0.0128: the slow trend works "
+                  "and the recent burst reverses"),
+    "penetration": ("Not extended", -1,
+                    "how far price pushed past the reference, in ATR",
+                    "IC -0.0174, t -3.57 - deep penetration is exhaustion, which "
+                    "is why `trap` is the worst rule in the engine"),
+    "turnover20": ("Liquidity", 1, "20-session average rupee turnover",
+                   "not a return signal - you must be able to get out"),
+    "stop_proxy": ("Tight stop", -1,
+                   "distance from the close back to the structural reference",
+                   "a normal stop distance, not an absurdly wide one"),
 }
 
-
-def _clip01(x: float | None) -> float:
-    if x is None or (isinstance(x, float) and np.isnan(x)):
-        return 0.0
-    return float(min(max(x, 0.0), 1.0))
+# Kept separate and small: `recovered_after_rej` is the only registered rule
+# that ever beat the seeded random null, but it has NOT survived independent
+# validation, so it must not carry much weight.
+EDGE_WEIGHT = 0.05
 
 
 def _num(x: Any) -> float | None:
@@ -47,70 +97,65 @@ def _num(x: Any) -> float | None:
         f = float(x)
     except (TypeError, ValueError):
         return None
-    return None if np.isnan(f) else f
+    return None if not np.isfinite(f) else f
 
 
-def components(row: pd.Series, cfg: dict, edge_days: float | None) -> dict[str, Any]:
-    """Score each component, or None where the data cannot support it.
+def panel_row(bar: pd.Series, cfg: dict) -> dict[str, Any]:
+    """Every raw field the ranking needs, read from one symbol's latest bar."""
+    r20 = _num(bar.get(f"R{int(cfg['pa']['reference'])}"))
+    close = _num(bar.get("Close"))
+    ret20 = _num(bar.get("ret20")) or 0.0
+    ret120 = _num(bar.get("ret120"))
+    stop = None
+    if r20 is not None and close:
+        stop = round((close - r20) / close, 4)
+    return {
+        "close": close, "reference": r20,
+        "rvol20": _num(bar.get("rvol20")), "ret20": _num(bar.get("ret20")),
+        "ret120": ret120,
+        "atrpct": _num(bar.get("atrpct")), "prox52": _num(bar.get("prox52")),
+        "efficiency": _num(bar.get("efficiency")),
+        "penetration": _num(bar.get("penetration")),
+        "turnover20": _num(bar.get("turnover20")),
+        "stop_proxy": stop,
+        # slow trend with the recent burst explicitly backed off
+        "trend_raw": None if ret120 is None else round(ret120 - 0.5 * ret20, 6),
+    }
 
-    A component that cannot be computed returns **None**, not 0.0. That
-    distinction is the whole point: a stock with no 120-day history is
-    UNKNOWN on trend, which is a different statement from a stock whose trend
-    is genuinely flat. Coercing missing data to zero would let an
-    insufficient-history name score as "bad but sellable" and rank among
-    genuinely-assessed names -- precisely the confusion this avoids.
 
-    `edge` is the one component where 0.0 is a real value: not firing within
-    the lookback window is a fact about the stock, not missing data.
+def rank_components(frame: pd.DataFrame) -> pd.DataFrame:
+    """Raw values -> cross-sectional percentile scores in [0, 1].
+
+    Rows where the raw value is unknown stay NaN. Unknown is not zero.
     """
-    q = cfg["quality"]
-    ret = _num(row.get("retention"))
-    cr = _num(row.get("closing_range"))
-    rvol = _num(row.get("rvol20"))
-    turnover = _num(row.get("turnover20"))
-    stop = _num(row.get("stop_proxy"))
-    r60 = _num(row.get("ret60"))
-    r120 = _num(row.get("ret120"))
-    scale = float(q["trend_min"]) + 0.30  # 0.30 = "full marks" for a 30% move
-
-    acceptance = (None if ret is None or cr is None else
-                  0.5 * _clip01(ret / cfg["pa"]["accepted_retention"]) +
-                  0.5 * _clip01(cr / cfg["pa"]["accepted_closing_range"]))
-    trend = (None if r60 is None or r120 is None else
-             0.5 * _clip01(r60 / scale) + 0.5 * _clip01(r120 / scale))
-    liquidity = (None if turnover is None else
-                 _clip01(np.log10(max(turnover / q["min_turnover20"], 1e-9))))
-    if rvol is None:
-        volume_sanity = None
-    else:  # a tent: fades when too quiet or too frantic
-        volume_sanity = _clip01(rvol / q["rvol_min"]) * _clip01(q["rvol_max"] / rvol)
-    risk = _clip01(1.0 - (stop / q["max_risk_to_ref"])) if stop is not None else None
-    edge = 1.0 if edge_days is not None else 0.0
-    return {"acceptance": acceptance, "trend": trend, "liquidity": liquidity,
-            "volume_sanity": volume_sanity, "risk": risk, "edge": edge}
+    out = pd.DataFrame(index=frame.index)
+    for field, (_label, sign, _m, _w) in COMPONENTS.items():
+        vals = pd.to_numeric(frame[field], errors="coerce") if field in frame else \
+            pd.Series(np.nan, index=frame.index)
+        out[field] = (-vals if sign < 0 else vals).rank(pct=True, na_option="keep")
+    return out
 
 
-def coverage(comps: dict[str, Any]) -> tuple[float, str]:
-    """Fraction of the components that are computable, and a status label."""
-    q_vals = [v for k, v in comps.items() if k != "edge"]
-    known = [v for v in q_vals if v is not None]
-    frac = len(known) / len(q_vals) if q_vals else 0.0
+def coverage(scores: pd.Series) -> tuple[float, str]:
+    """Fraction of components computable, and a FULL/THIN/INSUFFICIENT label."""
+    total = len(COMPONENTS)
+    frac = float(scores.notna().sum()) / total if total else 0.0
     return round(frac, 4), ("FULL" if frac >= 1.0 else
                             "THIN" if frac >= 0.5 else "INSUFFICIENT")
 
 
-def gates(row: pd.Series, cfg: dict, age_days: float | None) -> list[dict[str, Any]]:
+def gates(row: pd.Series, cfg: dict) -> list[dict[str, Any]]:
     """Hard filters. A stock failing any of these is not ranked at all.
 
-    Every gate distinguishes three states: passed, failed, and UNKNOWN
-    (the input was not computable). An unknown is never counted as a pass.
+    Each gate distinguishes passed / failed / UNKNOWN. An unknown input is
+    never counted as a pass.
     """
     q = cfg["quality"]
     turnover, close = _num(row.get("turnover20")), _num(row.get("close"))
-    r60, r120 = _num(row.get("ret60")), _num(row.get("ret120"))
-    ref, pen = _num(row.get("reference")), _num(row.get("penetration"))
-    stop = _num(row.get("stop_proxy"))
-    out = [
+    r120, ref = _num(row.get("ret120")), _num(row.get("reference"))
+    pen, stop = _num(row.get("penetration")), _num(row.get("stop_proxy"))
+    cov = float(row.get("coverage") or 0.0)
+    return [
         {"criterion": "20-day average turnover", "value": turnover,
          "threshold": f">= INR {q['min_turnover20']:,.0f}",
          "passed": turnover is not None and turnover >= q["min_turnover20"],
@@ -119,16 +164,15 @@ def gates(row: pd.Series, cfg: dict, age_days: float | None) -> list[dict[str, A
          "threshold": f">= INR {q['min_price']}",
          "passed": close is not None and close >= q["min_price"],
          "meaning": "not a sub-penny lottery ticket"},
-        {"criterion": "60-day return", "value": r60, "threshold": f"> {q['trend_min']}",
-         "passed": r60 is not None and r60 > q["trend_min"],
-         "meaning": "the stock is already working"},
-        {"criterion": "120-day return", "value": r120, "threshold": f"> {q['trend_min']}",
+        {"criterion": "120-day return", "value": r120,
+         "threshold": f"> {q['trend_min']}",
          "passed": r120 is not None and r120 > q["trend_min"],
-         "meaning": "not just a one-week bounce"},
-        {"criterion": "Price above the prior 20-session high", "value": ref,
-         "threshold": "Close > R20", "passed": ref is not None and close is not None
-         and close > ref and (pen or 0) > 0,
-         "meaning": "it is at its structural high right now"},
+         "meaning": "the slow trend is working"},
+        {"criterion": "Close above the prior 20-session high", "value": ref,
+         "threshold": "Close > R20",
+         "passed": (ref is not None and close is not None and close > ref
+                    and (pen or 0) > 0),
+         "meaning": "at its structural high right now"},
         {"criterion": "Risk to reference", "value": stop,
          "threshold": f"<= {q['max_risk_to_ref']}",
          "passed": stop is not None and stop <= q["max_risk_to_ref"],
@@ -137,22 +181,15 @@ def gates(row: pd.Series, cfg: dict, age_days: float | None) -> list[dict[str, A
          "threshold": f">= {q['min_sessions']} sessions",
          "passed": (row.get("sessions") or 0) >= q["min_sessions"],
          "meaning": "enough data to compute the features"},
+        {"criterion": "Data coverage", "value": cov,
+         "threshold": f"= {q['min_coverage']:.0%} of components computable",
+         "passed": cov >= float(q["min_coverage"]),
+         "meaning": "every component had the data it needed"},
     ]
-    # A stock can clear min_sessions and still have an uncomputable component
-    # (a NaN bar, a missing reference). Those are excluded explicitly rather
-    # than silently scored as zero.
-    cov = float(row.get("coverage") or 0.0)
-    out.append({
-        "criterion": "Data coverage", "value": cov,
-        "threshold": f"= {q['min_coverage']:.0%} of components computable",
-        "passed": cov >= float(q["min_coverage"]),
-        "meaning": "every score component had the data it needed",
-    })
-    return out
 
 
 def edge_dates(panel: dict[str, pd.DataFrame], cfg: dict) -> dict[str, pd.Timestamp]:
-    """Most recent reclaimed-reference event per symbol (the only rule with edge)."""
+    """Most recent reclaimed-reference event per symbol."""
     out: dict[str, pd.Timestamp] = {}
     for symbol, feat in panel.items():
         try:
@@ -160,108 +197,96 @@ def edge_dates(panel: dict[str, pd.DataFrame], cfg: dict) -> dict[str, pd.Timest
         except Exception:  # a malformed symbol must not kill the screen
             continue
         stamps = [pd.Timestamp(e["reject_date"]) for e in events
-                  if e.get("label") == "RECOVERED_AFTER_REJ" and e.get("reject_date") is not None]
+                  if e.get("label") == "RECOVERED_AFTER_REJ" and e.get("reject_date")]
         if stamps:
             out[symbol] = max(stamps)
     return out
 
 
-def rank(panel: dict[str, pd.DataFrame], cfg: dict, asof: pd.Timestamp,
-         top: int = 10, lookback_days: int = 20) -> pd.DataFrame:
-    """Score every symbol and return the best that clear all hard gates."""
-    q = cfg["quality"]
-    ref = f"R{int(cfg['pa']['reference'])}"
+def _frames(panel, cfg, asof, lookback_days):
+    """One row per symbol with every field the ranking and gates need."""
     edges = edge_dates(panel, cfg)
-    rows: list[dict[str, Any]] = []
+    rows = []
     for symbol, feat in panel.items():
         d = feat.reset_index(drop=True)
         upto = d[d["Date"] <= pd.Timestamp(asof)]
         if upto.empty:
             continue
-        i = len(upto) - 1
-        bar = upto.iloc[i]
-        row = {
-            "symbol": symbol, "date": str(pd.Timestamp(bar["Date"]).date()),
-            "close": _num(bar["Close"]), "reference": _num(bar.get(ref)),
-            "rvol20": _num(bar["rvol20"]), "closing_range": _num(bar["closing_range"]),
-            "retention": _num(bar["retention"]), "penetration": _num(bar["penetration"]),
-            "ret60": _num(bar["ret60"]), "ret120": _num(bar["ret120"]),
-            "turnover20": _num(bar["turnover20"]),
-            "stop_proxy": round((float(bar["Close"]) - float(bar[ref])) / float(bar["Close"]), 4)
-            if bar.get(ref) == bar.get(ref) and float(bar["Close"]) else None,
-            "sessions": int(len(upto)),
-        }
-        edge_days = None
+        bar = upto.iloc[-1]
+        age = None
         if symbol in edges:
-            edge_days = (pd.Timestamp(asof) - edges[symbol]).days
-        comps = components(row, cfg, edge_days)
-        row.update(comps)
-        row["edge"] = 1.0 if (edge_days is not None and edge_days <= lookback_days) else 0.0
-        row["edge_age_days"] = edge_days
-        cov, status = coverage(comps)
-        row["coverage"] = cov
-        row["data_status"] = status
-        checks = gates(row, cfg, edge_days)
-        row["failed"] = "; ".join(c["criterion"] for c in checks if not c["passed"])
-        row["gates"] = checks
-        # Score only over the components that could actually be computed, and
-        # renormalise the weights so a THIN name is not punished twice.
-        live_w = sum(float(q["weights"][k]) for k in COMPONENTS
-                     if comps.get(k) is not None or k == "edge")
-        row["score"] = (round(sum(float(q["weights"][k]) * float(row[k])
-                                 for k in COMPONENTS
-                                 if row.get(k) is not None) / live_w, 4)
-                        if live_w > 0 else None)
+            age = (pd.Timestamp(asof) - edges[symbol]).days
+        row = panel_row(bar, cfg)
+        row.update({"symbol": symbol, "date": str(pd.Timestamp(bar["Date"]).date()),
+                    "sessions": int(len(upto)), "edge_age_days": age})
+        row["edge"] = 1.0 if (age is not None and age <= lookback_days) else 0.0
         rows.append(row)
-    frame = pd.DataFrame(rows)
+    return pd.DataFrame(rows)
+
+
+def score_frame(frame: pd.DataFrame, cfg: dict) -> pd.DataFrame:
+    """Attach percentile components, coverage, the blended score and gates."""
     if frame.empty:
         return frame
-    ranked = frame[frame["failed"] == ""].sort_values("score", ascending=False)
-    ranked = ranked.head(max(int(top), 1)).copy()
-    if not ranked.empty:
-        ranked.insert(0, "rank", range(1, len(ranked) + 1))
-    return ranked
+    w = dict(cfg["quality"]["weights"])
+    w["edge"] = EDGE_WEIGHT
+    wset = {k: float(w.get(k, 0.0)) for k in COMPONENTS}
+    scored = rank_components(frame)
+    for field in COMPONENTS:
+        frame[field + "_pct"] = scored[field]
+    cols = [f + "_pct" for f in COMPONENTS]
+    weight_series = pd.Series(wset).reindex(COMPONENTS).rename(
+        index=lambda f: f + "_pct")
+    contrib = frame[cols].mul(weight_series, axis=1)
+    num = contrib.sum(axis=1) + frame["edge"] * EDGE_WEIGHT
+    den = contrib.notna().mul(weight_series, axis=1).sum(axis=1) + EDGE_WEIGHT
+    frame["score"] = (num / den).round(4)
+    cov = [coverage(scored.loc[i]) for i in frame.index]
+    frame["coverage"] = [c for c, _ in cov]
+    frame["data_status"] = [s for _, s in cov]
+    frame["candidates"] = int(len(frame))
+    checks = [gates(r, cfg) for _, r in frame.iterrows()]
+    frame["gates"] = checks
+    frame["failed"] = ["; ".join(c["criterion"] for c in g if not c["passed"])
+                       for g in checks]
+    return frame
+
+
+def rank(panel: dict[str, pd.DataFrame], cfg: dict, asof: pd.Timestamp,
+         top: int = 10, lookback_days: int = 20) -> pd.DataFrame:
+    """Rank every symbol cross-sectionally and return the best that clear
+    every hard gate."""
+    frame = score_frame(_frames(panel, cfg, asof, lookback_days), cfg)
+    if frame.empty:
+        return frame
+    out = frame[frame["failed"] == ""].sort_values("score", ascending=False)
+    out = out.head(max(int(top), 1)).copy()
+    if not out.empty:
+        out.insert(0, "rank", range(1, len(out) + 1))
+    return out
 
 
 def data_sufficiency_report(panel: dict[str, pd.DataFrame], cfg: dict,
                             asof: pd.Timestamp) -> dict[str, Any]:
-    """Who is being excluded for LACK OF DATA rather than for being bad.
+    """Who is excluded for LACK OF DATA rather than for being bad.
 
-    The fallback ladder, stated rather than hidden:
-
-      FULL        every component computable -> ranked normally
-      THIN        some components computable -> ranked with renormalised
-                  weights AND flagged, never mixed in silently
-      INSUFFICIENT too little history -> not ranked, and listed here so the
-                  gap is visible instead of looking like rejection on merit
-
-    Recent IPOs are the population this matters for; in a 2300-name universe
-    they are a real slice of the market.
+    Excluded for lack of data is NOT the same as rejected on merit. Recent
+    IPOs are the population this matters for; in a 2300-name universe they are
+    a real slice of the market.
     """
     min_cov = float(cfg["quality"]["min_coverage"])
     thin_cov = float(cfg["quality"]["thin_coverage"])
-    buckets: dict[str, list[str]] = {"FULL": [], "THIN": [], "INSUFFICIENT": []}
-    for symbol, feat in panel.items():
-        d = feat.reset_index(drop=True)
-        upto = d[d["Date"] <= pd.Timestamp(asof)]
-        if upto.empty:
-            buckets["INSUFFICIENT"].append(symbol)
-            continue
-        bar = upto.iloc[-1]
-        row = {"retention": _num(bar.get("retention")),
-               "closing_range": _num(bar.get("closing_range")),
-               "rvol20": _num(bar.get("rvol20")),
-               "turnover20": _num(bar.get("turnover20")),
-               "ret60": _num(bar.get("ret60")), "ret120": _num(bar.get("ret120")),
-               "stop_proxy": None if bar.get("R20") in (None, 0) else
-               round((float(bar["Close"]) - float(bar["R20"])) / float(bar["Close"]), 4)}
-        frac, _status = coverage(components(row, cfg, None))
-        if frac >= min_cov:
-            buckets["FULL"].append(symbol)
-        elif frac >= thin_cov:
-            buckets["THIN"].append(symbol)
-        else:
-            buckets["INSUFFICIENT"].append(symbol)
+    frame = _frames(panel, cfg, asof, 20)
+    if frame.empty:
+        return {"full": 0, "thin": 0, "insufficient": 0, "thin_symbols": [],
+                "insufficient_symbols": [], "note": "no panel data"}
+    scored = rank_components(frame)
+    cov = pd.Series({i: coverage(scored.loc[i])[0] for i in frame.index})
+    buckets = {"FULL": [], "THIN": [], "INSUFFICIENT": []}
+    for sym, frac in zip(frame["symbol"], cov.to_numpy()):
+        key = ("FULL" if frac >= min_cov else "THIN" if frac >= thin_cov
+               else "INSUFFICIENT")
+        buckets[key].append(sym)
     return {
         "min_coverage": min_cov, "thin_coverage": thin_cov,
         "full": len(buckets["FULL"]), "thin": len(buckets["THIN"]),
@@ -275,11 +300,14 @@ def data_sufficiency_report(panel: dict[str, pd.DataFrame], cfg: dict,
 
 def reason(row: pd.Series, cfg: dict) -> str:
     """One sentence: what this stock is, and why it scored where it did."""
-    strong = sorted(((k, row[k]) for k in COMPONENTS if k in row and row[k] is not None),
-                    key=lambda kv: kv[1], reverse=True)
-    top = ", ".join(f"{COMPONENTS[k][0].lower()} {v:.2f}" for k, v in strong[:3])
-    return (f"{row['symbol']} scored {row['score']:.2f}/1.00 "
-            f"(strongest: {top}). Close INR {row['close']}, reference INR "
-            f"{row['reference']}, RVOL20 {row['rvol20']}, 60d {row['ret60']}, "
-            f"120d {row['ret120']}, turnover INR {round(float(row['turnover20'] or 0)):,}. "
-            f"Data coverage {float(row.get('coverage') or 0):.0%} ({row.get('data_status')}).")
+    parts = [(f, row.get(f + "_pct")) for f in COMPONENTS]
+    parts = [(f, v) for f, v in parts if v is not None and pd.notna(v)]
+    parts.sort(key=lambda kv: -float(kv[1]))
+    top = ", ".join(f"{COMPONENTS[f][0].lower()} {float(v):.0%}" for f, v in parts[:3])
+    return (f"{row['symbol']} scored {row['score']:.2f}/1.00 against "
+            f"{int(row.get('candidates') or 0)} candidates today "
+            f"(strongest: {top}). Close INR {row['close']}, 52w-high "
+            f"{row['prox52']}, ATR% {row['atrpct']}, RVOL20 {row['rvol20']}, "
+            f"120d {row['ret120']}, turnover INR "
+            f"{round(float(row['turnover20'] or 0)):,}. Coverage "
+            f"{float(row.get('coverage') or 0):.0%} ({row.get('data_status')}).")

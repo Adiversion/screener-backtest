@@ -42,6 +42,13 @@ Each is tested as a Welch two-sample t-test on log volume across fixed
 windows either side of a candidate bar, gated on persistence and price
 continuity, then de-duplicated with non-maximum suppression.
 
+THE TEST IS TWO-SIDED, and that matters more than it sounds. An unadjusted
+1:2 SPLIT doubles volume. A 1:1 BONUS halves it. Bonus issues are far more
+common than splits on the Indian market, and a volume *drop* is exactly what
+a one-sided "ratio >= 1.25" detector is blind to -- so the first version of
+this module could not see the most likely corporate action it was written to
+find.
+
 Because thousands of candidate dates are tested across the universe, the
 t-threshold is deliberately severe; the honest number of discoveries is
 small, and most of them are not splits.
@@ -134,11 +141,13 @@ def _level_shift_scan(bars: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     boundary = starts + w
     price_ok = gap_atr[boundary] <= float(q["gap_atr_max"])
 
-    hit = price_ok & (tstat >= t_min) & (ratio >= ratio_min) & \
-          (persistent >= float(q["persist_ratio_min"]))
+    hit = price_ok & (np.abs(tstat) >= t_min) & \
+          ((ratio >= ratio_min) | (ratio <= 1.0 / ratio_min)) & \
+          ((persistent >= float(q["persist_ratio_min"])) |
+           (persistent <= 1.0 / float(q["persist_ratio_min"])))
     if not hit.any():
         return pd.DataFrame()
-    scores = np.where(hit, tstat, 0.0)
+    scores = np.where(hit, np.abs(tstat), 0.0)
     picks = [boundary[p] for p in _nms(scores, w, keep_max) if scores[p] > 0]
     if not picks:
         return pd.DataFrame()
@@ -147,7 +156,8 @@ def _level_shift_scan(bars: pd.DataFrame, cfg: dict) -> pd.DataFrame:
         "Date": d["Date"].to_numpy()[picks],
         "gap_atr": np.round(gap_atr[picks], 4),
         "level_shift": np.round(ratio[pos], 4),
-        "t_stat": np.round(tstat[pos], 2),
+        "t_stat": np.round(np.sign(tstat[pos]) * np.abs(tstat[pos]), 2),
+        "direction": np.where(ratio[pos] >= 1.0, "volume_up", "volume_down"),
         "Close": np.round(close[picks], 4),
         "Volume": raw_vol[picks],
         "volume_shift": True,
@@ -192,14 +202,18 @@ def _price_gap_scan(bars: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     })
 
 
-# Ratios an NSE issuer actually splits on. A detected shift whose ratio lands
-# near one of these is a split; everything else is a regime change.
+# Ratios an NSE issuer actually splits or issues a bonus on. A detected shift
+# whose ratio lands near one of these (in EITHER direction) is a corporate
+# action; everything else is a liquidity regime change.
 SPLIT_RATIOS = (1.25, 1.5, 2.0, 3.0, 4.0, 5.0, 10.0)
 SPLIT_TOLERANCE = 0.06
 
 
 def _confirm_split(ratio: float) -> bool:
-    return any(abs(ratio / r - 1.0) <= SPLIT_TOLERANCE for r in SPLIT_RATIOS)
+    """True when the ratio matches a real split/bonus ratio in either direction."""
+    if ratio >= 1.0:
+        return any(abs(ratio / r - 1.0) <= SPLIT_TOLERANCE for r in SPLIT_RATIOS)
+    return any(abs((1.0 / ratio) / r - 1.0) <= SPLIT_TOLERANCE for r in SPLIT_RATIOS)
 
 
 def scan(history: pd.DataFrame, cfg: dict) -> dict[str, Any]:
