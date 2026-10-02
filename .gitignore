@@ -3,5 +3,6 @@ __pycache__/
 .replit.user
 .protocol_state.json
 reports/
+data/adhoc_*.parquet
 .venv/
 .env

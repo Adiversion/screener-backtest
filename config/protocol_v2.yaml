@@ -229,6 +229,23 @@ inference:
   alpha: 0.05                 # FDR level
   min_n_for_test: 50          # below this, no p-value is claimed
 
+# ---- SINGLE-POSITION ROTATION (scripts/rotate.py) ---------------------
+# The deployment shape the engine exists for: investment only, no day
+# trading, no derivatives. One stock at a time, 100% of capital in it, exit
+# on a fixed profit target or a fixed stop, then move the whole account to
+# the next prime candidate. If nothing clears the gates the account stays in
+# cash -- a real position, not a gap in the report.
+#
+# These are separate from `run:` because `run:` describes the event-level
+# breakout study. A rotation holding period is measured in weeks, not in the
+# 15 sessions the AAE protocol was written around.
+rotation:
+  target_net: 0.15       # NET profit fraction that triggers the exit
+  stop_pct: 0.07         # fixed stop, fraction below the entry fill
+  hold_sessions: 60      # ~1 quarter; the "do not get stuck for years" rule
+  cooldown_sessions: 5   # do not re-enter a stopped-out name immediately
+  picks: [rank, random]  # `random` is the null this mode has to beat
+
 # ---- end-of-day candidate screen (scripts/screen_candidates.py) ----
 screen:
   stale_days: 3                # ignore symbols with no session this recent

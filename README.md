@@ -47,6 +47,12 @@ python scripts/pa_study.py
 # rank today's good stocks, with the reason and the evidence behind each
 python scripts/decisions.py --top 10
 
+# single-position rotation: one stock, whole account, exit on target or stop
+python scripts/rotate.py --capital 10000
+
+# judge specific stocks by name
+python scripts/judge.py --symbols CUPID,MARINE
+
 # tests
 python -m unittest discover -s tests -v
 ```
@@ -150,26 +156,37 @@ historical cohort evidence behind it. Output: `reports/DECISIONS.md` and
 |---|---|---|
 | 20-day average turnover | ≥ ₹5 crore | you must be able to get in and out at your size |
 | Closing price | ≥ ₹20 | not a lottery ticket |
-| 60-day return | > 0 | the stock is already working |
-| 120-day return | > 0 | not a one-week bounce |
-| Close vs the prior 20-session high | Close > R20, positive penetration | it is at its structural high right now |
+| 120-day return | > 0 | the stock is already working |
+| Close above the prior 20-session high | Close > R20, positive penetration | it is at its structural high right now |
 | Risk to reference | ≤ 8% | a normal stop, not an absurdly wide one |
 | History available | ≥ 252 sessions | enough data to compute the features |
+| Data coverage | = 100% of components computable | no component silently padded |
 
-**Blended score** — the six components, their weights and what each measures:
+**Blended score (v2, evidence-weighted)** — the seven components, their
+weights and the information coefficient each one earned:
 
-| Component | Weight | Measures |
-|---|---|---|
-| Price acceptance | 0.30 | retention into the close and closing range vs the prior 20-day high |
-| Trend | 0.20 | 60-day and 120-day return |
-| Liquidity | 0.15 | 20-day average rupee turnover (log scale) |
-| Volume sanity | 0.15 | relative volume vs its 20-session mean — a tent: fades when too quiet or too frantic |
-| Risk to reference | 0.10 | distance from the close back to the structural reference |
-| Evidence edge | 0.10 | the reclaimed-reference pattern fired within the last 20 sessions |
+| Component | Weight | Measures | Measured IC (5-day fwd) |
+|---|---|---|---|
+| Low volatility | 0.25 | ATR as a % of price | −0.0434 (t −7.35) |
+| Near the 52-week high | 0.20 | close vs the prior 252-session high | +0.0344 (t +6.03) |
+| Effort per result | 0.20 | result ÷ relative volume | +0.0178 (t +3.73) |
+| Slow trend, no recent chase | 0.15 | 120d return − half the last 20d | +0.0147 / −0.0128 |
+| Not extended | 0.10 | push past the reference, in ATR | −0.0174 (t −3.57) |
+| Liquidity | 0.05 | 20-session average rupee turnover | tradability, not a return signal |
+| Tight stop | 0.05 | distance back to the structural reference | a normal stop distance |
+| Reclaimed-reference edge | 0.05 | `recovered_after_rej` fired within 20 sessions | only rule that ever beat the null |
 
-The weights are a **frozen judgement, not a fit** — they were not tuned
-against outcomes, and nothing here is fitted at all. Change them only as a
-deliberate new experiment.
+Every component is a **cross-sectional percentile**, because a ranking is a
+rank. The weights are **fitted to the sample** — that is what the IC column
+means — so they describe 2018-2026 rather than predicting beyond it.
+
+> **Read this before trusting the ranking.** The ICs were measured against the
+> **5-day forward return**. The strategy geometry is a **+15% target / −7% stop
+> / 60-session hold**. These are not the same experiment: registered as
+> strategies, the strongest IC factor (`low_vol`) **loses** to the random null,
+> because calm names cannot travel far enough to reach a +15% target. The
+> ranking is a cross-sectional ordering for holding periods in months, not a
+> short-horizon entry trigger.
 
 `decisions.py` also prints the evidence table underneath the shortlist: every
 strategy's trade count, expectancy, bootstrap 95% CI, and whether it beats a
@@ -180,6 +197,67 @@ why it carries the `evidence edge` component.
 > Every name in this list is labelled a **HISTORICAL_CANDIDATE**. This is a
 > research screen, not investment advice, and no participant identity is
 > inferred anywhere in the output.
+
+## Single-position rotation — one stock, the whole account
+
+```bash
+python scripts/rotate.py --capital 10000 --start 2021-01-01
+python scripts/rotation_grid.py --capital 10000      # target/stop sweep
+```
+
+This is the engine's **actual deployment shape**: investment only, no day
+trading, no derivatives. One candidate at a time, **100% of capital** in it,
+exit when the fixed profit target or the fixed stop is hit, then the entire
+account moves to the next prime candidate. If nothing clears the gates the
+account stays in cash — that is a real position, not a gap in the report.
+
+Output: `reports/ROTATION.md`, `reports/rotation.json`, and the target/stop
+grid in `reports/rotation_grid.csv`. Thresholds live in
+`config/protocol_v2.yaml` → `rotation:`.
+
+### What rotating actually costs
+
+The DP charge is flat **per sell**, so it scales as `1/capital`:
+
+| Capital | Shares @ ₹250 | DP as % of capital | Round trip | Idle cash | Gross move needed for a +15% net target |
+|---|---|---|---|---|---|
+| ₹1,000 | 3 | **1.59%** | 191 bps | 24.8% | **17.61%** |
+| ₹10,000 | 39 | 0.16% | 57 bps | 2.3% | 15.65% |
+| ₹100,000 | 399 | 0.02% | 44 bps | 0.0% | 15.50% |
+
+At ₹1,000 every single rotation hands 1.6% of the account to the DP charge and
+leaves a quarter of it in cash earning nothing.
+
+### The honest result, and what it means
+
+At the headline geometry (+15% target / −7% stop), over 2021-2026:
+
+- The **arithmetic** expectancy is **+0.48% per trade** — the average trade
+  makes money.
+- The **geometric** result is **−0.02% per trade**, and the account CAGR is
+  **negative**. That gap is volatility drag: 22 exits at −7.6% against 12 at
+  +15%. An arithmetic mean is not a return.
+- At ₹1,000 the account ends at **₹205** (−24% a year). Costs and share-count
+  granularity alone destroy it.
+- **Choosing the top-ranked candidate does not beat picking at random** from the
+  same gate-clearing set, at any geometry in the grid.
+
+`rotation_grid.py` sweeps target × stop and reports **every cell, including the
+losing ones**. The best cell of a grid searched after the fact is an in-sample
+selection: a hypothesis for out-of-sample validation, not a rule to trade. With
+21-47 trades per cell, none of these CAGRs is statistically distinguishable from
+zero.
+
+## Judging a named stock
+
+```bash
+python scripts/judge.py --symbols CUPID,MARINE,REDINGTON
+```
+
+Prints, per stock: the blended score and its percentile against the whole
+panel, every hard gate with its measured value, the end-of-day screen tag, and
+the last 15 sessions so the story can be checked by eye instead of trusted. A
+symbol outside the panel is reported as `OUTSIDE PANEL`, never silently skipped.
 
 ### The raw session board
 
@@ -312,16 +390,24 @@ python scripts/run_backtest.py --mode validation --exploratory   # watermarked
 
 ```
 protocol/   config, data, features, states, filters, simulator, costs,
-            metrics, strategies (+rank, +pra, +pa), pra, pa, audit, engine,
-            report, ingest, screen, quality, evidence
-scripts/    run_backtest.py, decisions.py, screen_candidates.py,
-            pra_study.py, pa_study.py, fetch_data.py, fetch_delivery.py,
-            build_report.py, strategy_index.py
+            metrics, strategies (+rank, +pra, +pa, +evidence), pra, pa,
+            audit, engine, report, ingest, screen, quality, ranking,
+            rotation, evidence
+scripts/    run_backtest.py, decisions.py, judge.py, rotate.py,
+            rotation_grid.py, screen_candidates.py, pra_study.py, pa_study.py,
+            fetch_data.py, fetch_delivery.py, build_report.py,
+            strategy_index.py
 config/     protocol_v2.yaml
 tests/      features/states, simulator/costs/metrics/audit, pra, pa,
-            screen, delivery
+            screen, delivery, validation, rotation
 ```
 
 Every source file stays under 300 lines; a single no-lookahead audit
 (truncation, shuffle-future, static scan, ordering, cutoff) must pass before a
 report is produced.
+
+`protocol/ranking.py` is a **vectorised rewrite** of `quality.py`'s per-symbol
+frame, so a walk-forward over ~1400 dates is minutes instead of hours. It is a
+performance rewrite and nothing else: `tests/test_rotation.py` asserts its
+scores, percentiles and gate verdicts match `quality.score_frame` row for row,
+so the two can never quietly diverge.
