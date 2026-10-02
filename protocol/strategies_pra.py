@@ -62,3 +62,18 @@ def pra_full(panel, cfg) -> list[TradeSignal]:
                               (e["result_atr"] >= a["response_min"]) &
                               (e["retention"] >= a["retention_min"]) &
                               (e["closing_range"] >= a["closing_range_min"]))
+
+
+def _with_reference(cfg: dict, reference: int) -> dict:
+    return {**cfg, "pra": {**cfg["pra"], "reference": reference}}
+
+
+def _make_reference_variant(name: str, reference: int):
+    @register(name)
+    def _variant(panel, cfg, _ref=reference, _name=name) -> list[TradeSignal]:
+        return _emit_from_classes(panel, _with_reference(cfg, _ref), _name, ["STRONG_RETENTION"])
+
+
+# gpt6 requires references 5/10/20/60/252 as separately registered variants.
+for _ref in (5, 10, 60, 252):
+    _make_reference_variant(f"pra_retention_r{_ref}", _ref)

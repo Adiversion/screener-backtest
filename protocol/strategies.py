@@ -164,6 +164,12 @@ def recovered_after_rej(panel, cfg) -> list[TradeSignal]:
     return out
 
 
+@register("cash")
+def cash(panel, cfg) -> list[TradeSignal]:
+    """B0 (gpt6): cash / no-trade baseline. Holds capital, never enters."""
+    return []
+
+
 @register("random")
 def random_baseline(panel, cfg) -> list[TradeSignal]:
     """B0: the true null. Seeded random (symbol, session)."""

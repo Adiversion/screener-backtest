@@ -9,8 +9,9 @@ Two research protocols are implemented as strategies:
 
 | Family | Source | What it tests |
 |---|---|---|
-| **AAE** — Acceptance-After-Expansion | `ai research.txt` | volume breakout → acceptance hold → expansion trigger, with trap filters and baselines B0–B9 |
+| **AAE** — Acceptance-After-Expansion | `ai research.txt` / `claude-fable-5.1-search.txt` | volume breakout → acceptance hold → expansion trigger, with trap filters and baselines B0–B9 |
 | **PRA** — Pressure → Response → Acceptance | `chatgpt.txt` | effort/response event classes, forward T+1/T+2/T+3/T+5 outcomes, ablation ladder A–F |
+| **Rotation / reference variants** | `gpt 6 astar search max.txt` | cash (no-trade) baseline + STRONG_RETENTION on references 5/10/20/60/252 as separately registered variants |
 
 ## Quick start
 
@@ -69,11 +70,11 @@ python scripts/run_backtest.py --set filters.disabled='[F1,F5]'
 
 ## Strategies
 
-`aae_acceptance`, `trap` (B1), `breakout_day` (B2), `vol_breakout` (B3),
+`cash` (B0), `trap` (B1), `breakout_day` (B2), `vol_breakout` (B3),
 `momentum_top` (B4), `high_52w` (B5), `trend` (B6), `fip_proxy` (B7),
-`high_effort_low_result` (B8), `recovered_after_rej` (B9), `random` (B0),
-`pra_strong_retention`, `pra_expansion_attempt`, `pra_high_effort_low_result`,
-`pra_full`.
+`high_effort_low_result` (B8), `recovered_after_rej` (B9), `random`,
+`aae_acceptance`, `pra_strong_retention`, `pra_expansion_attempt`,
+`pra_high_effort_low_result`, `pra_full`, and `pra_retention_r{5,10,60,252}`.
 
 Add your own in `protocol/strategies*.py` with the `@register("name")`
 decorator — it returns `TradeSignal`s and inherits the shared simulator,
