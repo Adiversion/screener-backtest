@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
+    color-scheme: dark;
     --bg: #07090e;
     --surface: rgba(14, 19, 31, 0.75);
     --surface-hover: rgba(22, 30, 48, 0.85);
@@ -652,9 +653,9 @@
 
   .search-input {
     width: 100%;
-    background: rgba(255, 255, 255, 0.04);
+    background: #0d131f;
     border: 1px solid var(--border);
-    color: var(--text-primary);
+    color: #f0f6fc;
     padding: 8px 12px 8px 34px;
     border-radius: 8px;
     font-size: 0.84rem;
@@ -663,25 +664,47 @@
     transition: border 0.2s ease;
   }
 
+  .search-input::placeholder {
+    color: #64748b;
+  }
+
   .search-input:focus {
     border-color: var(--blue);
-    background: rgba(255, 255, 255, 0.06);
+    background: #111827;
+    color: #ffffff;
   }
 
   .custom-select {
-    background: rgba(255, 255, 255, 0.04);
+    background-color: #0d131f;
+    background: #0d131f;
     border: 1px solid var(--border);
-    color: var(--text-primary);
+    color: #f0f6fc;
     padding: 8px 12px;
     border-radius: 8px;
     font-size: 0.84rem;
     font-family: inherit;
     outline: none;
     cursor: pointer;
+    color-scheme: dark;
   }
 
   .custom-select:focus {
     border-color: var(--blue);
+  }
+
+  .custom-select option {
+    background-color: #0d131f !important;
+    background: #0d131f !important;
+    color: #f0f6fc !important;
+    padding: 8px 12px;
+  }
+
+  .custom-select option:hover,
+  .custom-select option:focus,
+  .custom-select option:checked {
+    background-color: #1e293b !important;
+    background: #1e293b !important;
+    color: #38bdf8 !important;
   }
 
   /* Basket Toggle Switch */
