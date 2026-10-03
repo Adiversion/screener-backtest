@@ -96,7 +96,7 @@ def build_universe_lookup(
         if rvol < 1.4:
             q_reasons.append(f"RVOL {rvol:.2f}x < 1.40x thrust")
         frameworks.append({
-            "name": "Qullamaggie Flag",
+            "name": "Qullamaggie HTF Breakout",
             "passed": bool(q_pass),
             "verdict": "Momentum Flag Breakout" if q_pass else "; ".join(q_reasons)
         })
@@ -105,13 +105,13 @@ def build_universe_lookup(
         w_pass = (close > sma150 >= sma200) and (close > r20) and (rvol >= 1.4) and (rs >= 65.0)
         w_reasons = []
         if close <= r20:
-            w_reasons.append(f"Did not break above Stage 1 base ceiling (₹{r20:.1f})")
+            w_reasons.append(f"Pending Stage 2 pivot clearance (₹{r20:.1f})")
         if rvol < 1.4:
-            w_reasons.append(f"Volume ignition missing ({rvol:.2f}x vs 1.40x)")
+            w_reasons.append(f"Volume expansion missing ({rvol:.2f}x vs 1.40x)")
         frameworks.append({
             "name": "Stan Weinstein Stage 2",
             "passed": bool(w_pass),
-            "verdict": "Stage 2 Inception" if w_pass else "; ".join(w_reasons)
+            "verdict": "Stage 2 Breakout Confirmed" if w_pass else "; ".join(w_reasons)
         })
 
         # 5. Protocol Fortified
@@ -155,10 +155,11 @@ def build_universe_lookup(
 
         # Wyckoff Auction State
         if high > r20 and close < r20 and cr <= 0.35:
-            pa_state = "State D: Upthrust Trap / Failed Acceptance"
+            pa_state = "State D: Intraday Upthrust / Failed Acceptance"
             wyckoff_narrative = (
-                f"Intraday attempt to breach ₹{r20:.2f} touched ₹{high:.2f}, but sellers aggressively rejected price "
-                f"into the close (Closing Range {cr * 100:.1f}%, 0% retention). Breakout buyers were trapped."
+                f"Intraday probe above prior pivot ₹{r20:.2f} touched session high ₹{high:.2f}, but supply absorbed "
+                f"buying demand, driving close down to ₹{close:.2f} (Closing Range {cr * 100:.1f}%, 0% retention). "
+                f"Breakout unconfirmed; requires secondary absorption and higher close."
             )
         elif close >= r20 and cr >= 0.60:
             pa_state = "State A: Accepted Expansion"
@@ -179,9 +180,9 @@ def build_universe_lookup(
         elif close > sma50 and sma50 > sma200:
             status = "WATCHLIST_NO_SETUP"
             gameplan = (
-                f"Stage 2 uptrend is healthy, but avoid buying today's upper wick. "
-                f"Wait for a confirmed daily close above ₹{high:.2f} on volume >= {max(1.5, rvol * 1.5):.1f}x. "
-                f"Key support floor sits at 10 EMA (₹{ema10:.2f}) and 20 EMA (₹{ema20:.2f})."
+                f"Macro Stage 2 trend remains structurally intact, but October 1 breakout attempt lacked volume confirmation and price acceptance. "
+                f"Wait for a daily close holding above ₹{r20:.2f}–₹{high:.2f} on volume >= {max(1.4, rvol * 1.5):.1f}x. "
+                f"Immediate dynamic support aligns at 10 EMA (₹{ema10:.2f}) and 20 EMA (₹{ema20:.2f})."
             )
         else:
             status = "STAGE_4_AVOID"
