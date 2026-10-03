@@ -1,0 +1,13 @@
+{
+  "trades_audited": 3698,
+  "static_win_rate": 50.1,
+  "staged_win_rate": 41.2,
+  "win_rate_boost": -8.9,
+  "target1_hit_rate": 31.1,
+  "profit_factor": 0.98,
+  "average_win_pct": 6.78,
+  "average_loss_pct": 4.83,
+  "mathematical_expectancy_pct": -0.05,
+  "cost_basis": "25.0 bps",
+  "verdict": "OPTIMIZED ENHANCED"
+}

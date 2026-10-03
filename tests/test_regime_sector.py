@@ -65,6 +65,22 @@ class SectorTests(unittest.TestCase):
         self.assertIn("WELSPUNLIV", symbols)
         self.assertIn("TCS", symbols)
 
+    def test_industry_momentum(self):
+        feat = pd.DataFrame([
+            {"Symbol": "BAJAJ-AUTO", "ret60": 0.15, "Close": 1000.0},
+            {"Symbol": "TCS", "ret60": -0.05, "Close": 3500.0},
+            {"Symbol": "WELSPUNLIV", "ret60": 0.25, "Close": 150.0},
+        ])
+        ind_df = sector.compute_industry_momentum(feat)
+        self.assertFalse(ind_df.empty)
+        self.assertIn("rank_pct", ind_df.columns)
+        self.assertIn("tier", ind_df.columns)
+
+        tw = sector.get_symbol_industry_momentum("BAJAJ-AUTO", ind_df)
+        self.assertEqual(tw["industry"], "Automobile and Auto Components")
+        self.assertIn("rs_rank", tw)
+        self.assertIn("is_tailwind", tw)
+
 
 if __name__ == "__main__":
     unittest.main()

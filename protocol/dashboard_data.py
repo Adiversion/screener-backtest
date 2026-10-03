@@ -23,9 +23,23 @@ from protocol.github_screeners import (
     screen_turtle_trading,
 )
 from protocol.regime import get_regime_at
-from protocol.sector import get_company_name, get_sector
+from protocol.sector import (
+    get_company_name, get_sector, compute_industry_momentum,
+    get_symbol_industry_momentum
+)
+from protocol.sniper_mode import screen_sniper_mode, evaluate_sniper_gates
 
 ROOT = Path(__file__).resolve().parent.parent
+
+
+def _load_report(filename: str) -> dict[str, Any]:
+    for p in (ROOT / "reports" / filename, ROOT / "data" / filename):
+        if p.exists():
+            try:
+                return json.loads(p.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+    return {}
 
 
 def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp = "2026-10-01") -> dict[str, Any]:
@@ -51,8 +65,11 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp = "2026
         except Exception:
             pass
 
-    # Screen all 9 frameworks
+    ind_df = compute_industry_momentum(feat)
+
+    # Screen all 10 frameworks (including Sniper Mode 65%+ WR)
     groups = [
+        ("Sniper Mode (65%+ WR)", screen_sniper_mode(feat, top_n=15, min_turnover_cr=1.0, deliv_map=deliv_map, ind_df=ind_df)),
         ("Protocol Fortified", screen_protocol_v2(feat, top_n=15, min_turnover_cr=1.0)),
         ("Relative Strength Leader", screen_relative_strength(feat, top_n=15, min_turnover_cr=1.0)),
         ("Minervini Template", screen_minervini(feat, top_n=15, min_turnover_cr=1.0)),
@@ -74,7 +91,7 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp = "2026
                 f = feat_by_sym.get(sym)
                 if f is None:
                     continue
-                cand = _build_single_candidate(f, deliv_map.get(sym))
+                cand = _build_single_candidate(f, deliv_map.get(sym), ind_df=ind_df)
                 cand["strategies"] = [strat_name]
                 candidates[sym] = cand
             else:
@@ -82,9 +99,7 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp = "2026
 
     # Sort: Frameworks count DESC, Safe extension priority, then 20d return DESC
     def sort_key(c: dict[str, Any]) -> tuple:
-        strat_cnt = len(c["strategies"])
-        ext_penalty = 0 if not c["is_extended"] else 1
-        return (strat_cnt, -ext_penalty, c["ret20"])
+        return (len(c["strategies"]), -(1 if c["is_extended"] else 0), c["ret20"])
 
     cand_list = sorted(candidates.values(), key=sort_key, reverse=True)
 
@@ -93,17 +108,6 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp = "2026
     high_conviction = sum(1 for c in cand_list if len(c["strategies"]) >= 3)
     avg_rvol = round(float(np.mean([c["rvol"] for c in cand_list])), 1) if cand_list else 0.0
     inst_deliv_cnt = sum(1 for c in cand_list if c["deliv_pct"] >= 50.0)
-
-    # Load walk-forward validation scorecard if available
-    wf_path = ROOT / "reports" / "walk_forward_report.json"
-    if not wf_path.exists():
-        wf_path = ROOT / "data" / "walk_forward_report.json"
-    wf_data: dict[str, Any] = {}
-    if wf_path.exists():
-        try:
-            wf_data = json.loads(wf_path.read_text(encoding="utf-8"))
-        except Exception:
-            pass
 
     return {
         "asof": str(asof.date()),
@@ -126,12 +130,14 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp = "2026
         },
         "candidates": cand_list,
         "universe_lookup": build_universe_lookup(feat, candidates, deliv_map),
-        "walk_forward": wf_data,
+        "walk_forward": _load_report("walk_forward_report.json"),
+        "sniper_report": _load_report("sniper_mode_report.json"),
+        "industry_rankings": ind_df.to_dict(orient="records") if not ind_df.empty else [],
         "default_capital_per_stock": 100000,
     }
 
 
-def _build_single_candidate(f: pd.Series, deliv_pct: float | None) -> dict[str, Any]:
+def _build_single_candidate(f: pd.Series, deliv_pct: float | None, ind_df: pd.DataFrame | None = None) -> dict[str, Any]:
     """Build rich technical scorecard and actual reasons for a single symbol."""
     sym = str(f["Symbol"])
     close = float(f["Close"])
@@ -156,14 +162,9 @@ def _build_single_candidate(f: pd.Series, deliv_pct: float | None) -> dict[str, 
 
     # Breakout categorization
     is_52w = close >= (h52 * 0.999)
-    if is_52w:
-        bo_type = "52-Week High Breakout"
-        bo_ref = h52
-        bo_pct = round(((close - h52) / h52) * 100, 1) if h52 > 0 else 0.0
-    else:
-        bo_type = "20-Day Resistance Breakout"
-        bo_ref = r20
-        bo_pct = round(((close - r20) / r20) * 100, 1) if r20 > 0 else 0.0
+    bo_type = "52-Week High Breakout" if is_52w else "20-Day Resistance Breakout"
+    bo_ref = h52 if is_52w else r20
+    bo_pct = round(((close - bo_ref) / bo_ref) * 100, 1) if bo_ref > 0 else 0.0
 
     # Moving Average Stack
     full_stack = (close > ema10 > ema20 > sma50 > sma150 > sma200)
@@ -184,19 +185,20 @@ def _build_single_candidate(f: pd.Series, deliv_pct: float | None) -> dict[str, 
     is_low_vol = adr20 <= 0.035
     is_extended = ext50 > 0.20
 
-    badges: list[str] = []
-    if is_52w:
-        badges.append("52W HIGH BREAKOUT")
-    if rs_rating >= 90.0:
-        badges.append(f"RS {rs_rating:.0f} (TOP {max(1, 100-int(round(rs_rating)))}%)")
-    if rvol20 >= 5.0:
-        badges.append(f"{round(rvol20, 1)}x VOLUME THRUST")
-    if dp >= 50.0:
-        badges.append("INSTITUTIONAL DELIVERY ≥50%")
-    if is_low_vol:
-        badges.append("LOW VOLATILITY ADVANTAGE")
-    if is_extended:
-        badges.append("CAUTION: EXTENDED >20%")
+    ind_info = get_symbol_industry_momentum(sym, ind_df) if ind_df is not None else {}
+    audit_sniper = evaluate_sniper_gates(f, deliv_pct=deliv_pct, ind_rank=ind_info.get("rs_rank"))
+
+    badges: list[str] = [
+        "52W HIGH BREAKOUT" if is_52w else "",
+        f"RS {rs_rating:.0f} (TOP {max(1, 100-int(round(rs_rating)))}%)" if rs_rating >= 90.0 else "",
+        f"{round(rvol20, 1)}x VOLUME THRUST" if rvol20 >= 5.0 else "",
+        "INSTITUTIONAL DELIVERY ≥50%" if dp >= 50.0 else "",
+        "LOW VOLATILITY ADVANTAGE" if is_low_vol else "",
+        "CAUTION: EXTENDED >20%" if is_extended else "",
+        "🎯 SNIPER QUALIFIED (65%+ WR)" if audit_sniper.is_sniper else "",
+        f"SECTOR TAILWIND: {str(ind_info.get('tier','')).split(':')[0]}" if ind_info.get("is_tailwind") else "",
+    ]
+    badges = [b for b in badges if b]
 
     shelf_touches = int(f["shelf_touches_20"]) if "shelf_touches_20" in f and not pd.isna(f["shelf_touches_20"]) else 0
     if is_52w:
@@ -268,6 +270,11 @@ def _build_single_candidate(f: pd.Series, deliv_pct: float | None) -> dict[str, 
         "stop_pct": stop_pct,
         "target_2r": target_2r,
         "target_2r_pct": target_2r_pct,
+        "industry_tier": ind_info.get("tier", "Tier 3: Neutral"),
+        "industry_rs": ind_info.get("rs_rank", 50.0),
+        "is_sector_tailwind": bool(ind_info.get("is_tailwind", False)),
+        "is_sniper": audit_sniper.is_sniper,
+        "sniper_score": audit_sniper.score,
         "badges": badges,
         "catalyst_warning": audit["warning_text"],
         "ma_stack": {
