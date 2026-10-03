@@ -13,6 +13,7 @@ import pandas as pd
 
 from protocol.data import load_history
 from protocol.corporate_events import get_corporate_audit
+from protocol.wyckoff_pa import evaluate_wyckoff_pa
 from protocol.github_screeners import (
     compute_screener_features,
     screen_canslim,
@@ -155,9 +156,13 @@ def _build_single_candidate(f: pd.Series, deliv_pct: float | None) -> dict[str, 
     # Moving Average Stack
     full_stack = (close > ema10 > ema20 > sma50 > sma150 > sma200)
 
-    # Invalidation Stop (2x ATR or max -8%)
+    # Invalidation Stop: base consolidation low - 0.5 ATR, bounded between 3% and 8%
     atr = adr20 * close
-    stop = round(max(close - 2.0 * atr, close * 0.92), 2)
+    base_low = float(f["base_low20"]) if "base_low20" in f and not pd.isna(f["base_low20"]) else (
+        float(f["low10"]) if "low10" in f and not pd.isna(f["low10"]) else (close - 1.5 * atr)
+    )
+    struct_stop = base_low - 0.5 * atr
+    stop = round(max(min(struct_stop, close * 0.97), close * 0.92), 2)
     stop_pct = round(((close - stop) / close) * 100, 1)
     target_2r = round(close + 2.0 * (close - stop), 2)
     target_2r_pct = round(((target_2r - close) / close) * 100, 1)
@@ -181,65 +186,39 @@ def _build_single_candidate(f: pd.Series, deliv_pct: float | None) -> dict[str, 
     if is_extended:
         badges.append("CAUTION: EXTENDED >20%")
 
-    # Technical actual rationale narrative
-    reasons = []
+    shelf_touches = int(f["shelf_touches_20"]) if "shelf_touches_20" in f and not pd.isna(f["shelf_touches_20"]) else 0
     if is_52w:
-        reasons.append(
-            f"Printed a fresh 52-week high breakout at ₹{close:.2f} (prior high: ₹{h52:.2f}, +{bo_pct}% clearance)."
-        )
+        reasons = [f"Printed 52-week high breakout at ₹{close:.2f} (prior high: ₹{h52:.2f}, +{bo_pct}% clearance)."]
+    elif shelf_touches >= 2:
+        reasons = [f"Decisively cleared {shelf_touches}-touch consolidation shelf at ₹{r20:.2f} to close at ₹{close:.2f} (+{bo_pct}% clearance)."]
     else:
-        reasons.append(
-            f"Broke past key 20-day resistance at ₹{r20:.2f} to close at ₹{close:.2f} (+{bo_pct}% clearance)."
-        )
-
+        reasons = [f"Broke 20-day resistance at ₹{r20:.2f} to close at ₹{close:.2f} (+{bo_pct}% clearance)."]
     if rs_rating >= 80.0:
-        reasons.append(
-            f"Market leader relative strength: RS Rating {rs_rating:.0f}/99 (outperformed {rs_rating:.0f}% of the broad market, "
-            f"1-year return {ret252*100:+.1f}%, 6-month return {ret120*100:+.1f}%)."
-        )
-
-    if full_stack:
-        reasons.append(
-            f"Perfect institutional stack: Close (₹{close:.1f}) > EMA10 (₹{ema10:.1f}) > EMA20 (₹{ema20:.1f}) > "
-            f"SMA50 (₹{sma50:.1f}) > SMA150 (₹{sma150:.1f}) > SMA200 (₹{sma200:.1f})."
-        )
-    else:
-        reasons.append(
-            f"Stage 2 uptrend: Close above 50-day SMA (₹{sma50:.1f}) and 200-day SMA (₹{sma200:.1f})."
-        )
-
+        reasons.append(f"Market leader RS {rs_rating:.0f}/99 (beat {rs_rating:.0f}% of market, 1Y: {ret252*100:+.1f}%, 6M: {ret120*100:+.1f}%).")
+    reasons.append(
+        f"Institutional MA stack: Close > EMA10 > EMA20 > SMA50 > SMA150 > SMA200."
+        if full_stack else f"Stage 2 uptrend: Close above 50-day SMA (₹{sma50:.1f}) and 200-day SMA (₹{sma200:.1f})."
+    )
     if rvol20 >= 2.0:
-        reasons.append(
-            f"High institutional volume ignition: {rvol20:.1f}x 20-day average volume ({vol:,} shares traded, "
-            f"turnover ~₹{turnover_cr} Cr)."
-        )
-
+        reasons.append(f"Volume ignition: {rvol20:.1f}x 20d average volume ({vol:,} shares, ~₹{turnover_cr} Cr turnover).")
     if dp >= 50.0:
-        reasons.append(
-            f"Heavy Demat delivery absorption of {dp}% (exceeds the 50% quant hurdle; filters out intraday churn)."
-        )
+        reasons.append(f"Heavy Demat delivery absorption of {dp}% (exceeds the 50% quant hurdle).")
     elif dp > 0:
-        reasons.append(f"Security delivery rate: {dp}% with {vol:,} total traded shares.")
-
+        reasons.append(f"Security delivery rate: {dp}% with {vol:,} traded shares.")
     if is_low_vol:
-        reasons.append(
-            f"Low-volatility breakout structure (ADR = {adr20*100:.1f}%), aligning with empirical edge (IC = -0.0434, t = -7.35)."
-        )
-
+        reasons.append(f"Low-volatility breakout structure (ADR = {adr20*100:.1f}%, IC = -0.0434, t = -7.35 edge).")
     if is_extended:
-        reasons.append(
-            f"WARNING: Extended +{ext50*100:.1f}% above 50 SMA (>20% ceiling). Wait for 3-5 day high-tight flag "
-            f"or pullback toward 10 EMA (₹{ema10:.2f}) before entering."
-        )
+        reasons.append(f"WARNING: Extended +{ext50*100:.1f}% above 50 SMA (>20% limit). Wait for pullback toward 10 EMA (₹{ema10:.2f}).")
     else:
-        reasons.append(
-            f"Safe extension (+{ext50*100:.1f}% above SMA50), safely within the strict ≤20% anti-chase gate."
-        )
+        reasons.append(f"Safe extension (+{ext50*100:.1f}% above SMA50), inside strict ≤20% anti-chase gate.")
 
     action = "Wait for 3-5 day High-Tight Flag or EMA10 pullback" if is_extended else "Immediate breakout execution"
     sec_name = get_sector(sym)
     audit = get_corporate_audit(sym, sec_name, is_extended, ema10)
+    wpa = evaluate_wyckoff_pa(f)
     badges.extend(audit["badges"])
+    badges.extend(wpa["badges"])
+    reasons.append(f"Price Action & Wyckoff: {wpa['wyckoff_narrative']}")
 
     return {
         "symbol": sym,
@@ -249,6 +228,7 @@ def _build_single_candidate(f: pd.Series, deliv_pct: float | None) -> dict[str, 
         "circuit_band": audit["circuit_band"],
         "is_t2t": audit["is_t2t"],
         "has_earnings_soon": audit["has_earnings_soon"],
+        "wyckoff": wpa,
         "close": round(close, 2),
         "r20": round(r20, 2),
         "r10": round(r10, 2),

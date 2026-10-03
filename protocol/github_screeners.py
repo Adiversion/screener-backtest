@@ -85,6 +85,13 @@ def compute_screener_features(sub_history: pd.DataFrame, asof_date: pd.Timestamp
         range20 = float((r20 - l20) / close_now)
         range60 = float((r60 - l60) / close_now)
 
+        # Multi-touch resistance shelf: prior 20 sessions touching within 0.75 ATR
+        atr_est = max(adr20 * close_now, 0.01)
+        prior_h20 = h[-21:-1] if len(h) >= 21 else h[:-1]
+        shelf_band_lo = r20 - 0.75 * atr_est
+        shelf_touches = int(np.sum((prior_h20 >= shelf_band_lo) & (prior_h20 <= r20 + 0.5 * atr_est))) if len(prior_h20) > 0 else 0
+        clearance_atr = float((close_now - r20) / atr_est)
+
         records.append({
             "Symbol": sym, "Close": close_now, "Open": o[-1], "High": h[-1], "Low": l[-1],
             "Volume": v[-1], "sma50": sma50, "sma150": sma150, "sma200": sma200,
@@ -94,6 +101,8 @@ def compute_screener_features(sub_history: pd.DataFrame, asof_date: pd.Timestamp
             "ret120": ret120, "ret252": ret252, "rs_raw": rs_raw,
             "pre_vol_min": pre_vol_min, "range20": range20, "range60": range60,
             "ext_sma50": (close_now - sma50) / sma50 if sma50 > 0 else 0.0,
+            "shelf_touches_20": shelf_touches, "is_shelf_r20": int(shelf_touches >= 2),
+            "clearance_atr": clearance_atr, "base_low20": l20,
         })
     res_df = pd.DataFrame(records)
     if not res_df.empty and "rs_raw" in res_df.columns:

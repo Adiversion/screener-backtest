@@ -93,5 +93,64 @@ class LevelSemanticsTests(unittest.TestCase):
         self.assertEqual(self.f["level_sufficient"].iloc[0], 1.0)
 
 
+class ReinforcedLevelTests(unittest.TestCase):
+    def test_shelf_detection_distinguishes_shelf_from_single_wick(self):
+        """A level tested 3 times must be flagged as a shelf; a single wick must not."""
+        n = 50
+        dates = pd.bdate_range("2025-01-01", periods=n)
+        # Create a flat base around 100 with ATR ~ 2.0
+        df = pd.DataFrame({
+            "Date": dates,
+            "Open": 100.0, "High": 101.0, "Low": 99.0, "Close": 100.0,
+            "Volume": 1_000_000.0,
+        })
+        # Set R20 = 105 by putting a high at bar 10
+        df.loc[10, "High"] = 105.0
+        df.loc[15, "High"] = 104.8  # second touch within 0.75 ATR
+        df.loc[20, "High"] = 104.9  # third touch within 0.75 ATR
+        res = levels.add_levels(df)
+
+        # At bar 25, shelf touches should be >= 2 and is_shelf_r20 should be 1.0
+        self.assertGreaterEqual(res.loc[25, "shelf_touches_20"], 2.0)
+        self.assertEqual(res.loc[25, "is_shelf_r20"], 1.0)
+
+    def test_clearance_hurdle_prevents_tick_whipsaw(self):
+        """A 1-cent breach should not trigger confirmed break, but a 0.5 ATR move should."""
+        n = 50
+        dates = pd.bdate_range("2025-01-01", periods=n)
+        df = pd.DataFrame({
+            "Date": dates,
+            "Open": 100.0, "High": 101.0, "Low": 99.0, "Close": 100.0,
+            "Volume": 1_000_000.0,
+        })
+        df.loc[10, "High"] = 105.0
+        res = levels.add_levels(df)
+        
+        # Test bar 30 with microscopic breach (close = 105.02, ATR ~ 2.0)
+        df.loc[30, "Close"] = 105.02
+        res2 = levels.add_levels(df.copy())
+        self.assertEqual(res2.loc[30, "r20_break_confirmed"], 0.0)
+
+        # Test bar 30 with solid expansion (close = 106.50, clearance > 0.20 ATR)
+        df.loc[30, "Close"] = 106.50
+        res3 = levels.add_levels(df.copy())
+        self.assertEqual(res3.loc[30, "r20_break_confirmed"], 1.0)
+
+    def test_structural_stop_anchors_below_base_low(self):
+        """Base stop must sit below base_low20 with ATR buffer."""
+        n = 50
+        dates = pd.bdate_range("2025-01-01", periods=n)
+        df = pd.DataFrame({
+            "Date": dates,
+            "Open": 100.0, "High": 102.0, "Low": 95.0, "Close": 100.0,
+            "Volume": 1_000_000.0,
+        })
+        res = levels.add_levels(df)
+        last = res.iloc[-1]
+        self.assertLess(last["base_stop_level"], last["base_low20"])
+        self.assertGreater(last["base_stop_pct"], 0.0)
+
+
 if __name__ == "__main__":
     unittest.main()
+
