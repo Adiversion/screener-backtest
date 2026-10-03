@@ -6,6 +6,7 @@ matching TECHNICAL_ANALYSIS_AND_DATA_GUIDE.md.
 """
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 import numpy as np
@@ -93,6 +94,17 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp = "2026
     avg_rvol = round(float(np.mean([c["rvol"] for c in cand_list])), 1) if cand_list else 0.0
     inst_deliv_cnt = sum(1 for c in cand_list if c["deliv_pct"] >= 50.0)
 
+    # Load walk-forward validation scorecard if available
+    wf_path = ROOT / "reports" / "walk_forward_report.json"
+    if not wf_path.exists():
+        wf_path = ROOT / "data" / "walk_forward_report.json"
+    wf_data: dict[str, Any] = {}
+    if wf_path.exists():
+        try:
+            wf_data = json.loads(wf_path.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
     return {
         "asof": str(asof.date()),
         "regime": {
@@ -114,6 +126,7 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp = "2026
         },
         "candidates": cand_list,
         "universe_lookup": build_universe_lookup(feat, candidates, deliv_map),
+        "walk_forward": wf_data,
         "default_capital_per_stock": 100000,
     }
 

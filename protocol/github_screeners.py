@@ -56,10 +56,13 @@ def compute_screener_features(sub_history: pd.DataFrame, asof_date: pd.Timestamp
         ema10 = float(s_c.ewm(span=10, adjust=False).mean().iloc[-1])
         ema20 = float(s_c.ewm(span=20, adjust=False).mean().iloc[-1])
 
-        # Volume and range features
+        # Volume and range features (Adaptive: Mean & Median volume to resist outlier spikes)
         vol_mean20 = float(np.mean(v[-21:-1])) if len(v) >= 21 else float(np.mean(v))
+        vol_med20 = float(np.median(v[-21:-1])) if len(v) >= 21 else vol_mean20
         vol_mean50 = float(np.mean(v[-51:-1])) if len(v) >= 51 else vol_mean20
-        rvol20 = float(v[-1] / vol_mean20) if vol_mean20 > 0 else 0.0
+        rvol20_mean = float(v[-1] / vol_mean20) if vol_mean20 > 0 else 0.0
+        rvol20_med = float(v[-1] / vol_med20) if vol_med20 > 0 else 0.0
+        rvol20 = max(rvol20_mean, rvol20_med)
         rvol50 = float(v[-1] / vol_mean50) if vol_mean50 > 0 else 0.0
 
         r10 = float(np.max(h[-11:-1])) if len(h) >= 11 else float(h[-1])
@@ -96,7 +99,7 @@ def compute_screener_features(sub_history: pd.DataFrame, asof_date: pd.Timestamp
             "Symbol": sym, "Close": close_now, "Open": o[-1], "High": h[-1], "Low": l[-1],
             "Volume": v[-1], "sma50": sma50, "sma150": sma150, "sma200": sma200,
             "sma200_1m": sma200_1m, "ema10": ema10, "ema20": ema20, "rvol20": rvol20,
-            "rvol50": rvol50, "r10": r10, "r20": r20, "h52": h52, "l52": l52,
+            "rvol50": rvol50, "rvol20_median": rvol20_med, "r10": r10, "r20": r20, "h52": h52, "l52": l52,
             "adr20": adr20, "turnover20": turnover20, "ret20": ret20, "ret60": ret60,
             "ret120": ret120, "ret252": ret252, "rs_raw": rs_raw,
             "pre_vol_min": pre_vol_min, "range20": range20, "range60": range60,

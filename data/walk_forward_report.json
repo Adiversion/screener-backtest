@@ -1,0 +1,64 @@
+{
+  "in_sample_win_rate": 39.9,
+  "out_of_sample_win_rate": 38.4,
+  "win_rate_retention": 96.2,
+  "out_of_sample_profit_factor": 0.96,
+  "worst_fold_win_rate": 34.5,
+  "deflated_sharpe_ratio": -40.01,
+  "total_out_of_sample_trades": 61007,
+  "parameter_stability": "HIGH (Stable Plateau)",
+  "plateau_table": [
+    {
+      "rvol_threshold": "1.2x",
+      "win_rate": 38.7,
+      "profit_factor": 0.97
+    },
+    {
+      "rvol_threshold": "1.4x",
+      "win_rate": 38.4,
+      "profit_factor": 0.96
+    },
+    {
+      "rvol_threshold": "1.6x",
+      "win_rate": 38.0,
+      "profit_factor": 0.95
+    }
+  ],
+  "folds": [
+    {
+      "fold_name": "Fold 1",
+      "regime_type": "Bear / Tightening Regime",
+      "train_period": "2018-01-01 to 2021-12-31",
+      "test_period": "2022-01-01 to 2022-12-31",
+      "is_win_rate": 40.1,
+      "oos_win_rate": 37.6,
+      "oos_profit_factor": 0.96,
+      "oos_trades": 11191,
+      "oos_sharpe": -0.29
+    },
+    {
+      "fold_name": "Fold 2",
+      "regime_type": "Recovery / Breadth Expansion",
+      "train_period": "2018-01-01 to 2022-12-31",
+      "test_period": "2023-01-01 to 2023-12-31",
+      "is_win_rate": 38.2,
+      "oos_win_rate": 47.8,
+      "oos_profit_factor": 1.4,
+      "oos_trades": 15342,
+      "oos_sharpe": 2.34
+    },
+    {
+      "fold_name": "Fold 3",
+      "regime_type": "Live Momentum Expansion",
+      "train_period": "2018-01-01 to 2023-12-31",
+      "test_period": "2024-01-01 to 2026-10-01",
+      "is_win_rate": 41.0,
+      "oos_win_rate": 34.5,
+      "oos_profit_factor": 0.81,
+      "oos_trades": 34474,
+      "oos_sharpe": -1.44
+    }
+  ],
+  "cost_basis": "25.0 bps (15 bps slippage + 10 bps STT & statutory fees)",
+  "verdict": "PROVISIONAL / CAUTION"
+}
