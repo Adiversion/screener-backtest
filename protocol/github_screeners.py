@@ -117,10 +117,12 @@ def screen_relative_strength(df: pd.DataFrame, top_n: int = 10, min_turnover_cr:
         (sub["Close"] > sub["sma50"]) & (sub["sma50"] > sub["sma200"]) &
         (sub["rs_rating"] >= 80.0) &
         (sub["ext_sma50"] <= 0.25) &
+        (sub["rvol20"] >= 1.0) &
         (sub["ret60"] > 0)
     )
     passed = sub[m].copy()
-    passed["score"] = passed["rs_rating"]
+    # Steel: Composite rank weighting RS power (70%) and institutional volume commitment (30%)
+    passed["score"] = passed["rs_rating"] * 0.7 + np.clip(passed["rvol20"], 0.5, 3.0) * 10.0
     ranked = passed.sort_values("score", ascending=False).head(top_n)
     return [
         ScreenerResult("RELATIVE_STRENGTH", r["Symbol"], r["Close"], r["rvol20"], r["ret20"], r["adr20"], r["ext_sma50"], r["score"])
@@ -129,7 +131,7 @@ def screen_relative_strength(df: pd.DataFrame, top_n: int = 10, min_turnover_cr:
 
 
 def screen_minervini(df: pd.DataFrame, top_n: int = 10, min_turnover_cr: float = 1.0) -> list[ScreenerResult]:
-    """Mark Minervini Trend Template Screener (RyanJHamby/stock-screener, icedevil2001)."""
+    """Mark Minervini Trend Template & Contraction Screener (SEPA Framework)."""
     sub = df[df["turnover20"] >= min_turnover_cr * 1e7].copy()
     m = (
         (sub["Close"] > sub["sma150"]) & (sub["Close"] > sub["sma200"]) &
@@ -139,11 +141,13 @@ def screen_minervini(df: pd.DataFrame, top_n: int = 10, min_turnover_cr: float =
         (sub["Close"] > sub["sma50"]) &
         (sub["Close"] >= 1.30 * sub["l52"]) &
         (sub["Close"] >= 0.75 * sub["h52"]) &
+        (sub["ext_sma50"] <= 0.25) &
         (sub["ret20"] > 0)
     )
     passed = sub[m].copy()
-    # Rank by 60d momentum + 20d momentum
-    passed["score"] = passed["ret60"] * 0.6 + passed["ret20"] * 0.4
+    # Steel: Rank by tight base contraction proximity + smooth multi-month momentum
+    tightness = 1.0 / (passed["range20"] + 0.05)
+    passed["score"] = (passed["ret60"] * 0.4 + passed["ret20"] * 0.3) * tightness
     ranked = passed.sort_values("score", ascending=False).head(top_n)
     return [
         ScreenerResult("MINERVINI_TEMPLATE", r["Symbol"], r["Close"], r["rvol20"], r["ret20"], r["adr20"], r["ext_sma50"], r["score"])
@@ -152,17 +156,19 @@ def screen_minervini(df: pd.DataFrame, top_n: int = 10, min_turnover_cr: float =
 
 
 def screen_qullamaggie(df: pd.DataFrame, top_n: int = 10, min_turnover_cr: float = 1.0) -> list[ScreenerResult]:
-    """Kristjan Qullamaggie High Tight Flag & Breakout Screener (axidzz/Qullamaggie-Setups)."""
+    """Kristjan Qullamaggie High Tight Flag & Breakout Screener."""
     sub = df[df["turnover20"] >= min_turnover_cr * 1e7].copy()
     m = (
         (sub["ema10"] > sub["ema20"]) & (sub["ema20"] > sub["sma50"]) &
         (sub["adr20"] >= 0.035) &  # High daily volatility asset (ADR% >= 3.5%)
         (sub["Close"] > sub["r10"]) &  # Pivot breakout
         (sub["rvol20"] >= 1.4) &  # Volume thrust
-        ((sub["Close"] - sub["ema10"]) / sub["ema10"] <= 0.08)  # Not over-extended from 10 EMA
+        ((sub["Close"] - sub["ema10"]) / sub["ema10"] <= 0.08) &  # Tight to 10 EMA (anti-chase)
+        ((sub["ret60"] >= 0.15) | (sub["ret120"] >= 0.25))  # Steel: Mandatory prior momentum thrust leg
     )
     passed = sub[m].copy()
-    passed["score"] = passed["adr20"] * passed["rvol20"]
+    # Steel: Momentum explosion factor * Volume thrust
+    passed["score"] = passed["adr20"] * passed["rvol20"] * (1.0 + passed["ret20"])
     ranked = passed.sort_values("score", ascending=False).head(top_n)
     return [
         ScreenerResult("QULLAMAGGIE_BREAKOUT", r["Symbol"], r["Close"], r["rvol20"], r["ret20"], r["adr20"], r["ext_sma50"], r["score"])
@@ -178,11 +184,13 @@ def screen_canslim(df: pd.DataFrame, top_n: int = 10, min_turnover_cr: float = 1
         (sub["Close"] >= 0.85 * sub["h52"]) &  # Within 15% of 52-week high
         (sub["Close"] > sub["r20"]) &  # Fresh 20-day high breakout
         (sub["Close"] <= 1.05 * sub["r20"]) &  # Anti-chasing: <= 5% above pivot
-        (sub["rvol50"] >= 1.5) &  # Volume surge >= 1.5x 50-day average
+        (sub["rvol50"] >= 1.4) &  # Volume surge >= 1.4x 50-day average
+        (sub["rs_rating"] >= 70.0) &  # Steel: O'Neil RS leadership criterion
         (sub["ret60"] > 0)
     )
     passed = sub[m].copy()
-    passed["score"] = passed["ret60"] * passed["rvol20"]
+    # Steel: Reward breakout volume conviction * Relative Strength ranking
+    passed["score"] = passed["rs_rating"] * (passed["rvol50"] / 2.0)
     ranked = passed.sort_values("score", ascending=False).head(top_n)
     return [
         ScreenerResult("CANSLIM_PIVOT", r["Symbol"], r["Close"], r["rvol20"], r["ret20"], r["adr20"], r["ext_sma50"], r["score"])
@@ -196,12 +204,15 @@ def screen_pkscreener_vcp(df: pd.DataFrame, top_n: int = 10, min_turnover_cr: fl
     m = (
         (sub["Close"] > sub["sma50"]) & (sub["sma50"] > sub["sma200"]) &
         (sub["range20"] < sub["range60"] * 0.85) &  # Volatility contraction
-        (sub["pre_vol_min"] <= 0.70) &  # Volume dry-up in prior sessions
+        (sub["pre_vol_min"] <= 0.75) &  # Volume dry-up in prior sessions
         (sub["Close"] > sub["r10"]) &  # Breakout of tight contraction
-        (sub["rvol20"] >= 1.25)
+        (sub["rvol20"] >= 1.25) &
+        (sub["ret60"] > 0)
     )
     passed = sub[m].copy()
-    passed["score"] = (1.0 / (passed["range20"] + 0.01)) * passed["rvol20"]
+    # Steel: Safe contraction expansion ratio (no singularity/div-by-zero on flat bases)
+    contraction_ratio = passed["range60"] / np.maximum(passed["range20"], 0.03)
+    passed["score"] = contraction_ratio * passed["rvol20"]
     ranked = passed.sort_values("score", ascending=False).head(top_n)
     return [
         ScreenerResult("PKSCREENER_VCP", r["Symbol"], r["Close"], r["rvol20"], r["ret20"], r["adr20"], r["ext_sma50"], r["score"])
@@ -210,17 +221,19 @@ def screen_pkscreener_vcp(df: pd.DataFrame, top_n: int = 10, min_turnover_cr: fl
 
 
 def screen_protocol_v2(df: pd.DataFrame, top_n: int = 10, min_turnover_cr: float = 1.0) -> list[ScreenerResult]:
-    """Our Protocol v2 Fortified Screener (Regime + Sector Cap + Climax Guard)."""
+    """Our Protocol v2 Fortified Screener (Regime + Sector Cap + Climax Guard + Multi-Touch Shelf)."""
     sub = df[df["turnover20"] >= min_turnover_cr * 1e7].copy()
     m = (
         (sub["Close"] > sub["sma50"]) & (sub["sma50"] > sub["sma200"]) &
-        (sub["ext_sma50"] <= 0.20) &  # Anti-climax extension cap
+        (sub["ext_sma50"] <= 0.20) &  # Anti-climax extension cap (<= 20% above 50 SMA)
         (sub["Close"] > sub["r20"]) &
+        (sub["clearance_atr"] >= 0.10) &  # Steel: ATR clearance hurdle against false wicks
         (sub["ret20"] > 0)
     )
     passed = sub[m].copy()
-    # Blended score: momentum + volume surge + ADR
-    passed["score"] = passed["ret20"] * 0.4 + (passed["rvol20"] / 5.0) * 0.3 + (passed["adr20"] * 10.0) * 0.3
+    # Steel: Blended score rewarding ATR clearance, volume thrust, ADR quality, and shelf consolidation touches
+    shelf_bonus = np.clip(passed["shelf_touches_20"], 0, 4) * 0.10
+    passed["score"] = passed["ret20"] * 0.35 + (passed["rvol20"] / 5.0) * 0.35 + (passed["adr20"] * 10.0) * 0.15 + shelf_bonus
     ranked = passed.sort_values("score", ascending=False).head(top_n)
     return [
         ScreenerResult("PROTOCOL_V2", r["Symbol"], r["Close"], r["rvol20"], r["ret20"], r["adr20"], r["ext_sma50"], r["score"])
