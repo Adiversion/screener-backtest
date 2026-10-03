@@ -21,29 +21,33 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from protocol.dashboard_data import build_candidate_data  # noqa: E402
-from protocol.dashboard_html import get_dashboard_html  # noqa: E402
+from protocol.dashboard_html import get_dashboard_html, get_paper_trading_html  # noqa: E402
 from protocol.data import load_history  # noqa: E402
 
 
 def build_app(data_path: str, asof_date: str = "2026-10-01", outdir: str = "reports") -> Path:
-    """Build and write the interactive screener web app to reports/ and docs/."""
+    """Build and write interactive screener and paper trading station to reports/ and docs/."""
     df = load_history(data_path)
     app_data = build_candidate_data(df, asof_date=asof_date)
-    html = get_dashboard_html(app_data)
+    screener_html = get_dashboard_html(app_data)
+    paper_html = get_paper_trading_html(app_data)
 
     out = Path(outdir)
     out.mkdir(parents=True, exist_ok=True)
     target_files = [
-        out / "index.html",
-        out / "interactive_screener.html",
-        ROOT / "docs" / "index.html",
+        (out / "index.html", screener_html),
+        (out / "interactive_screener.html", screener_html),
+        (ROOT / "docs" / "index.html", screener_html),
+        (out / "paper_trading.html", paper_html),
+        (ROOT / "docs" / "paper_trading.html", paper_html),
     ]
-    for p in target_files:
+    for p, content in target_files:
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(html, encoding="utf-8")
+        p.write_text(content, encoding="utf-8")
 
-    print(f"Interactive website successfully built -> {out / 'index.html'} and docs/index.html")
+    print(f"Interactive website successfully built -> {out / 'index.html'} and {out / 'paper_trading.html'}")
     return out / "index.html"
+
 
 
 def main() -> int:
