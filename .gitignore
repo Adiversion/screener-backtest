@@ -18,3 +18,4 @@ reports/*.parquet
 reports/*.bak
 reports/trades_*.csv
 *.bak
+data/sec_list_[0-9]*.csv

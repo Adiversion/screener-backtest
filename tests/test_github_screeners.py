@@ -13,6 +13,7 @@ from protocol.github_screeners import (
     screen_pkscreener_vcp,
     screen_protocol_v2,
     screen_qullamaggie,
+    screen_relative_strength,
 )
 
 
@@ -77,6 +78,12 @@ class TestGitHubScreeners(unittest.TestCase):
     def test_protocol_v2_screen(self):
         feat = compute_screener_features(self.df, self.asof)
         picks = screen_protocol_v2(feat, top_n=5, min_turnover_cr=0.01)
+        self.assertEqual(len(picks), 1)
+        self.assertEqual(picks[0].symbol, "UPTREND")
+
+    def test_relative_strength_screen(self):
+        feat = compute_screener_features(self.df, self.asof)
+        picks = screen_relative_strength(feat, top_n=5, min_turnover_cr=0.01)
         self.assertEqual(len(picks), 1)
         self.assertEqual(picks[0].symbol, "UPTREND")
 

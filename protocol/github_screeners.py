@@ -76,6 +76,9 @@ def compute_screener_features(sub_history: pd.DataFrame, asof_date: pd.Timestamp
         turnover20 = float(np.mean(c[-20:] * v[-20:]))
         ret20 = float((c[-1] / c[-21]) - 1.0) if len(c) >= 21 else 0.0
         ret60 = float((c[-1] / c[-61]) - 1.0) if len(c) >= 61 else 0.0
+        ret120 = float((c[-1] / c[-121]) - 1.0) if len(c) >= 121 else ret60
+        ret252 = float((c[-1] / c[-253]) - 1.0) if len(c) >= 253 else ret120
+        rs_raw = 0.4 * ret252 + 0.2 * ret120 + 0.2 * ret60 + 0.2 * ret20
 
         # Base volume dry up (prior 3 sessions minimum volume vs 20d avg)
         pre_vol_min = float(np.min(v[-4:-1]) / vol_mean20) if len(v) >= 4 and vol_mean20 > 0 else 1.0
@@ -88,10 +91,32 @@ def compute_screener_features(sub_history: pd.DataFrame, asof_date: pd.Timestamp
             "sma200_1m": sma200_1m, "ema10": ema10, "ema20": ema20, "rvol20": rvol20,
             "rvol50": rvol50, "r10": r10, "r20": r20, "h52": h52, "l52": l52,
             "adr20": adr20, "turnover20": turnover20, "ret20": ret20, "ret60": ret60,
+            "ret120": ret120, "ret252": ret252, "rs_raw": rs_raw,
             "pre_vol_min": pre_vol_min, "range20": range20, "range60": range60,
             "ext_sma50": (close_now - sma50) / sma50 if sma50 > 0 else 0.0,
         })
-    return pd.DataFrame(records)
+    res_df = pd.DataFrame(records)
+    if not res_df.empty and "rs_raw" in res_df.columns:
+        res_df["rs_rating"] = (res_df["rs_raw"].rank(pct=True) * 100).round(1)
+    return res_df
+
+
+def screen_relative_strength(df: pd.DataFrame, top_n: int = 10, min_turnover_cr: float = 1.0) -> list[ScreenerResult]:
+    """Comparative Relative Strength Leader Screener (William O'Neil / Mansfield RS)."""
+    sub = df[df["turnover20"] >= min_turnover_cr * 1e7].copy()
+    m = (
+        (sub["Close"] > sub["sma50"]) & (sub["sma50"] > sub["sma200"]) &
+        (sub["rs_rating"] >= 80.0) &
+        (sub["ext_sma50"] <= 0.25) &
+        (sub["ret60"] > 0)
+    )
+    passed = sub[m].copy()
+    passed["score"] = passed["rs_rating"]
+    ranked = passed.sort_values("score", ascending=False).head(top_n)
+    return [
+        ScreenerResult("RELATIVE_STRENGTH", r["Symbol"], r["Close"], r["rvol20"], r["ret20"], r["adr20"], r["ext_sma50"], r["score"])
+        for _, r in ranked.iterrows()
+    ]
 
 
 def screen_minervini(df: pd.DataFrame, top_n: int = 10, min_turnover_cr: float = 1.0) -> list[ScreenerResult]:

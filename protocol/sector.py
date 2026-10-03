@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SECTOR_FILE = ROOT / "data" / "sector_map.csv"
 
 _CACHE: dict[str, str] | None = None
+_COMPANY_CACHE: dict[str, str] | None = None
 
 
 def get_sector_map() -> dict[str, str]:
@@ -32,6 +33,35 @@ def get_sector(symbol: str) -> str:
     """Return the industry for a symbol, or 'Unknown'."""
     smap = get_sector_map()
     return smap.get(symbol.strip().upper(), "Unknown")
+
+
+def get_company_map() -> dict[str, str]:
+    """Map of Symbol -> Official Company Name."""
+    global _COMPANY_CACHE
+    if _COMPANY_CACHE is not None:
+        return _COMPANY_CACHE
+    _COMPANY_CACHE = {}
+    master_file = ROOT / "data" / "nse_equity_master.parquet"
+    if master_file.exists():
+        try:
+            mdf = pd.read_parquet(master_file)
+            _COMPANY_CACHE.update(dict(zip(mdf["symbol"].astype(str), mdf["name"].astype(str))))
+        except Exception:
+            pass
+    if SECTOR_FILE.exists():
+        try:
+            sdf = pd.read_csv(SECTOR_FILE)
+            if "Company" in sdf.columns:
+                _COMPANY_CACHE.update(dict(zip(sdf["Symbol"].astype(str), sdf["Company"].astype(str))))
+        except Exception:
+            pass
+    return _COMPANY_CACHE
+
+
+def get_company_name(symbol: str) -> str:
+    """Return the official company name for a symbol."""
+    cmap = get_company_map()
+    return cmap.get(symbol.strip().upper(), symbol)
 
 
 def apply_sector_diversification(

@@ -45,6 +45,10 @@ jobs:
         continue-on-error: true
         run: python scripts/fetch_delivery.py --days 40
 
+      - name: Refresh NSE supplementary annex (board meetings, actions, surveillance)
+        continue-on-error: true
+        run: python scripts/fetch_nse_annex.py
+
       # The site scores EVERY listed NSE cash equity, so it needs the wide file,
       # not the 499-name Nifty-500 one. yfinance is the single price source on
       # purpose: NSE bhavcopy prices are RAW, and appending raw bars onto an
