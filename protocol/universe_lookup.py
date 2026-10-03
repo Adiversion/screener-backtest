@@ -182,12 +182,13 @@ def build_universe_lookup(
         })
 
         # Wyckoff Auction State
+        range_atr = round((high - low) / atr, 2)
         if high > r20 and close < r20 and cr <= 0.35:
-            pa_state = "State D: Intraday Upthrust / Failed Acceptance"
+            pa_state = "State D: Failed Acceptance Above Resistance"
             wyckoff_narrative = (
-                f"Intraday probe above prior pivot ₹{r20:.2f} touched session high ₹{high:.2f}, but supply absorbed "
-                f"buying demand, driving close down to ₹{close:.2f} (Closing Range {cr * 100:.1f}%, 0% retention). "
-                f"Breakout unconfirmed; requires secondary absorption and higher close."
+                f"Intraday probe above prior pivot ₹{r20:.2f} touched session high ₹{high:.2f}, but price rejected above "
+                f"the prior pivot and closed near the session low at ₹{close:.2f} (Closing Range {cr * 100:.1f}%, 0% retention, "
+                f"Day Range {range_atr}x ATR), indicating failed acceptance above resistance. Breakout unconfirmed on the tape."
             )
         elif close >= r20 and cr >= 0.60:
             pa_state = "State A: Accepted Expansion"
@@ -206,11 +207,12 @@ def build_universe_lookup(
             status = "QUALIFIED_SETUP"
             gameplan = f"Active buy candidate. Execute breakout entry at ₹{close:.2f} with stop at ₹{inval_stop:.2f}."
         elif close > sma50 and sma50 > sma200:
-            status = "WATCHLIST_NO_SETUP"
+            status = "WATCHLIST_PIVOT_UNCONFIRMED"
+            deliv_obs = f"Security delivery rate ({dp:.1f}%) indicates low participation relative to historical distribution. " if dp > 0 else ""
             gameplan = (
-                f"Macro Stage 2 trend remains structurally intact, but October 1 breakout attempt lacked volume confirmation and price acceptance. "
-                f"Wait for a daily close holding above ₹{r20:.2f}–₹{high:.2f} on volume >= {max(1.4, rvol * 1.5):.1f}x. "
-                f"Immediate dynamic support aligns at 10 EMA (₹{ema10:.2f}) and 20 EMA (₹{ema20:.2f})."
+                f"Macro Stage 2 trend and relative strength remain intact, but session breakout attempt lacked volume confirmation (RVOL {rvol:.2f}x) and price acceptance. {deliv_obs}"
+                f"Confirmation condition: Subsequent daily close holding above ₹{r20:.2f}–₹{high:.2f} on volume >= {max(1.4, rvol * 1.5):.1f}x with successful hold of the breakout zone. "
+                f"Dynamic support aligns at 10 EMA (₹{ema10:.2f}) and 20 EMA (₹{ema20:.2f})."
             )
         else:
             status = "STAGE_4_AVOID"

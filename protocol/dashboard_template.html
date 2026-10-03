@@ -1751,10 +1751,22 @@ function render() {
 
   if (matchedLookup && inspectorBox) {
     const isCand = matchedLookup.is_cand;
-    const statusBg = isCand ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)';
-    const statusColor = isCand ? '#34d399' : '#f87171';
-    const statusBorder = isCand ? 'rgba(16,185,129,0.35)' : 'rgba(239,68,68,0.35)';
-    const statusLabel = isCand ? 'QUALIFIED BUY CANDIDATE' : 'WATCHLIST / NOT A BUY SETUP TODAY';
+    let statusBg = 'rgba(245,158,11,0.15)';
+    let statusColor = '#fbbf24';
+    let statusBorder = 'rgba(245,158,11,0.35)';
+    let statusLabel = 'WATCHLIST / PIVOT UNCONFIRMED';
+
+    if (isCand) {
+      statusBg = 'rgba(16,185,129,0.15)';
+      statusColor = '#34d399';
+      statusBorder = 'rgba(16,185,129,0.35)';
+      statusLabel = 'CONFIRMED BREAKOUT SETUP';
+    } else if (matchedLookup.status === 'STAGE_4_AVOID') {
+      statusBg = 'rgba(239,68,68,0.15)';
+      statusColor = '#f87171';
+      statusBorder = 'rgba(239,68,68,0.35)';
+      statusLabel = 'STAGE 4 DOWNTREND (NON-QUALIFIED)';
+    }
 
     const fwHtml = (matchedLookup.frameworks || []).map(f => {
       const passCls = f.passed ? 'background:rgba(16,185,129,0.12);color:#34d399;border:1px solid rgba(16,185,129,0.3);' : 'background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.25);';
@@ -1762,7 +1774,7 @@ function render() {
       return `<div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:0.78rem;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
           <strong style="color:#f1f5f9;">${f.name}</strong>
-          <span style="padding:1px 6px;border-radius:4px;font-weight:700;font-size:0.68rem;${passCls}">${icon} ${f.passed ? 'PASS' : 'FAIL'}</span>
+          <span style="padding:1px 6px;border-radius:4px;font-weight:700;font-size:0.68rem;${passCls}">${icon} ${f.passed ? 'QUALIFIED' : 'RULE FAILED'}</span>
         </div>
         <div style="color:${f.passed ? '#94a3b8' : '#cbd5e1'};line-height:1.35;font-size:0.74rem;">${f.verdict}</div>
       </div>`;
