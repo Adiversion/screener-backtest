@@ -62,43 +62,412 @@
     padding: 0;
   }
 
-  /* Top Navigation & App Bar */
-  header {
+  /* Persistent Glassmorphic Navigation Bar */
+  header.app-nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    background: rgba(7, 9, 14, 0.90);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    margin: -16px -20px 20px -20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
     gap: 16px;
-    margin-bottom: 22px;
-    padding-bottom: 18px;
-    border-bottom: 1px solid var(--border);
+    transition: all 0.25s ease;
   }
 
-  .brand-group h1 {
-    font-size: 1.55rem;
+  .nav-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .brand-logo-mark {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(56, 139, 253, 0.25) 0%, rgba(139, 92, 246, 0.25) 100%);
+    border: 1px solid rgba(56, 139, 253, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    box-shadow: 0 0 16px rgba(56, 139, 253, 0.2);
+    user-select: none;
+  }
+
+  .brand-text h1 {
+    font-size: 1.15rem;
     font-weight: 800;
     letter-spacing: -0.03em;
     background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    line-height: 1.2;
   }
 
-  .brand-group p {
-    font-size: 0.82rem;
+  .brand-text p {
+    font-size: 0.72rem;
     color: var(--text-secondary);
-    margin-top: 3px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
   }
 
   .session-pill {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--border);
-    padding: 2px 8px;
-    border-radius: 6px;
+    padding: 2px 7px;
+    border-radius: 5px;
     color: #e2e8f0;
     font-weight: 600;
+    font-size: 0.72rem;
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .nav-links-desktop {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .nav-link-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: #94a3b8;
+    padding: 6px 11px;
+    border-radius: 6px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .nav-link-btn:hover {
+    color: #f8fafc;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--border);
+  }
+
+  .nav-link-btn.highlight {
+    color: #fbbf24;
+    border-color: rgba(251, 191, 36, 0.3);
+    background: rgba(251, 191, 36, 0.08);
+  }
+
+  .nav-link-btn.highlight:hover {
+    background: rgba(251, 191, 36, 0.16);
+    border-color: #fbbf24;
+    color: #ffffff;
+  }
+
+  .mobile-menu-btn {
+    display: none;
+    width: 44px;
+    height: 44px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: #f8fafc;
+    font-size: 1.25rem;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-menu-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--blue);
+  }
+
+  @media (max-width: 960px) {
+    .nav-links-desktop { display: none; }
+    .mobile-menu-btn { display: flex; }
+  }
+
+  /* Mobile Drawer Menu */
+  .drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 200;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+
+  .drawer-panel {
+    position: fixed;
+    top: 0;
+    right: -320px;
+    width: 300px;
+    height: 100vh;
+    background: #0d131f;
+    border-left: 1px solid var(--border);
+    z-index: 201;
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.7);
+  }
+
+  .drawer-overlay.open {
+    display: block;
+    opacity: 1;
+  }
+
+  .drawer-panel.open {
+    right: 0;
+  }
+
+  .drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .drawer-close {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    color: #94a3b8;
+    cursor: pointer;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .drawer-links {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 20px;
+    overflow-y: auto;
+  }
+
+  .drawer-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    min-height: 44px;
+    border-radius: 8px;
+    color: #cbd5e1;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.88rem;
+    transition: all 0.2s ease;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid transparent;
+  }
+
+  .drawer-link:hover, .drawer-link:active {
+    background: rgba(56, 139, 253, 0.12);
+    border-color: var(--blue);
+    color: #ffffff;
+  }
+
+  /* Cinematic Hero Story Banner */
+  .hero-banner {
+    position: relative;
+    padding: 24px 28px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.7) 0%, rgba(10, 15, 28, 0.9) 100%);
+    border: 1px solid var(--border);
+    margin-bottom: 22px;
+    overflow: hidden;
+    box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.5);
+  }
+
+  .hero-banner::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -20%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(56, 139, 253, 0.12) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    background: rgba(56, 139, 253, 0.12);
+    border: 1px solid rgba(56, 139, 253, 0.3);
+    color: #38bdf8;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .hero-heading {
+    font-size: 1.55rem;
+    font-weight: 800;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    color: #ffffff;
+    margin-bottom: 8px;
+  }
+
+  .hero-sub {
+    font-size: 0.88rem;
+    color: #94a3b8;
+    max-width: 880px;
+    line-height: 1.55;
+    margin-bottom: 16px;
+  }
+
+  .hero-ribbon {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .ribbon-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: #cbd5e1;
+  }
+
+  /* View Switcher: Table vs Cards */
+  .view-switch {
+    display: inline-flex;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2px;
+    gap: 2px;
+  }
+
+  .view-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .view-btn.active {
+    background: var(--blue);
+    color: #ffffff;
+  }
+
+  /* Mobile / Visual Stock Cards Grid */
+  .stock-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 14px;
+    width: 100%;
+  }
+
+  .stock-card {
+    background: var(--surface);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 12px;
+    transition: all 0.2s ease;
+    box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.4);
+  }
+
+  .stock-card:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px -8px rgba(56, 139, 253, 0.25);
+  }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .card-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
+    padding: 10px;
+  }
+
+  .card-metric-cell {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card-metric-label {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .card-metric-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: #f8fafc;
+    margin-top: 2px;
+  }
+
+  /* Sticky Column and Header */
+  thead th {
+    position: sticky;
+    top: 60px;
+    z-index: 10;
   }
 
   .regime-badge {
@@ -762,22 +1131,83 @@
 <body>
 <div class="container">
 
-  <!-- Header -->
-  <header>
-    <div class="brand-group">
-      <h1>NSE Quantitative Screener & Allocation Engine</h1>
-      <p>
-        <span>Active As-Of Session:</span>
-        <span class="session-pill mono" id="asofDate">2026-10-01</span>
-        <span>•</span>
-        <span>Institutional Multi-Framework Engine</span>
-      </p>
+  <!-- Persistent Glassmorphic Navigation Bar -->
+  <header class="app-nav">
+    <div class="nav-left">
+      <div class="brand-logo-mark">⟁</div>
+      <div class="brand-text">
+        <h1>ASTRA QUANT • NSE BREAKOUT CORE</h1>
+        <p>
+          <span>As-Of Session:</span>
+          <span class="session-pill mono" id="asofDate">2026-10-01</span>
+          <span>•</span>
+          <span>7-Framework Engine</span>
+        </p>
+      </div>
     </div>
-    <div id="regimeBadge" class="regime-badge defensive">
-      <span class="pulse-dot"></span>
-      <span id="regimeBadgeText">DEFENSIVE (CASH)</span>
+
+    <div class="nav-right">
+      <div class="nav-links-desktop">
+        <a href="#macroSection" class="nav-link-btn" onclick="scrollToSection('directiveTile')">🛡️ Macro HUD</a>
+        <a href="#inspectorSection" class="nav-link-btn" onclick="focusSearch()">🔍 Inspector</a>
+        <a href="#screenerSection" class="nav-link-btn" onclick="scrollToSection('toolbarSection')">🎯 Screener</a>
+        <button class="nav-link-btn highlight" onclick="openUsicModal()">🏆 USIC Playbook</button>
+        <button class="nav-link-btn" onclick="openPrinciplesModal()">🏛️ Quant Truths</button>
+      </div>
+
+      <div id="regimeBadge" class="regime-badge defensive">
+        <span class="pulse-dot"></span>
+        <span id="regimeBadgeText">DEFENSIVE (CASH)</span>
+      </div>
+
+      <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle navigation menu">☰</button>
     </div>
   </header>
+
+  <!-- Mobile Slide-Out Drawer -->
+  <div id="mobileDrawerOverlay" class="drawer-overlay" onclick="closeMobileMenu()"></div>
+  <div id="mobileDrawer" class="drawer-panel">
+    <div>
+      <div class="drawer-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="brand-logo-mark" style="width:32px;height:32px;font-size:1rem;">⟁</div>
+          <strong style="color:#ffffff;font-size:1rem;">ASTRA QUANT</strong>
+        </div>
+        <div class="drawer-close" onclick="closeMobileMenu()">&times;</div>
+      </div>
+      <div class="drawer-links">
+        <a href="javascript:void(0)" class="drawer-link" onclick="closeMobileMenu();scrollToSection('directiveTile');">🛡️ Macro Regime & Breadth</a>
+        <a href="javascript:void(0)" class="drawer-link" onclick="closeMobileMenu();focusSearch();">🔍 Universal Stock Inspector</a>
+        <a href="javascript:void(0)" class="drawer-link" onclick="closeMobileMenu();scrollToSection('toolbarSection');">🎯 Qualified Breakouts Screener</a>
+        <a href="javascript:void(0)" class="drawer-link" style="color:#fbbf24;" onclick="closeMobileMenu();openUsicModal();">🏆 USIC Champions Playbook (+1,499%)</a>
+        <a href="javascript:void(0)" class="drawer-link" onclick="closeMobileMenu();openPrinciplesModal();">🏛️ 5 Institutional Quant Truths</a>
+        <a href="javascript:void(0)" class="drawer-link" onclick="closeMobileMenu();openWyckoffGuideModal();">🌊 Wyckoff Effort & Result Guide</a>
+        <a href="javascript:void(0)" class="drawer-link" onclick="closeMobileMenu();openRsGuideModal();">⚡ Relative Strength Edge Guide</a>
+        <a href="javascript:void(0)" class="drawer-link" onclick="closeMobileMenu();openNseGuideModal();">⏱️ NSE 6-Feed Timing & Surveillance</a>
+        <a href="javascript:void(0)" class="drawer-link" onclick="closeMobileMenu();openCaseStudyModal();">📖 JINDALPOLY Case Study</a>
+      </div>
+    </div>
+    <div style="font-size:0.75rem;color:var(--text-muted);border-top:1px solid var(--border);padding-top:12px;">
+      <div>NSE Causal Breakout Architecture</div>
+      <div>Zero Lookahead Bias • Real-time VSA</div>
+    </div>
+  </div>
+
+  <!-- Cinematic Hero Story Banner -->
+  <div class="hero-banner">
+    <div class="hero-badge">⟁ INSTITUTIONAL BREAKOUT ARCHITECTURE • 7 AUDITED GATES</div>
+    <h2 class="hero-heading">Algorithmic Breakout Detection & Wyckoff Order Flow Engine</h2>
+    <p class="hero-sub">
+      Causal daily auction surveillance across the 2,000+ NSE cash equity universe. Engineered with Mark Minervini SEPA, William O'Neil CANSLIM, Kristjan Qullamaggie High-Tight Flags, and Stan Weinstein Stage 2 momentum protocols.
+    </p>
+    <div class="hero-ribbon">
+      <div class="ribbon-chip"><span>⚡</span> <b>2,000+</b> NSE Universe Monitored</div>
+      <div class="ribbon-chip"><span>🛡️</span> <b>Zero</b> Lookahead Bias (Strict Causal .shift(1))</div>
+      <div class="ribbon-chip"><span>🌊</span> <b>Wyckoff</b> Closing Range & Volume-Spread VSA</div>
+      <div class="ribbon-chip"><span>🏛️</span> <b>Demat Delivery &ge;50%</b> Absorption Hurdle</div>
+      <div class="ribbon-chip"><span>⚖️</span> <b>Dynamic</b> Risk Parity & Capital Sizing</div>
+    </div>
+  </div>
 
   <!-- Bento HUD (Market Directive & Primary KPIs) -->
   <div class="bento-hud">
@@ -835,6 +1265,7 @@
 
   <!-- Quick Institutional Insights Bar -->
   <div class="quick-links">
+    <button class="btn-chip" onclick="openUsicModal()" style="border-color:rgba(251,191,36,0.4);color:#fbbf24;background:rgba(251,191,36,0.08);"><span>🏆</span> USIC Champions Playbook (+1,499%)</button>
     <button class="btn-chip" onclick="openPrinciplesModal()"><span>🏛️</span> 5 Institutional Quant Truths</button>
     <button class="btn-chip" onclick="openRsGuideModal()"><span>⚡</span> Why Relative Strength Beats 20-Day Return</button>
     <button class="btn-chip" onclick="openWyckoffGuideModal()"><span>🌊</span> Wyckoff Effort vs Result & Price Acceptance</button>
@@ -843,7 +1274,7 @@
   </div>
 
   <!-- Interactive Command Toolbar -->
-  <div class="toolbar">
+  <div class="toolbar" id="toolbarSection">
     <div class="search-wrapper">
       <span class="search-icon">🔍</span>
       <input type="text" id="searchBox" class="search-input" placeholder="Search by Symbol, Company Name, or Industry Sector..."/>
@@ -891,13 +1322,18 @@
       <button class="cap-chip" onclick="setCapital(500000)">₹5L</button>
       <input type="number" id="capInput" class="cap-custom-input" value="100000" step="10000"/>
     </div>
+
+    <div class="view-switch">
+      <button id="viewTableBtn" class="view-btn active" onclick="setViewMode('table')">📊 Table</button>
+      <button id="viewCardsBtn" class="view-btn" onclick="setViewMode('cards')">🎴 Cards</button>
+    </div>
   </div>
 
   <!-- Universal Stock Inspector Card -->
   <div id="stockInspectorCard" style="display:none;margin-bottom:16px;"></div>
 
   <!-- Financial Table Card -->
-  <div class="table-card">
+  <div class="table-card" id="tableCard">
     <div class="table-scroll">
       <table>
         <thead>
@@ -921,6 +1357,9 @@
       </table>
     </div>
   </div>
+
+  <!-- Mobile / Visual Stock Cards View -->
+  <div id="cardsView" class="stock-cards-grid" style="display:none;margin-bottom:24px;"></div>
 
 </div>
 
@@ -1106,6 +1545,79 @@
     <div class="content-narrative">
       <h3 style="color:#fbbf24;font-size:0.95rem;margin-bottom:6px;">3. Support & Resistance Memory (protocol/levels.py)</h3>
       <p>Most screeners only track 52-week highs. Our engine tracks <b>Durable Highs</b> spanning 1 to 3 years (260 to 760 sessions), alerting when a stock breaks out over multi-year ceilings that standard rolling windows forget.</p>
+    </div>
+  </div>
+</div>
+
+<!-- USIC Champions Playbook Modal -->
+<div id="usicModal" class="modal-overlay" onclick="if(event.target===this)closeModal('usicModal')">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div>
+        <h2 style="font-size:1.35rem;font-weight:800;color:#fbbf24;display:flex;align-items:center;gap:8px;">
+          <span>🏆</span> United States Investing Championship (USIC) Playbook
+        </h2>
+        <div style="color:var(--text-secondary);font-size:0.82rem;margin-top:2px;">
+          Audited strategies of verified top performers (+1,499% to +941%) & algorithmic screener mapping
+        </div>
+      </div>
+      <div class="close-icon" onclick="closeModal('usicModal')">&times;</div>
+    </div>
+
+    <!-- Law Wai-Sum -->
+    <div class="content-narrative" style="margin-bottom:14px;border-left:3px solid #fbbf24;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;">
+        <h3 style="color:#fbbf24;font-size:1.02rem;">1. Law Wai-Sum: +1,499% 2-Year Return ($1,000,000+ Division)</h3>
+        <span class="session-pill mono" style="color:#34d399;font-weight:700;">Verified USIC Winner</span>
+      </div>
+      <p style="margin-top:6px;line-height:1.6;">
+        <b>Strategy Architecture:</b> Pure Minervini SEPA (Specific Entry Point Analysis) + Macro Stage 2 Concentration.
+      </p>
+      <ul style="margin:8px 0 0 20px;line-height:1.7;">
+        <li><b>Low Frequency, High Concentration:</b> Unlike retail day traders churning dozens of random tickers, Law Wai-Sum concentrates capital in only 3 to 5 premier high-relative-strength market leaders.</li>
+        <li><b>Strict 3%–5% Risk Protocol:</b> Cuts losses unconditionally. Never holds through earnings or hopes for a rebound when an initial breakout stalls.</li>
+        <li><b>Moving Average Extension Veto:</b> Never chases a stock that is &gt;15–20% extended from its 50-day moving average. Trapped buyers at the highs create the overhead supply that crashes failed breakouts.</li>
+      </ul>
+    </div>
+
+    <!-- Martin Luk -->
+    <div class="content-narrative" style="margin-bottom:14px;border-left:3px solid #38bdf8;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;">
+        <h3 style="color:#38bdf8;font-size:1.02rem;">2. Martin Luk: +969.8% 1-Year Return ($20,000+ Division)</h3>
+        <span class="session-pill mono" style="color:#38bdf8;font-weight:700;">Verified USIC Winner</span>
+      </div>
+      <p style="margin-top:6px;line-height:1.6;">
+        <b>Strategy Architecture:</b> Volume-Spread Analysis (VSA), Wyckoff Order Flow Auction Dynamics, and High ADR% Momentum.
+      </p>
+      <ul style="margin:8px 0 0 20px;line-height:1.7;">
+        <li><b>Closing Range (CR) Rule:</b> Breakouts must close in the top 30% of the daily candle (CR &ge; 70%). A candle that wicks down to close in the lower half (like SYRMA's 6.9% CR) is an instant disqualification (Effort vs Result Churn / Upthrust Trap).</li>
+        <li><b>Institutional Volume Hurdle:</b> Requires RVOL &ge; 1.4x to confirm institutional sponsorship. Low-volume surges represent retail drift, not institutional accumulation.</li>
+        <li><b>Multi-Touch Resistance Shelves:</b> Prioritizes bases where overhead resistance was tested 2 to 4 times prior to the expansion bar, ensuring all loose hands were absorbed.</li>
+      </ul>
+    </div>
+
+    <!-- Oliver Kell & Qullamaggie -->
+    <div class="content-narrative" style="margin-bottom:14px;border-left:3px solid #34d399;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;">
+        <h3 style="color:#34d399;font-size:1.02rem;">3. Oliver Kell (+941%) & Kristjan Qullamaggie</h3>
+        <span class="session-pill mono" style="color:#c084fc;font-weight:700;">Elite Momentum Models</span>
+      </div>
+      <p style="margin-top:6px;line-height:1.6;">
+        <b>Strategy Architecture:</b> High-Tight Flags (HTF), Episodic Pivots (EP), and 10 EMA / 20 EMA Moving Average Surfing.
+      </p>
+      <ul style="margin:8px 0 0 20px;line-height:1.7;">
+        <li><b>The Cheat Entry:</b> When a stock fails an initial breakout attempt, do not buy into the dump. Wait for price to pull back to the rising 10 EMA or 20 EMA on contracting volume, then buy the reclamation candle with a tight stop just below the low.</li>
+        <li><b>Progressive Exposure:</b> Start with half position sizes. Only add more capital when open positions are showing profits and the broader market regime is healthy.</li>
+      </ul>
+    </div>
+
+    <!-- Screener Alignment -->
+    <div class="content-narrative" style="border-left:3px solid #c084fc;">
+      <h3 style="color:#c084fc;font-size:1.02rem;">How Our Screener Codifies Their Rules</h3>
+      <p style="margin-top:6px;line-height:1.6;">
+        Our screener embeds every single one of these champion rules directly into automated mathematical gates:
+        <b>RVOL &ge; 1.4x</b> (Martin Luk), <b>RS &ge; 80</b> (Law Wai-Sum), <b>50 SMA Extension &le; 20%</b> (Minervini), <b>Closing Range &ge; 65%</b> (Wyckoff), and <b>Cash Preservation in Defensive Regimes</b> (Mark Minervini SEPA).
+      </p>
     </div>
   </div>
 </div>
@@ -1326,15 +1838,30 @@ function render() {
   }
 
   const tb = document.getElementById('tableBody');
+  const cardsContainer = document.getElementById('cardsView');
+  const tableCardEl = document.getElementById('tableCard');
+
   if (filtered.length === 0) {
-    tb.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:48px 20px;color:var(--text-muted);font-size:0.95rem;">
-      <div style="font-size:1.8rem;margin-bottom:8px;">🔍</div>
-      <div style="font-weight:600;color:#f1f5f9;margin-bottom:4px;">No qualified breakout candidates match your current search/filters.</div>
-      <div style="font-size:0.85rem;color:#94a3b8;">${matchedLookup ? 'Universal stock inspection for ' + matchedLookup.symbol + ' is displayed above.' : 'Try adjusting the search query, strategy, or setup filters.'}</div>
-    </td></tr>`;
+    const emptyMsg = `
+      <div style="text-align:center;padding:48px 20px;color:var(--text-muted);font-size:0.95rem;grid-column:1/-1;">
+        <div style="font-size:1.8rem;margin-bottom:8px;">🔍</div>
+        <div style="font-weight:600;color:#f1f5f9;margin-bottom:4px;">No qualified breakout candidates match your current search/filters.</div>
+        <div style="font-size:0.85rem;color:#94a3b8;">${matchedLookup ? 'Universal stock inspection for ' + matchedLookup.symbol + ' is displayed above.' : 'Try adjusting the search query, strategy, or setup filters.'}</div>
+      </div>
+    `;
+    tb.innerHTML = `<tr><td colspan="13">${emptyMsg}</td></tr>`;
+    if (cardsContainer) cardsContainer.innerHTML = emptyMsg;
+    if (viewMode === 'table') {
+      tableCardEl.style.display = 'block';
+      if (cardsContainer) cardsContainer.style.display = 'none';
+    } else {
+      tableCardEl.style.display = 'none';
+      if (cardsContainer) cardsContainer.style.display = 'grid';
+    }
     return;
   }
 
+  // 1. Table Rows Rendering
   tb.innerHTML = filtered.map((c, i) => {
     const shares = Math.floor(cap / c.close);
     const sharesHtml = shares > 0 ? `<span class="shares-val">${shares}</span>` : `<span style="color:var(--text-muted);font-size:0.78rem;">0 <small>(&gt;Cap)</small></span>`;
@@ -1422,6 +1949,156 @@ function render() {
       </td>
     </tr>`;
   }).join('');
+
+  // 2. Mobile Visual Cards Rendering
+  if (cardsContainer) {
+    cardsContainer.innerHTML = filtered.map((c, i) => {
+      const shares = Math.floor(cap / c.close);
+      const sharesHtml = shares > 0 ? `<b class="mono" style="color:#10b981;">${shares}</b>` : `<span style="color:var(--text-muted);font-size:0.75rem;">0 (&gt;Cap)</span>`;
+      const infusion = shares * c.close;
+      const risk = shares * (c.close - c.stop);
+      const infStr = infusion > 0 ? '₹' + infusion.toLocaleString('en-IN', {maximumFractionDigits: 0}) : '₹0';
+      const riskStr = risk > 0 ? '₹' + risk.toLocaleString('en-IN', {maximumFractionDigits: 0}) : '₹0';
+
+      const stratTags = c.strategies.map(s => {
+        let cls = 'protocol';
+        let shortName = s;
+        if (s.includes('Minervini')) { cls = 'minervini'; shortName = 'Minervini'; }
+        else if (s.includes('Weinstein')) { cls = 'weinstein'; shortName = 'Weinstein Stage 2'; }
+        else if (s.includes('Relative Strength')) { cls = 'rs'; shortName = 'RS Leader'; }
+        else if (s.includes('Qullamaggie')) { cls = 'qullamaggie'; shortName = 'Qullamaggie'; }
+        else if (s.includes('CANSLIM')) { cls = 'canslim'; shortName = 'CANSLIM'; }
+        else if (s.includes('PKScreener')) { cls = 'pkscreener'; shortName = 'PKScreener VCP'; }
+        else if (s.includes('Protocol')) { shortName = 'Protocol Fortified'; }
+        return `<span class="strat-tag ${cls}">${shortName}</span>`;
+      }).join('');
+
+      let alertBadges = '';
+      if (c.series === 'BE' || c.is_t2t) {
+        alertBadges += '<span class="badge-pill warning-be" title="Trade for Trade">⚠️ BE</span>';
+      }
+      if (c.has_earnings_soon) {
+        alertBadges += '<span class="badge-pill warning-earnings">⚠️ Earnings</span>';
+      }
+      if (c.breakout_type === '52-Week High Breakout') {
+        alertBadges += '<span class="badge-pill ath">52W High</span>';
+      }
+      if (c.wyckoff && c.wyckoff.shelf_touches >= 2) {
+        alertBadges += `<span class="badge-pill" style="background:rgba(168,85,247,0.15);color:#c084fc;border:1px solid rgba(168,85,247,0.35);">${c.wyckoff.shelf_touches}x Shelf</span>`;
+      }
+      if (c.wyckoff && c.wyckoff.wyckoff_badge === 'WYCKOFF ABSORPTION') {
+        alertBadges += '<span class="badge-pill" style="background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.35);">Absorption</span>';
+      } else if (c.wyckoff && c.wyckoff.wyckoff_badge === 'SUPPLY VACUUM GLIDE') {
+        alertBadges += '<span class="badge-pill" style="background:rgba(6,182,212,0.15);color:#22d3ee;border:1px solid rgba(6,182,212,0.35);">Vacuum</span>';
+      }
+
+      const delivHighlight = c.deliv_pct >= 50 ? 'color:#22d3ee;font-weight:700;' : '';
+      const extColor = c.is_extended ? 'color:#f43f5e;font-weight:700;' : 'color:#10b981;';
+
+      return `
+        <div class="stock-card">
+          <div>
+            <div class="card-top">
+              <div>
+                <div style="display:flex;align-items:baseline;gap:8px;">
+                  <span class="asset-symbol" style="font-size:1.15rem;" onclick="openModal('${c.symbol}')">${c.symbol}</span>
+                  <span class="mono" style="font-weight:700;font-size:1.05rem;color:#f8fafc;">₹${c.close.toFixed(2)}</span>
+                </div>
+                <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">${c.company || c.symbol}</div>
+                <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
+                  <span class="sector-badge">${c.sector}</span>
+                  ${alertBadges}
+                </div>
+              </div>
+              <div class="rs-score-badge">
+                <span class="rs-pill ${c.rs_rating >= 95 ? 'elite' : ''}">RS ${c.rs_rating.toFixed(0)}</span>
+              </div>
+            </div>
+
+            <div style="margin:10px 0;display:flex;flex-wrap:wrap;gap:4px;">
+              ${stratTags}
+            </div>
+
+            <div class="card-metrics-grid">
+              <div class="card-metric-cell">
+                <span class="card-metric-label">Stop Loss</span>
+                <span class="card-metric-val" style="color:var(--rose);">₹${c.stop.toFixed(2)} <small>(-${c.stop_pct}%)</small></span>
+              </div>
+              <div class="card-metric-cell">
+                <span class="card-metric-label">Target 2R</span>
+                <span class="card-metric-val" style="color:#34d399;">₹${c.target_2r.toFixed(2)} <small>(+${c.target_2r_pct}%)</small></span>
+              </div>
+              <div class="card-metric-cell">
+                <span class="card-metric-label">Shares (${capLabel})</span>
+                <span class="card-metric-val">${sharesHtml}</span>
+              </div>
+              <div class="card-metric-cell">
+                <span class="card-metric-label">RVOL</span>
+                <span class="card-metric-val" style="color:${c.rvol >= 1.2 ? '#34d399' : '#f87171'};">${c.rvol.toFixed(1)}x</span>
+              </div>
+              <div class="card-metric-cell">
+                <span class="card-metric-label">Delivery %</span>
+                <span class="card-metric-val" style="${delivHighlight}">${c.deliv_pct > 0 ? c.deliv_pct + '%' : 'N/A'}</span>
+              </div>
+              <div class="card-metric-cell">
+                <span class="card-metric-label">SMA50 Ext</span>
+                <span class="card-metric-val" style="${extColor}">${c.ext50 >= 0 ? '+' : ''}${c.ext50}%</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);font-size:0.75rem;">
+            <div style="color:var(--text-muted);font-family:'JetBrains Mono',monospace;">Risk: <b style="color:var(--text-secondary);">${riskStr}</b></div>
+            <button class="btn-inspect" onclick="openModal('${c.symbol}')" style="min-height:36px;padding:6px 14px;">Inspect Rationale →</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // 3. View Visibility Toggle
+  if (viewMode === 'table') {
+    tableCardEl.style.display = 'block';
+    if (cardsContainer) cardsContainer.style.display = 'none';
+  } else {
+    tableCardEl.style.display = 'none';
+    if (cardsContainer) cardsContainer.style.display = 'grid';
+  }
+}
+
+let viewMode = 'table';
+function setViewMode(mode) {
+  viewMode = mode;
+  document.getElementById('viewTableBtn').classList.toggle('active', mode === 'table');
+  document.getElementById('viewCardsBtn').classList.toggle('active', mode === 'cards');
+  render();
+}
+
+function toggleMobileMenu() {
+  document.getElementById('mobileDrawerOverlay').classList.toggle('open');
+  document.getElementById('mobileDrawer').classList.toggle('open');
+}
+
+function closeMobileMenu() {
+  document.getElementById('mobileDrawerOverlay').classList.remove('open');
+  document.getElementById('mobileDrawer').classList.remove('open');
+}
+
+function focusSearch() {
+  const sb = document.getElementById('searchBox');
+  if (sb) {
+    sb.focus();
+    document.getElementById('toolbarSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function scrollToSection(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function openUsicModal() {
+  document.getElementById('usicModal').classList.add('open');
 }
 
 function openModal(sym) {
@@ -1487,6 +2164,13 @@ function openWyckoffGuideModal() { document.getElementById('wyckoffGuideModal').
 function openCaseStudyModal() { document.getElementById('caseStudyModal').classList.add('open'); }
 function openNseGuideModal() { document.getElementById('nseGuideModal').classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeMobileMenu();
+    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+  }
+});
 
 document.getElementById('searchBox').oninput = render;
 document.getElementById('sectorFilter').onchange = render;
