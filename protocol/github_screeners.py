@@ -235,10 +235,7 @@ def screen_protocol_v2(df: pd.DataFrame, top_n: int = 10, min_turnover_cr: float
     shelf_bonus = np.clip(passed["shelf_touches_20"], 0, 4) * 0.10
     passed["score"] = passed["ret20"] * 0.35 + (passed["rvol20"] / 5.0) * 0.35 + (passed["adr20"] * 10.0) * 0.15 + shelf_bonus
     ranked = passed.sort_values("score", ascending=False).head(top_n)
-    return [
-        ScreenerResult("PROTOCOL_V2", r["Symbol"], r["Close"], r["rvol20"], r["ret20"], r["adr20"], r["ext_sma50"], r["score"])
-        for _, r in ranked.iterrows()
-    ]
+    return [ScreenerResult("PROTOCOL_V2", r["Symbol"], r["Close"], r["rvol20"], r["ret20"], r["adr20"], r["ext_sma50"], r["score"]) for _, r in ranked.iterrows()]
 
 
 def screen_stan_weinstein(df: pd.DataFrame, top_n: int = 10, min_turnover_cr: float = 1.0) -> list[ScreenerResult]:
@@ -246,16 +243,38 @@ def screen_stan_weinstein(df: pd.DataFrame, top_n: int = 10, min_turnover_cr: fl
     sub = df[df["turnover20"] >= min_turnover_cr * 1e7].copy()
     m = (
         (sub["Close"] > sub["sma150"]) & (sub["sma150"] >= sub["sma200"]) &
-        (sub["Close"] > sub["r20"]) &  # Breaking out above Stage 1 base ceiling
-        (sub["rvol20"] >= 1.4) &  # Heavy volume expansion into Stage 2
-        (sub["rs_rating"] >= 65.0) &  # Mansfield RS outperformance
-        (sub["ext_sma50"] <= 0.25) &  # Early in trend, inside strict anti-chase gate
-        (sub["ret20"] > 0)
+        (sub["Close"] > sub["r20"]) & (sub["rvol20"] >= 1.4) &
+        (sub["rs_rating"] >= 65.0) & (sub["ext_sma50"] <= 0.25) & (sub["ret20"] > 0)
     )
     passed = sub[m].copy()
     passed["score"] = passed["rs_rating"] * (passed["rvol20"] / 2.0)
     ranked = passed.sort_values("score", ascending=False).head(top_n)
-    return [
-        ScreenerResult("STAN_WEINSTEIN_STAGE2", r["Symbol"], r["Close"], r["rvol20"], r["ret20"], r["adr20"], r["ext_sma50"], r["score"])
-        for _, r in ranked.iterrows()
-    ]
+    return [ScreenerResult("STAN_WEINSTEIN_STAGE2", r["Symbol"], r["Close"], r["rvol20"], r["ret20"], r["adr20"], r["ext_sma50"], r["score"]) for _, r in ranked.iterrows()]
+
+
+def screen_turtle_trading(df: pd.DataFrame, top_n: int = 10, min_turnover_cr: float = 1.0) -> list[ScreenerResult]:
+    """Richard Dennis Turtle Trading Donchian Channel Breakout (20d High Breakout with 10d Low Stop)."""
+    sub = df[df["turnover20"] >= min_turnover_cr * 1e7].copy()
+    m = (
+        (sub["Close"] > sub["sma50"]) & (sub["sma50"] > sub["sma200"]) &
+        (sub["Close"] > sub["r20"]) & (sub["rvol20"] >= 1.2) &
+        (sub["ext_sma50"] <= 0.25) & (sub["ret20"] > 0)
+    )
+    passed = sub[m].copy()
+    passed["score"] = (passed["ret20"] * 0.5 + (passed["rvol20"] / 3.0) * 0.5) / np.maximum(passed["adr20"], 0.01)
+    ranked = passed.sort_values("score", ascending=False).head(top_n)
+    return [ScreenerResult("TURTLE_TRADING", r["Symbol"], r["Close"], r["rvol20"], r["ret20"], r["adr20"], r["ext_sma50"], r["score"]) for _, r in ranked.iterrows()]
+
+
+def screen_darvas_box(df: pd.DataFrame, top_n: int = 10, min_turnover_cr: float = 1.0) -> list[ScreenerResult]:
+    """Nicolas Darvas Box Theory Breakout (Tight Consolidation Ceiling Expansion)."""
+    sub = df[df["turnover20"] >= min_turnover_cr * 1e7].copy()
+    m = (
+        (sub["Close"] > sub["sma50"]) & (sub["sma50"] > sub["sma200"]) &
+        (sub["Close"] >= 0.85 * sub["h52"]) & (sub["range20"] <= 0.18) &
+        (sub["Close"] > sub["r20"]) & (sub["rvol20"] >= 1.3) & (sub["ext_sma50"] <= 0.25)
+    )
+    passed = sub[m].copy()
+    passed["score"] = (1.0 / np.maximum(passed["range20"], 0.04)) * passed["rvol20"] * (1.0 + passed["ret20"])
+    ranked = passed.sort_values("score", ascending=False).head(top_n)
+    return [ScreenerResult("DARVAS_BOX", r["Symbol"], r["Close"], r["rvol20"], r["ret20"], r["adr20"], r["ext_sma50"], r["score"]) for _, r in ranked.iterrows()]

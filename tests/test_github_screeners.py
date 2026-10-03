@@ -9,12 +9,14 @@ from protocol.exits import ExitStrategy, simulate_dynamic_trade
 from protocol.github_screeners import (
     compute_screener_features,
     screen_canslim,
+    screen_darvas_box,
     screen_minervini,
     screen_pkscreener_vcp,
     screen_protocol_v2,
     screen_qullamaggie,
     screen_relative_strength,
     screen_stan_weinstein,
+    screen_turtle_trading,
 )
 
 
@@ -91,6 +93,18 @@ class TestGitHubScreeners(unittest.TestCase):
     def test_stan_weinstein_screen(self):
         feat = compute_screener_features(self.df, self.asof)
         picks = screen_stan_weinstein(feat, top_n=5, min_turnover_cr=0.01)
+        self.assertEqual(len(picks), 1)
+        self.assertEqual(picks[0].symbol, "UPTREND")
+
+    def test_turtle_trading_screen(self):
+        feat = compute_screener_features(self.df, self.asof)
+        picks = screen_turtle_trading(feat, top_n=5, min_turnover_cr=0.01)
+        self.assertEqual(len(picks), 1)
+        self.assertEqual(picks[0].symbol, "UPTREND")
+
+    def test_darvas_box_screen(self):
+        feat = compute_screener_features(self.df, self.asof)
+        picks = screen_darvas_box(feat, top_n=5, min_turnover_cr=0.01)
         self.assertEqual(len(picks), 1)
         self.assertEqual(picks[0].symbol, "UPTREND")
 

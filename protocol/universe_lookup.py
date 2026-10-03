@@ -153,6 +153,34 @@ def build_universe_lookup(
             "verdict": "VCP Contraction Breakout" if vcp_pass else "; ".join(vcp_reasons)
         })
 
+        # 8. Turtle Trading (Donchian 20d Breakout)
+        t_pass = (close > sma50 > sma200) and (close > r20) and (rvol >= 1.2)
+        t_reasons = []
+        if close <= r20:
+            t_reasons.append(f"Closed below 20-day Donchian ceiling (₹{r20:.1f})")
+        if rvol < 1.2:
+            t_reasons.append(f"Volume {rvol:.2f}x < 1.20x threshold")
+        frameworks.append({
+            "name": "Turtle Trading",
+            "passed": bool(t_pass),
+            "verdict": "Donchian 20d Breakout Confirmed" if t_pass else "; ".join(t_reasons)
+        })
+
+        # 9. Darvas Box (Consolidation Ceiling Expansion)
+        d_pass = (close > sma50 > sma200) and (close >= 0.85 * h52) and (close > r20) and (rvol >= 1.3)
+        d_reasons = []
+        if close <= r20:
+            d_reasons.append(f"Inside Darvas box ceiling (₹{r20:.1f})")
+        if close < 0.85 * h52:
+            d_reasons.append(f"Outside upper 15% 52W quadrant (High ₹{h52:.1f})")
+        if rvol < 1.3:
+            d_reasons.append(f"Volume surge {rvol:.2f}x < 1.30x box expansion hurdle")
+        frameworks.append({
+            "name": "Darvas Box",
+            "passed": bool(d_pass),
+            "verdict": "Darvas Box Breakout Confirmed" if d_pass else "; ".join(d_reasons)
+        })
+
         # Wyckoff Auction State
         if high > r20 and close < r20 and cr <= 0.35:
             pa_state = "State D: Intraday Upthrust / Failed Acceptance"
@@ -198,6 +226,8 @@ def build_universe_lookup(
             "low": round(low, 2),
             "r10": round(r10, 2),
             "r20": round(r20, 2),
+            "resistance": round(r20, 2),
+            "support": round(low, 2),
             "h52": round(h52, 2),
             "l52": round(l52, 2),
             "ema10": round(ema10, 2),

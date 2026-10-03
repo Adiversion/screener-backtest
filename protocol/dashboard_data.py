@@ -16,14 +16,10 @@ from protocol.corporate_events import get_corporate_audit
 from protocol.wyckoff_pa import evaluate_wyckoff_pa
 from protocol.universe_lookup import build_universe_lookup
 from protocol.github_screeners import (
-    compute_screener_features,
-    screen_canslim,
-    screen_minervini,
-    screen_pkscreener_vcp,
-    screen_protocol_v2,
-    screen_qullamaggie,
-    screen_relative_strength,
-    screen_stan_weinstein,
+    compute_screener_features, screen_canslim, screen_darvas_box,
+    screen_minervini, screen_pkscreener_vcp, screen_protocol_v2,
+    screen_qullamaggie, screen_relative_strength, screen_stan_weinstein,
+    screen_turtle_trading,
 )
 from protocol.regime import get_regime_at
 from protocol.sector import get_company_name, get_sector
@@ -31,10 +27,7 @@ from protocol.sector import get_company_name, get_sector
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def build_candidate_data(
-    df: pd.DataFrame,
-    asof_date: str | pd.Timestamp = "2026-10-01"
-) -> dict[str, Any]:
+def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp = "2026-10-01") -> dict[str, Any]:
     """Build complete dashboard payload with enriched technical breakdown."""
     asof = pd.Timestamp(asof_date).normalize()
     reg = get_regime_at(df, asof)
@@ -57,7 +50,7 @@ def build_candidate_data(
         except Exception:
             pass
 
-    # Screen all 7 frameworks
+    # Screen all 9 frameworks
     groups = [
         ("Protocol Fortified", screen_protocol_v2(feat, top_n=15, min_turnover_cr=1.0)),
         ("Relative Strength Leader", screen_relative_strength(feat, top_n=15, min_turnover_cr=1.0)),
@@ -66,6 +59,8 @@ def build_candidate_data(
         ("Qullamaggie Breakout", screen_qullamaggie(feat, top_n=15, min_turnover_cr=1.0)),
         ("CANSLIM Pivot", screen_canslim(feat, top_n=15, min_turnover_cr=1.0)),
         ("PKScreener VCP", screen_pkscreener_vcp(feat, top_n=15, min_turnover_cr=1.0)),
+        ("Turtle Trading", screen_turtle_trading(feat, top_n=15, min_turnover_cr=1.0)),
+        ("Darvas Box", screen_darvas_box(feat, top_n=15, min_turnover_cr=1.0)),
     ]
 
     feat_by_sym = {row["Symbol"]: row for _, row in feat.iterrows()}
@@ -223,6 +218,7 @@ def _build_single_candidate(f: pd.Series, deliv_pct: float | None) -> dict[str, 
     badges.extend(audit["badges"])
     badges.extend(wpa["badges"])
     reasons.append(f"Price Action & Wyckoff: {wpa['wyckoff_narrative']}")
+    reasons.append(f"Key S/R Architecture: Overhead Resistance cleared at ₹{bo_ref:.2f} (+{bo_pct}%), Base Support Floor at ₹{base_low:.2f} (-{round(((close - base_low)/close)*100, 1)}%).")
 
     return {
         "symbol": sym,
@@ -237,6 +233,8 @@ def _build_single_candidate(f: pd.Series, deliv_pct: float | None) -> dict[str, 
         "r20": round(r20, 2),
         "r10": round(r10, 2),
         "h52": round(h52, 2),
+        "resistance": round(bo_ref, 2),
+        "support": round(base_low, 2),
         "breakout_type": bo_type,
         "breakout_ref": round(bo_ref, 2),
         "breakout_pct": bo_pct,
