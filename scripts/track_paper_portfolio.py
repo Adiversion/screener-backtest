@@ -23,39 +23,65 @@ from pathlib import Path
 from typing import Any
 
 if hasattr(sys.stdout, "reconfigure"):
-    try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_PORTFOLIO_PATH = ROOT / "data" / "paper_portfolio.json"
 FINANCE_QUERY_URL = "https://finance-query.com/v2/quote"
 WORKER_PROXY_URL = "https://nse-quote.audittool-api.workers.dev"
+CLOUD_PORTFOLIO_URL = "https://nse-quote.audittool-api.workers.dev/portfolio"
 
 
-def load_portfolio(path: Path = DEFAULT_PORTFOLIO_PATH) -> dict[str, Any]:
-    """Load portfolio state from disk or initialize default account."""
+def load_portfolio(
+    path: Path = DEFAULT_PORTFOLIO_PATH,
+    sync_cloud: bool = True,
+    key: str = "default",
+) -> dict[str, Any]:
+    """Load portfolio state from Cloudflare KV edge or disk."""
+    if sync_cloud:
+        try:
+            req = urllib.request.Request(
+                f"{CLOUD_PORTFOLIO_URL}?key={urllib.parse.quote(key)}",
+                headers={"User-Agent": "Mozilla/5.0"},
+            )
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                if resp.status == 200:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    if isinstance(data, dict) and "positions" in data and not data.get("isNew"):
+                        save_portfolio(data, path, sync_cloud=False)
+                        return data
+        except Exception:
+            pass
     if path.exists():
         try:
             return json.loads(path.read_text(encoding="utf-8"))
         except Exception:
             pass
-    return {
-        "initialCapital": 1000000.0,
-        "cash": 1000000.0,
-        "positions": [],
-        "closedTrades": [],
-        "lastUpdated": datetime.now(timezone.utc).isoformat(),
-    }
+    return {"initialCapital": 1e6, "cash": 1e6, "positions": [], "closedTrades": [], "lastUpdated": datetime.now(timezone.utc).isoformat()}
 
 
-def save_portfolio(portfolio: dict[str, Any], path: Path = DEFAULT_PORTFOLIO_PATH) -> None:
-    """Save portfolio state to disk with atomic write."""
+def save_portfolio(
+    portfolio: dict[str, Any],
+    path: Path = DEFAULT_PORTFOLIO_PATH,
+    sync_cloud: bool = True,
+    key: str = "default",
+) -> None:
+    """Save portfolio state to disk and Cloudflare KV edge."""
     path.parent.mkdir(parents=True, exist_ok=True)
     portfolio["lastUpdated"] = datetime.now(timezone.utc).isoformat()
     path.write_text(json.dumps(portfolio, indent=2, ensure_ascii=False), encoding="utf-8")
+    if sync_cloud:
+        try:
+            body = json.dumps(portfolio).encode("utf-8")
+            req = urllib.request.Request(
+                f"{CLOUD_PORTFOLIO_URL}?key={urllib.parse.quote(key)}",
+                data=body,
+                headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"},
+            )
+            with urllib.request.urlopen(req, timeout=3) as _:
+                pass
+        except Exception:
+            pass
 
 
 def fetch_live_quotes(symbols: list[str]) -> dict[str, float]:
@@ -243,14 +269,17 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Headless Paper Trading & Execution Daemon")
     ap.add_argument("--portfolio", default=str(DEFAULT_PORTFOLIO_PATH))
     ap.add_argument("--once", action="store_true", help="Run single evaluation cycle")
+    ap.add_argument("--no-cloud", action="store_true", help="Disable Cloudflare KV edge sync")
+    ap.add_argument("--key", default="default", help="Cloudflare KV sync key / passphrase")
     args = ap.parse_args()
 
+    sync_cloud = not args.no_cloud
     p_path = Path(args.portfolio)
-    port = load_portfolio(p_path)
+    port = load_portfolio(p_path, sync_cloud=sync_cloud, key=args.key)
     syms = [p["symbol"] for p in port.get("positions", [])]
     prices = fetch_live_quotes(syms) if syms else {}
     port, events = evaluate_staged_positions(port, prices)
-    save_portfolio(port, p_path)
+    save_portfolio(port, p_path, sync_cloud=sync_cloud, key=args.key)
     print_portfolio_status(port)
     if events:
         print(f"⚡ Executed {len(events)} automated rules:")

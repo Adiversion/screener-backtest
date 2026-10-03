@@ -532,6 +532,9 @@
         </button>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button id="cloudSyncBtn" class="btn" onclick="triggerManualCloudSync()" style="color:#38bdf8;border-color:rgba(56,189,248,0.4);background:rgba(56,189,248,0.12);font-weight:700;" title="Cloudflare KV Edge Memory (Instant access on Phone & Home PC)">
+          <span id="cloudSyncIcon">☁️</span> <span id="cloudSyncText">Cloud: Checking...</span>
+        </button>
         <button id="autoTradeBtn" class="btn" onclick="toggleAutoTrade()" style="color:#10b981;border-color:rgba(16,185,129,0.4);background:rgba(16,185,129,0.12);font-weight:700;" title="Automatic Stop-Loss & 1.5R Profit Taking Engine">
           <span>🤖</span> Auto-Pilot: ON
         </button>
@@ -542,14 +545,14 @@
           <span>📥</span> Import JSON
         </button>
         <input type="file" id="importFileInput" style="display:none;" accept=".json" onchange="importPortfolioFile(event)">
-        <button class="btn" onclick="resetAccount()" style="color:#f87171;font-size:0.75rem;">🔄 Reset Account</button>
+        <button class="btn" onclick="resetAccount()" style="color:#f87171;font-size:0.75rem;">🔄 Reset</button>
       </div>
     </div>
 
     <!-- Open Positions Table -->
     <div class="section-title">
       <span>📈</span> Active Open Positions (<span id="openCountHeader">0</span>)
-      <span style="font-size:0.72rem;font-weight:400;color:var(--text-muted);margin-left:8px;">• Guaranteed Persistent in LocalStorage & Auto-Protected</span>
+      <span style="font-size:0.72rem;font-weight:400;color:var(--text-muted);margin-left:8px;">• Synced to Cloudflare KV Edge • Live on Mobile & Desktop</span>
     </div>
     <div class="table-card">
       <div class="table-scroll">
@@ -712,9 +715,148 @@
     // Embedded Candidate Data Payload from Screener
     const D = __JSON_PAYLOAD__;
 
-    // Local Storage State
+    // Local Storage & Cloudflare KV Edge State
     const STORAGE_KEY = 'astra_quant_paper_portfolio_v1';
+    const CLOUD_SYNC_ENDPOINT = 'https://nse-quote.audittool-api.workers.dev/portfolio';
     let portfolio = loadPortfolio();
+    let cloudSyncDebounceTimer = null;
+    let isCloudSyncing = false;
+
+    function getSyncKey() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const k = urlParams.get('key') || urlParams.get('syncKey');
+        if (k) {
+          const cleanK = k.trim().toLowerCase();
+          localStorage.setItem('astra_cloud_sync_key', cleanK);
+          return cleanK;
+        }
+        const savedK = localStorage.getItem('astra_cloud_sync_key');
+        if (savedK) return savedK.trim().toLowerCase();
+      } catch (_) {}
+      return 'default';
+    }
+
+    function setSyncKey(newKey) {
+      if (!newKey) return;
+      localStorage.setItem('astra_cloud_sync_key', newKey.trim().toLowerCase());
+      fetchCloudPortfolio(true);
+    }
+
+    function updateCloudSyncStatus(status, text) {
+      const btn = document.getElementById('cloudSyncBtn');
+      const textEl = document.getElementById('cloudSyncText');
+      const iconEl = document.getElementById('cloudSyncIcon');
+      if (!textEl || !btn) return;
+
+      if (status === 'syncing') {
+        textEl.textContent = 'Cloud: Syncing...';
+        btn.style.borderColor = 'rgba(56,189,248,0.6)';
+        btn.style.color = '#38bdf8';
+        if (iconEl) iconEl.textContent = '🔄';
+      } else if (status === 'synced') {
+        const timeStr = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+        textEl.textContent = text || `Cloud: Synced (${timeStr})`;
+        btn.style.borderColor = 'rgba(16,185,129,0.4)';
+        btn.style.color = '#34d399';
+        if (iconEl) iconEl.textContent = '☁️';
+      } else if (status === 'error') {
+        textEl.textContent = text || 'Cloud: Offline';
+        btn.style.borderColor = 'rgba(239,68,68,0.4)';
+        btn.style.color = '#f87171';
+        if (iconEl) iconEl.textContent = '⚠️';
+      }
+    }
+
+    async function pushPortfolioToCloud() {
+      if (isCloudSyncing) return;
+      isCloudSyncing = true;
+      updateCloudSyncStatus('syncing');
+      const key = getSyncKey();
+
+      try {
+        portfolio.lastUpdated = new Date().toISOString();
+        const res = await fetch(`${CLOUD_SYNC_ENDPOINT}?key=${encodeURIComponent(key)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(portfolio),
+          cache: 'no-store'
+        });
+        if (res.ok) {
+          updateCloudSyncStatus('synced', 'Cloud: Synced to Edge');
+        } else {
+          updateCloudSyncStatus('error', 'Cloud: Sync Failed');
+        }
+      } catch (e) {
+        console.warn('Cloud sync error:', e);
+        updateCloudSyncStatus('error', 'Cloud: Offline');
+      } finally {
+        isCloudSyncing = false;
+      }
+    }
+
+    async function fetchCloudPortfolio(forceOverwrite = false) {
+      updateCloudSyncStatus('syncing');
+      const key = getSyncKey();
+
+      try {
+        const res = await fetch(`${CLOUD_SYNC_ENDPOINT}?key=${encodeURIComponent(key)}`, { cache: 'no-store' });
+        if (res.ok) {
+          const cloudData = await res.json();
+          if (cloudData && !cloudData.isNew && Array.isArray(cloudData.positions)) {
+            const localUpdated = portfolio.lastUpdated ? new Date(portfolio.lastUpdated).getTime() : 0;
+            const cloudUpdated = cloudData.lastUpdated ? new Date(cloudData.lastUpdated).getTime() : 0;
+
+            if (forceOverwrite || cloudUpdated >= localUpdated || (portfolio.positions.length === 0 && cloudData.positions.length > 0)) {
+              portfolio = cloudData;
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(portfolio));
+              renderHUD();
+              renderPositions();
+              renderClosed();
+              updateCloudSyncStatus('synced', 'Cloud: Up to Date');
+              showToastNotification(`☁️ Loaded ${portfolio.positions.length} active positions from Cloudflare KV Edge`, 'info');
+              return;
+            }
+          }
+          if (portfolio.positions.length > 0 || (portfolio.closedTrades && portfolio.closedTrades.length > 0)) {
+            pushPortfolioToCloud();
+          } else {
+            updateCloudSyncStatus('synced', 'Cloud: Synced');
+          }
+        } else {
+          updateCloudSyncStatus('error', 'Cloud: Offline');
+        }
+      } catch (e) {
+        console.warn('Cloud fetch error:', e);
+        updateCloudSyncStatus('error', 'Cloud: Offline');
+      }
+    }
+
+    function triggerManualCloudSync() {
+      const choice = prompt(
+        `Cloudflare KV Edge Memory Sync:\n\n` +
+        `Current Sync Key: "${getSyncKey()}"\n\n` +
+        `Options:\n` +
+        `1 = Push local portfolio to Cloudflare\n` +
+        `2 = Pull cloud portfolio to this device\n` +
+        `3 = Set custom Sync Key / Passphrase (for phone / home PC sharing)\n\n` +
+        `Enter 1, 2, or 3:`,
+        "1"
+      );
+      if (!choice) return;
+      const trimmed = choice.trim();
+      if (trimmed === '1') {
+        pushPortfolioToCloud();
+      } else if (trimmed === '2') {
+        fetchCloudPortfolio(true);
+      } else if (trimmed === '3') {
+        const newKey = prompt('Enter your unique Sync Key / Passphrase (e.g. my-trading-pc):', getSyncKey());
+        if (newKey && newKey.trim()) {
+          setSyncKey(newKey.trim());
+          alert(`Sync Key set to "${newKey.trim()}". Open this dashboard on your mobile phone or home PC with ?key=${encodeURIComponent(newKey.trim())} to view the exact same portfolio!`);
+        }
+      }
+    }
 
     function loadPortfolio() {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -725,15 +867,19 @@
         initialCapital: 1000000,
         cash: 1000000,
         positions: [],
-        closedTrades: []
+        closedTrades: [],
+        lastUpdated: new Date().toISOString()
       };
     }
 
     function savePortfolio() {
+      portfolio.lastUpdated = new Date().toISOString();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(portfolio));
       renderHUD();
       renderPositions();
       renderClosed();
+      clearTimeout(cloudSyncDebounceTimer);
+      cloudSyncDebounceTimer = setTimeout(pushPortfolioToCloud, 400);
     }
 
     function resetAccount() {
@@ -742,7 +888,8 @@
           initialCapital: 1000000,
           cash: 1000000,
           positions: [],
-          closedTrades: []
+          closedTrades: [],
+          lastUpdated: new Date().toISOString()
         };
         savePortfolio();
       }
@@ -1596,6 +1743,9 @@
     renderWatchlist();
     renderClosed();
     renderTickerTape();
+
+    // Fetch and Sync Portfolio from Cloudflare KV Edge
+    fetchCloudPortfolio();
 
     // Connect Real-Time Live WebSocket Streamer (Finance-Query + Yahoo Fallback, Zero Simulation)
     updateStatusPill('INITIAL');

@@ -18,18 +18,33 @@ class TestTrackPaperPortfolio(unittest.TestCase):
     def tearDown(self):
         self.temp_dir.cleanup()
 
-    def test_save_and_load_portfolio(self):
+    def test_save_and_load_portfolio_local(self):
         port = {
             "initialCapital": 1000000.0,
             "cash": 900000.0,
             "positions": [{"symbol": "SYRMA", "shares": 100, "buyPrice": 1000.0, "stopPrice": 950.0}],
             "closedTrades": []
         }
-        save_portfolio(port, self.portfolio_file)
-        loaded = load_portfolio(self.portfolio_file)
+        save_portfolio(port, self.portfolio_file, sync_cloud=False)
+        loaded = load_portfolio(self.portfolio_file, sync_cloud=False)
         self.assertEqual(loaded["cash"], 900000.0)
         self.assertEqual(len(loaded["positions"]), 1)
         self.assertEqual(loaded["positions"][0]["symbol"], "SYRMA")
+
+    def test_cloudflare_kv_cloud_sync(self):
+        test_key = "unit_test_probe"
+        port = {
+            "initialCapital": 1000000.0,
+            "cash": 950000.0,
+            "positions": [{"symbol": "INFY", "shares": 10, "buyPrice": 1500.0, "stopPrice": 1400.0}],
+            "closedTrades": []
+        }
+        # Save to Cloudflare KV Edge
+        save_portfolio(port, self.portfolio_file, sync_cloud=True, key=test_key)
+        # Load from Cloudflare KV Edge
+        cloud_loaded = load_portfolio(self.portfolio_file, sync_cloud=True, key=test_key)
+        self.assertEqual(cloud_loaded["cash"], 950000.0)
+        self.assertEqual(cloud_loaded["positions"][0]["symbol"], "INFY")
 
     def test_stop_loss_trigger(self):
         port = {
