@@ -43,10 +43,11 @@
                 radial-gradient(1000px circle at 100% 10%, rgba(139, 92, 246, 0.06), transparent 40%),
                 var(--bg);
     color: var(--text-primary);
-    padding: 24px;
+    padding: 16px 20px;
     line-height: 1.5;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
 
   .mono {
@@ -54,7 +55,12 @@
     font-feature-settings: "tnum" 1;
   }
 
-  .container { max-width: 1440px; margin: 0 auto; }
+  .container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+  }
 
   /* Top Navigation & App Bar */
   header {
@@ -392,27 +398,43 @@
     border-radius: 14px;
     overflow: hidden;
     box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.5);
+    width: 100%;
   }
 
   .table-scroll {
     overflow-x: auto;
+    width: 100%;
+  }
+
+  .table-scroll::-webkit-scrollbar {
+    height: 6px;
+  }
+  .table-scroll::-webkit-scrollbar-track {
+    background: rgba(10, 14, 24, 0.6);
+  }
+  .table-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+  }
+  .table-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(56, 139, 253, 0.4);
   }
 
   table {
     width: 100%;
     border-collapse: collapse;
     text-align: left;
-    font-size: 0.84rem;
+    font-size: 0.82rem;
   }
 
   thead th {
     background: rgba(10, 14, 24, 0.85);
     color: var(--text-muted);
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    padding: 12px 14px;
+    letter-spacing: 0.06em;
+    padding: 10px 10px;
     border-bottom: 1px solid var(--border);
     white-space: nowrap;
   }
@@ -427,7 +449,7 @@
   }
 
   tbody td {
-    padding: 12px 14px;
+    padding: 10px 10px;
     vertical-align: middle;
   }
 
@@ -440,7 +462,7 @@
     display: flex;
     flex-direction: column;
     gap: 3px;
-    min-width: 180px;
+    min-width: 160px;
   }
 
   .asset-top {
@@ -469,7 +491,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 150px;
+    max-width: 200px;
   }
 
   .asset-bottom {
@@ -525,7 +547,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
-    max-width: 220px;
+    max-width: 260px;
   }
 
   .strat-tag {
@@ -881,17 +903,17 @@
         <thead>
           <tr>
             <th style="width:30px;">#</th>
-            <th>Symbol / Company / Sector</th>
-            <th>Matched Frameworks</th>
-            <th class="num">Entry / Close (₹)</th>
-            <th class="num">Stop Loss (₹)</th>
-            <th class="num">Target 2R (₹)</th>
+            <th>Symbol / Company</th>
+            <th>Frameworks</th>
+            <th class="num">Entry (₹)</th>
+            <th class="num">Stop Loss</th>
+            <th class="num">Target 2R</th>
             <th class="num" id="sharesHeader">Shares (₹100k)</th>
-            <th class="num">Infusion (₹)</th>
-            <th class="num">Max Risk (₹)</th>
-            <th class="num">RVOL / Deliv %</th>
+            <th class="num">Infusion</th>
+            <th class="num">Max Risk</th>
+            <th class="num">RVOL / Deliv</th>
             <th class="num">SMA50 Ext</th>
-            <th class="num">RS Score / Trend</th>
+            <th class="num">RS / Trend</th>
             <th style="text-align:center;">Action</th>
           </tr>
         </thead>
@@ -1216,34 +1238,86 @@ function render() {
     const statusBorder = isCand ? 'rgba(16,185,129,0.35)' : 'rgba(239,68,68,0.35)';
     const statusLabel = isCand ? 'QUALIFIED BUY CANDIDATE' : 'WATCHLIST / NOT A BUY SETUP TODAY';
 
+    const fwHtml = (matchedLookup.frameworks || []).map(f => {
+      const passCls = f.passed ? 'background:rgba(16,185,129,0.12);color:#34d399;border:1px solid rgba(16,185,129,0.3);' : 'background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.25);';
+      const icon = f.passed ? '✓' : '✗';
+      return `<div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:0.78rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <strong style="color:#f1f5f9;">${f.name}</strong>
+          <span style="padding:1px 6px;border-radius:4px;font-weight:700;font-size:0.68rem;${passCls}">${icon} ${f.passed ? 'PASS' : 'FAIL'}</span>
+        </div>
+        <div style="color:${f.passed ? '#94a3b8' : '#cbd5e1'};line-height:1.35;font-size:0.74rem;">${f.verdict}</div>
+      </div>`;
+    }).join('');
+
     inspectorBox.style.display = 'block';
     inspectorBox.innerHTML = `
-      <div style="background:rgba(15,23,42,0.85);border:1px solid ${statusBorder};border-radius:12px;padding:16px 20px;backdrop-filter:blur(10px);box-shadow:0 8px 30px rgba(0,0,0,0.5);">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+      <div style="background:linear-gradient(145deg, rgba(15,23,42,0.95) 0%, rgba(10,15,28,0.98) 100%);border:1px solid ${statusBorder};border-radius:14px;padding:20px;backdrop-filter:blur(12px);box-shadow:0 12px 40px rgba(0,0,0,0.6);">
+        <!-- Top Row: Identification & Status -->
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
           <div>
             <div style="display:flex;align-items:center;gap:10px;">
-              <span style="font-size:1.25rem;font-weight:800;color:#f8fafc;font-family:'JetBrains Mono',monospace;">${matchedLookup.symbol}</span>
-              <span style="font-size:0.85rem;color:#94a3b8;">${matchedLookup.company}</span>
-              <span style="font-size:0.75rem;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,0.06);color:#38bdf8;">${matchedLookup.sector}</span>
+              <span style="font-size:1.4rem;font-weight:800;color:#f8fafc;font-family:'JetBrains Mono',monospace;">${matchedLookup.symbol}</span>
+              <span style="font-size:0.92rem;color:#cbd5e1;font-weight:500;">${matchedLookup.company}</span>
+              <span style="font-size:0.75rem;padding:3px 8px;border-radius:6px;background:rgba(56,189,248,0.12);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);">${matchedLookup.sector}</span>
             </div>
-            <div style="margin-top:8px;display:flex;gap:16px;flex-wrap:wrap;font-size:0.82rem;color:#cbd5e1;font-family:'JetBrains Mono',monospace;">
+            <div style="margin-top:8px;display:flex;gap:14px;flex-wrap:wrap;font-size:0.8rem;color:#94a3b8;font-family:'JetBrains Mono',monospace;">
               <span>Close: <strong style="color:#f8fafc;">₹${matchedLookup.close}</strong></span>
-              <span>20d Res: <strong>₹${matchedLookup.r20}</strong></span>
+              <span>Day: ₹${matchedLookup.low} - ₹${matchedLookup.high}</span>
+              <span>20d Res: <strong style="color:#fbbf24;">₹${matchedLookup.r20}</strong></span>
               <span>52W High: <strong>₹${matchedLookup.h52}</strong></span>
-              <span>RS Rating: <strong style="color:#38bdf8;">${matchedLookup.rs}/99</strong></span>
-              <span>RVOL: <strong>${matchedLookup.rvol}x</strong></span>
-              <span>Delivery: <strong>${matchedLookup.deliv}%</strong></span>
+              <span>RS: <strong style="color:#38bdf8;">${matchedLookup.rs}/99</strong></span>
+              <span>RVOL: <strong style="color:${matchedLookup.rvol >= 1.2 ? '#34d399' : '#f87171'};">${matchedLookup.rvol}x</strong></span>
+              <span>Deliv: <strong style="color:${matchedLookup.deliv >= 40 ? '#34d399' : '#94a3b8'};">${matchedLookup.deliv}%</strong></span>
+              <span>Closing Range: <strong style="color:${matchedLookup.closing_range >= 60 ? '#34d399' : '#f87171'};">${matchedLookup.closing_range}%</strong></span>
             </div>
           </div>
           <div>
-            <span style="display:inline-block;padding:5px 12px;border-radius:20px;background:${statusBg};color:${statusColor};border:1px solid ${statusBorder};font-size:0.75rem;font-weight:700;letter-spacing:0.04em;">
+            <span style="display:inline-block;padding:6px 14px;border-radius:20px;background:${statusBg};color:${statusColor};border:1px solid ${statusBorder};font-size:0.78rem;font-weight:800;letter-spacing:0.04em;">
               ${statusLabel}
             </span>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08);font-size:0.84rem;line-height:1.5;color:#e2e8f0;">
-          <strong style="color:#94a3b8;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;">Technical Diagnostic:</strong> 
-          <span style="color:${isCand ? '#34d399' : '#cbd5e1'};">${matchedLookup.why}</span>
+
+        <!-- Bento Grid: Wyckoff & Microstructure + Tactical Plan -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:12px;margin-bottom:14px;">
+          <!-- Card 1: Wyckoff Auction State -->
+          <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:10px;padding:12px 14px;">
+            <div style="font-size:0.75rem;text-transform:uppercase;color:#38bdf8;font-weight:700;letter-spacing:0.05em;margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+              <span>🌊</span> Wyckoff Auction State & Order Flow
+            </div>
+            <div style="font-weight:700;font-size:0.85rem;color:${matchedLookup.closing_range >= 60 ? '#34d399' : '#f87171'};margin-bottom:4px;">
+              ${matchedLookup.pa_state}
+            </div>
+            <div style="font-size:0.8rem;line-height:1.45;color:#cbd5e1;">
+              ${matchedLookup.wyckoff_narrative}
+            </div>
+          </div>
+
+          <!-- Card 2: Tactical Action Plan -->
+          <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:10px;padding:12px 14px;">
+            <div style="font-size:0.75rem;text-transform:uppercase;color:#fbbf24;font-weight:700;letter-spacing:0.05em;margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+              <span>🎯</span> Tactical Action Plan & Key Levels
+            </div>
+            <div style="font-size:0.8rem;line-height:1.45;color:#cbd5e1;">
+              ${matchedLookup.tactical_gameplan}
+            </div>
+            <div style="margin-top:8px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:12px;font-size:0.75rem;font-family:'JetBrains Mono',monospace;">
+              <span>10 EMA: <strong>₹${matchedLookup.ema10}</strong></span>
+              <span>20 EMA: <strong>₹${matchedLookup.ema20}</strong></span>
+              <span>50 SMA: <strong>₹${matchedLookup.sma50}</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7-Framework Forensic Checklist -->
+        <div>
+          <div style="font-size:0.75rem;text-transform:uppercase;color:#94a3b8;font-weight:700;letter-spacing:0.05em;margin-bottom:8px;">
+            7-Framework Gate Audit (Pass / Fail Checklist)
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:8px;">
+            ${fwHtml}
+          </div>
         </div>
       </div>
     `;
