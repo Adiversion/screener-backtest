@@ -1751,8 +1751,27 @@
     updateStatusPill('INITIAL');
     connectLiveStream('finance-query');
     setInterval(() => {
+      const ms = getNseMarketStatus();
       updateStatusPill(liveWs && liveWs.readyState === WebSocket.OPEN ? 'WS_CONNECTED' : 'IDLE');
-    }, 15000);
+      // On live trading days, if WebSocket is disconnected or idle, run automated REST safety poll
+      if (ms.isOpen && (!liveWs || liveWs.readyState !== WebSocket.OPEN)) {
+        refreshAllLiveQuotes();
+      }
+    }, 12000);
+
+    // Mobile / Tab Resume Handler: Instant Re-sync when phone is unlocked or tab opened
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        fetchCloudPortfolio();
+        if (!liveWs || liveWs.readyState !== WebSocket.OPEN) {
+          connectLiveStream(currentStreamerMode);
+        }
+        const ms = getNseMarketStatus();
+        if (ms.isOpen) {
+          refreshAllLiveQuotes();
+        }
+      }
+    });
 
     // Auto-import via URL parameter e.g. ?symbol=XYZ or ?buy=XYZ
     try {
