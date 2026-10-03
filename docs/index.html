@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NSE Quant Screener & Allocation Engine</title>
+<style>
+  :root { --bg: #090d16; --card: #131b2e; --border: #222f4c; --text: #f0f6fc; --muted: #8b9bb4; --accent: #388bfd; --green: #238636; --green-bg: #0e2a1b; --red: #f85149; --red-bg: #351314; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); padding: 20px; line-height: 1.5; }
+  .container { max-width: 1240px; margin: 0 auto; }
+  header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
+  h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+  .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+  .badge.defensive { background: var(--red-bg); color: var(--red); border: 1px solid var(--red); }
+  .badge.bull { background: var(--green-bg); color: var(--green); border: 1px solid var(--green); }
+  .regime-banner { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; }
+  .regime-stats { display: flex; gap: 24px; } .stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; } .stat-val { font-size: 1.1rem; font-weight: 700; font-feature-settings: "tnum"; }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; align-items: center; }
+  input[type="text"], select { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; outline: none; }
+  .search-box { flex: 1; min-width: 240px; }
+  .capital-box { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--border); padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; }
+  .capital-box input { width: 110px; background: transparent; border: none; color: #58a6ff; font-weight: 700; font-size: 1rem; outline: none; text-align: right; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
+  th { background: #16223b; color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.05em; }
+  td.num { text-align: right; font-feature-settings: "tnum"; font-variant-numeric: tabular-nums; } tr:hover { background: #1a2640; }
+  .sym { font-weight: 700; color: #58a6ff; cursor: pointer; text-decoration: underline; text-decoration-color: #58a6ff44; }
+  .sector-pill { font-size: 0.75rem; color: var(--muted); background: #0f1626; padding: 2px 8px; border-radius: 4px; }
+  .shares-val { font-weight: 700; color: #3fb950; } .strat-tag { display: inline-block; font-size: 0.7rem; padding: 1px 6px; border-radius: 4px; background: #21262d; margin-right: 4px; color: #c9d1d9; }
+  .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); align-items: center; justify-content: center; z-index: 100; }
+  .modal.open { display: flex; } .modal-content { background: var(--card); border: 1px solid var(--border); border-radius: 12px; width: 90%; max-width: 580px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; } .close-btn { cursor: pointer; font-size: 1.5rem; color: var(--muted); }
+  .rationale-row { margin-bottom: 12px; font-size: 0.9rem; color: #c9d1d9; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div>
+      <h1>NSE Quantitative Screener & Allocation Engine</h1>
+      <p style="color:var(--muted);font-size:0.85rem">Active Session: <b id="asofDate"></b> · Built for Next-Day Market Execution</p>
+    </div>
+    <div id="regimeBadge" class="badge"></div>
+  </header>
+
+  <div class="regime-banner">
+    <div>
+      <div class="stat-label">Market Directive</div>
+      <div id="regimeMsg" style="font-weight:600;font-size:0.95rem;margin-top:2px;"></div>
+    </div>
+    <div class="regime-stats">
+      <div><div class="stat-label">Breadth (% > SMA20)</div><div class="stat-val" id="breadthVal"></div></div>
+      <div><div class="stat-label">Equal-Weight Index</div><div class="stat-val" id="mktIndexVal"></div></div>
+      <div><div class="stat-label">Market 20d SMA</div><div class="stat-val" id="mktSmaVal"></div></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <input type="text" id="searchBox" class="search-box" placeholder="Search stock or sector... (e.g. JINDALPOLY, Construction, Pharma)"/>
+    <select id="sectorFilter"><option value="">All Sectors</option></select>
+    <select id="strategyFilter">
+      <option value="">All Strategies</option>
+      <option value="Protocol Fortified">Protocol Fortified</option>
+      <option value="Minervini Template">Minervini Template</option>
+      <option value="Qullamaggie Breakout">Qullamaggie Breakout</option>
+      <option value="CANSLIM Pivot">CANSLIM Pivot</option>
+      <option value="PKScreener VCP">PKScreener VCP</option>
+    </select>
+    <div class="capital-box">
+      <span>Cap / Stock: ₹</span>
+      <input type="number" id="capInput" value="100000" step="10000"/>
+    </div>
+  </div>
+
+  <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Symbol / Sector</th>
+          <th>Matched Frameworks</th>
+          <th class="num">Close (₹)</th>
+          <th class="num">Stop Loss (₹)</th>
+          <th class="num">Shares (₹100k)</th>
+          <th class="num">Infusion (₹)</th>
+          <th class="num">Max Risk (₹)</th>
+          <th class="num">RVOL</th>
+          <th class="num">20d Return</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="infoModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="modalSym" style="font-size:1.3rem;"></h2>
+      <div class="close-btn" onclick="closeModal()">&times;</div>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+const D = {"asof": "2026-10-01", "regime": {"name": "DEFENSIVE", "action": "CASH", "index": 970.16, "sma20": 1000.18, "breadth": 21.3, "message": "Market is in DEFENSIVE regime: Universe index is below 20-day SMA and breadth is weak (21.3% above SMA20). Capital protection (CASH) recommended."}, "candidates": [{"symbol": "VENUSREM", "sector": "Unknown", "close": 1796.7, "rvol": 4.23, "ret20": 10.8, "adr": 5.2, "ext50": 9.7, "stop": 1652.96, "stop_pct": 8.0, "strategies": ["Protocol Fortified", "Qullamaggie Breakout", "CANSLIM Pivot"], "primary_rank": 3, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 4.2x, 20d return +10.8%, extension +9.7% within 20% cap."}, {"symbol": "LOKESHMACH", "sector": "Unknown", "close": 400.8, "rvol": 21.47, "ret20": 11.2, "adr": 5.7, "ext50": 17.6, "stop": 368.74, "stop_pct": 8.0, "strategies": ["Protocol Fortified", "CANSLIM Pivot", "PKScreener VCP"], "primary_rank": 1, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 21.5x, 20d return +11.2%, extension +17.6% within 20% cap."}, {"symbol": "WELSPUNLIV", "sector": "Textiles", "close": 239.17, "rvol": 5.26, "ret20": 19.2, "adr": 3.7, "ext50": 25.2, "stop": 221.47, "stop_pct": 7.4, "strategies": ["Qullamaggie Breakout", "CANSLIM Pivot", "PKScreener VCP"], "primary_rank": 2, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 5.3x, 20d return +19.2%, extension +25.2% within 20% cap."}, {"symbol": "DYNAMATECH", "sector": "Capital Goods", "close": 13756.0, "rvol": 1.71, "ret20": 19.3, "adr": 3.8, "ext50": 18.4, "stop": 12698.87, "stop_pct": 7.7, "strategies": ["Protocol Fortified", "Qullamaggie Breakout", "CANSLIM Pivot"], "primary_rank": 5, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 1.7x, 20d return +19.3%, extension +18.4% within 20% cap."}, {"symbol": "DIFFNKG", "sector": "Unknown", "close": 464.4, "rvol": 1.87, "ret20": -2.6, "adr": 5.1, "ext50": 10.0, "stop": 427.25, "stop_pct": 8.0, "strategies": ["Qullamaggie Breakout", "PKScreener VCP"], "primary_rank": 5, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 1.9x, 20d return -2.6%, extension +10.0% within 20% cap."}, {"symbol": "ADFFOODS", "sector": "Unknown", "close": 281.4, "rvol": 2.9, "ret20": 5.2, "adr": 3.6, "ext50": 3.7, "stop": 261.25, "stop_pct": 7.2, "strategies": ["Protocol Fortified", "PKScreener VCP"], "primary_rank": 4, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 2.9x, 20d return +5.2%, extension +3.7% within 20% cap."}, {"symbol": "SCHNEIDER", "sector": "Capital Goods", "close": 1275.4, "rvol": 6.84, "ret20": 7.1, "adr": 3.4, "ext50": 1.5, "stop": 1189.83, "stop_pct": 6.7, "strategies": ["Protocol Fortified", "PKScreener VCP"], "primary_rank": 2, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 6.8x, 20d return +7.1%, extension +1.5% within 20% cap."}, {"symbol": "MOREPENLAB", "sector": "Unknown", "close": 133.72, "rvol": 2.19, "ret20": 14.0, "adr": 6.1, "ext50": 37.8, "stop": 123.02, "stop_pct": 8.0, "strategies": ["Minervini Template", "CANSLIM Pivot"], "primary_rank": 5, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 2.2x, 20d return +14.0%, extension +37.8% within 20% cap."}, {"symbol": "RAMRAT", "sector": "Unknown", "close": 616.55, "rvol": 3.66, "ret20": 15.2, "adr": 4.7, "ext50": 21.4, "stop": 567.23, "stop_pct": 8.0, "strategies": ["Qullamaggie Breakout", "CANSLIM Pivot"], "primary_rank": 3, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 3.7x, 20d return +15.2%, extension +21.4% within 20% cap."}, {"symbol": "RATNAVEER", "sector": "Unknown", "close": 345.45, "rvol": 1.73, "ret20": 20.7, "adr": 6.1, "ext50": 29.5, "stop": 317.81, "stop_pct": 8.0, "strategies": ["Minervini Template", "Qullamaggie Breakout"], "primary_rank": 9, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 1.7x, 20d return +20.7%, extension +29.5% within 20% cap."}, {"symbol": "ALICON", "sector": "Unknown", "close": 871.95, "rvol": 10.63, "ret20": 27.9, "adr": 4.9, "ext50": 21.9, "stop": 802.19, "stop_pct": 8.0, "strategies": ["CANSLIM Pivot", "PKScreener VCP"], "primary_rank": 2, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 10.6x, 20d return +27.9%, extension +21.9% within 20% cap."}, {"symbol": "DPABHUSHAN", "sector": "Unknown", "close": 1874.0, "rvol": 7.02, "ret20": 37.9, "adr": 5.0, "ext50": 30.0, "stop": 1724.08, "stop_pct": 8.0, "strategies": ["CANSLIM Pivot", "PKScreener VCP"], "primary_rank": 1, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 7.0x, 20d return +37.9%, extension +30.0% within 20% cap."}, {"symbol": "VALIANTORG", "sector": "Unknown", "close": 477.15, "rvol": 5.06, "ret20": 58.5, "adr": 6.2, "ext50": 43.3, "stop": 438.98, "stop_pct": 8.0, "strategies": ["Minervini Template", "CANSLIM Pivot"], "primary_rank": 7, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 5.1x, 20d return +58.5%, extension +43.3% within 20% cap."}, {"symbol": "LALPATHLAB", "sector": "Healthcare", "close": 2005.1, "rvol": 1.66, "ret20": 4.2, "adr": 3.1, "ext50": 4.9, "stop": 1879.77, "stop_pct": 6.3, "strategies": ["PKScreener VCP"], "primary_rank": 7, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 1.7x, 20d return +4.2%, extension +4.9% within 20% cap."}, {"symbol": "BIRLACABLE", "sector": "Unknown", "close": 383.0, "rvol": 0.75, "ret20": 6.8, "adr": 6.2, "ext50": 24.3, "stop": 352.36, "stop_pct": 8.0, "strategies": ["Minervini Template"], "primary_rank": 8, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 0.8x, 20d return +6.8%, extension +24.3% within 20% cap."}, {"symbol": "JAYBARMARU", "sector": "Unknown", "close": 130.8, "rvol": 2.09, "ret20": 7.4, "adr": 4.6, "ext50": 0.9, "stop": 120.34, "stop_pct": 8.0, "strategies": ["Protocol Fortified"], "primary_rank": 6, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 2.1x, 20d return +7.4%, extension +0.9% within 20% cap."}, {"symbol": "SHILPAMED", "sector": "Healthcare", "close": 1064.1, "rvol": 1.9, "ret20": 11.4, "adr": 4.8, "ext50": 23.1, "stop": 978.97, "stop_pct": 8.0, "strategies": ["Minervini Template"], "primary_rank": 15, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 1.9x, 20d return +11.4%, extension +23.1% within 20% cap."}, {"symbol": "CUPID", "sector": "Fast Moving Consumer Goods", "close": 312.5, "rvol": 1.17, "ret20": 11.6, "adr": 4.9, "ext50": 15.6, "stop": 287.5, "stop_pct": 8.0, "strategies": ["Protocol Fortified"], "primary_rank": 7, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 1.2x, 20d return +11.6%, extension +15.6% within 20% cap."}, {"symbol": "SYNCOMF", "sector": "Unknown", "close": 23.96, "rvol": 1.53, "ret20": 12.7, "adr": 7.4, "ext50": 36.4, "stop": 22.04, "stop_pct": 8.0, "strategies": ["Minervini Template"], "primary_rank": 12, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 1.5x, 20d return +12.7%, extension +36.4% within 20% cap."}, {"symbol": "SHREEJISPG", "sector": "Services", "close": 775.35, "rvol": 0.93, "ret20": 16.7, "adr": 3.1, "ext50": 15.3, "stop": 727.91, "stop_pct": 6.1, "strategies": ["Protocol Fortified"], "primary_rank": 8, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 0.9x, 20d return +16.7%, extension +15.3% within 20% cap."}, {"symbol": "ISGEC", "sector": "Unknown", "close": 919.7, "rvol": 2.23, "ret20": 20.2, "adr": 3.7, "ext50": 14.6, "stop": 851.8, "stop_pct": 7.4, "strategies": ["Qullamaggie Breakout"], "primary_rank": 6, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 2.2x, 20d return +20.2%, extension +14.6% within 20% cap."}, {"symbol": "SALSTEEL", "sector": "Unknown", "close": 98.92, "rvol": 1.78, "ret20": 20.6, "adr": 5.6, "ext50": 33.5, "stop": 91.01, "stop_pct": 8.0, "strategies": ["Minervini Template"], "primary_rank": 13, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 1.8x, 20d return +20.6%, extension +33.5% within 20% cap."}, {"symbol": "NRAIL", "sector": "Unknown", "close": 659.5, "rvol": 0.47, "ret20": 33.0, "adr": 7.5, "ext50": 19.1, "stop": 606.74, "stop_pct": 8.0, "strategies": ["Minervini Template"], "primary_rank": 11, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 0.5x, 20d return +33.0%, extension +19.1% within 20% cap."}, {"symbol": "AXISCADES", "sector": "Capital Goods", "close": 2307.3, "rvol": 2.36, "ret20": 33.3, "adr": 5.0, "ext50": 35.2, "stop": 2122.72, "stop_pct": 8.0, "strategies": ["CANSLIM Pivot"], "primary_rank": 8, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 2.4x, 20d return +33.3%, extension +35.2% within 20% cap."}, {"symbol": "WHEELS", "sector": "Unknown", "close": 2241.3, "rvol": 0.21, "ret20": 35.5, "adr": 6.9, "ext50": 28.5, "stop": 2062.0, "stop_pct": 8.0, "strategies": ["Minervini Template"], "primary_rank": 14, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 0.2x, 20d return +35.5%, extension +28.5% within 20% cap."}, {"symbol": "BHAGERIA", "sector": "Unknown", "close": 382.05, "rvol": 1.17, "ret20": 38.2, "adr": 5.8, "ext50": 43.2, "stop": 351.49, "stop_pct": 8.0, "strategies": ["Minervini Template"], "primary_rank": 6, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 1.2x, 20d return +38.2%, extension +43.2% within 20% cap."}, {"symbol": "FILATEX", "sector": "Unknown", "close": 106.1, "rvol": 0.51, "ret20": 38.8, "adr": 6.4, "ext50": 25.5, "stop": 97.61, "stop_pct": 8.0, "strategies": ["Minervini Template"], "primary_rank": 10, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 0.5x, 20d return +38.8%, extension +25.5% within 20% cap."}, {"symbol": "INDORAMA", "sector": "Unknown", "close": 95.81, "rvol": 0.56, "ret20": 39.1, "adr": 9.3, "ext50": 32.9, "stop": 88.15, "stop_pct": 8.0, "strategies": ["Minervini Template"], "primary_rank": 2, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 0.6x, 20d return +39.1%, extension +32.9% within 20% cap."}, {"symbol": "RAYMOND", "sector": "Unknown", "close": 1197.2, "rvol": 0.18, "ret20": 58.0, "adr": 7.6, "ext50": 52.6, "stop": 1101.42, "stop_pct": 8.0, "strategies": ["Minervini Template"], "primary_rank": 4, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 0.2x, 20d return +58.0%, extension +52.6% within 20% cap."}, {"symbol": "STLNETWORK", "sector": "Unknown", "close": 47.18, "rvol": 1.43, "ret20": 71.6, "adr": 4.7, "ext50": 46.8, "stop": 43.41, "stop_pct": 8.0, "strategies": ["Minervini Template"], "primary_rank": 3, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 1.4x, 20d return +71.6%, extension +46.8% within 20% cap."}, {"symbol": "AHCL", "sector": "Unknown", "close": 32.86, "rvol": 0.03, "ret20": 110.6, "adr": 8.0, "ext50": 75.6, "stop": 30.23, "stop_pct": 8.0, "strategies": ["Minervini Template"], "primary_rank": 1, "reason": "Stage 2 uptrend (Close > SMA50 > SMA200), RVOL 0.0x, 20d return +110.6%, extension +75.6% within 20% cap."}], "default_capital_per_stock": 100000};
+
+document.getElementById('asofDate').textContent = D.asof;
+const regBadge = document.getElementById('regimeBadge');
+regBadge.textContent = D.regime.name + ' (' + D.regime.action + ')';
+regBadge.className = 'badge ' + (D.regime.name === 'BULL' ? 'bull' : 'defensive');
+
+document.getElementById('regimeMsg').textContent = D.regime.message;
+document.getElementById('breadthVal').textContent = D.regime.breadth + '%';
+document.getElementById('mktIndexVal').textContent = D.regime.index;
+document.getElementById('mktSmaVal').textContent = D.regime.sma20;
+
+// Populate sector dropdown
+const sectors = [...new Set(D.candidates.map(c => c.sector).filter(Boolean))].sort();
+const secSel = document.getElementById('sectorFilter');
+sectors.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; secSel.appendChild(o); });
+
+function render() {
+  const q = document.getElementById('searchBox').value.trim().toLowerCase();
+  const sec = document.getElementById('sectorFilter').value;
+  const strat = document.getElementById('strategyFilter').value;
+  const cap = parseFloat(document.getElementById('capInput').value) || 100000;
+
+  const filtered = D.candidates.filter(c => {
+    const matchesQ = !q || c.symbol.toLowerCase().includes(q) || c.sector.toLowerCase().includes(q);
+    const matchesSec = !sec || c.sector === sec;
+    const matchesStrat = !strat || c.strategies.includes(strat);
+    return matchesQ && matchesSec && matchesStrat;
+  });
+
+  const tb = document.getElementById('tableBody');
+  tb.innerHTML = filtered.map((c, i) => {
+    const shares = Math.floor(cap / c.close);
+    const infusion = (shares * c.close).toLocaleString('en-IN', {maximumFractionDigits: 0});
+    const risk = (shares * (c.close - c.stop)).toLocaleString('en-IN', {maximumFractionDigits: 0});
+    const stratTags = c.strategies.map(s => `<span class="strat-tag">${s}</span>`).join('');
+    return `<tr>
+      <td>${i + 1}</td>
+      <td>
+        <span class="sym" onclick="openModal('${c.symbol}')">${c.symbol}</span><br/>
+        <span class="sector-pill">${c.sector}</span>
+      </td>
+      <td>${stratTags}</td>
+      <td class="num">₹${c.close.toFixed(2)}</td>
+      <td class="num" style="color:var(--red)">₹${c.stop.toFixed(2)} <small>(-${c.stop_pct}%)</small></td>
+      <td class="num"><span class="shares-val">${shares}</span></td>
+      <td class="num">₹${infusion}</td>
+      <td class="num">₹${risk}</td>
+      <td class="num">${c.rvol.toFixed(1)}x</td>
+      <td class="num" style="color:${c.ret20 >= 0 ? '#3fb950' : '#f85149'}">${c.ret20 >= 0 ? '+' : ''}${c.ret20}%</td>
+    </tr>`;
+  }).join('');
+}
+
+function openModal(sym) {
+  const c = D.candidates.find(x => x.symbol === sym);
+  if (!c) return;
+  document.getElementById('modalSym').textContent = c.symbol + ' — ' + c.sector;
+  document.getElementById('modalBody').innerHTML = `
+    <div class="rationale-row"><b>Why It Was Picked:</b> ${c.reason}</div>
+    <div class="rationale-row"><b>Frameworks:</b> ${c.strategies.join(', ')}</div>
+    <div class="rationale-row"><b>50-day SMA Extension:</b> ${c.ext50 > 0 ? '+' : ''}${c.ext50}% (Strict &le;20% Gate Cleared)</div>
+    <div class="rationale-row"><b>Relative Volume (RVOL):</b> ${c.rvol}x institutional thrust</div>
+    <div class="rationale-row"><b>Average Daily Range (ADR):</b> ${c.adr}% volatility expansion</div>
+    <div class="rationale-row"><b>Suggested Trailing Stop:</b> ₹${c.stop} (-${c.stop_pct}% from entry)</div>
+  `;
+  document.getElementById('infoModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('infoModal').classList.remove('open');
+}
+
+document.getElementById('searchBox').oninput = render;
+document.getElementById('sectorFilter').onchange = render;
+document.getElementById('strategyFilter').onchange = render;
+document.getElementById('capInput').oninput = render;
+render();
+</script>
+</body>
+</html>

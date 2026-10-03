@@ -27,7 +27,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from protocol import audit, engine, evidence, quality  # noqa: E402
+from protocol import audit, engine, evidence, quality, regime, sector, sizing  # noqa: E402
 from protocol.config import get, load_config  # noqa: E402
 from protocol.data import data_quality_report, load_history  # noqa: E402
 from protocol.features import build_panel  # noqa: E402
@@ -46,6 +46,9 @@ def main() -> int:
     ap.add_argument("--top", type=int, default=10)
     ap.add_argument("--symbols", default="all")
     ap.add_argument("--outdir", default=str(ROOT / "reports"))
+    ap.add_argument("--ignore-regime", action="store_true", help="Rank candidates even if market regime is defensive")
+    ap.add_argument("--capital-per-stock", type=float, default=None, help="Fixed capital to allocate per stock (e.g. 100000)")
+    ap.add_argument("--max-per-sector", type=int, default=1, help="Max candidates per sector")
     args = ap.parse_args()
 
     cfg = load_config(args.config)
@@ -60,9 +63,14 @@ def main() -> int:
         return 1
 
     panel = build_panel(history)
+    mkt_regime = regime.get_regime_at(history, asof)
 
-    # ---- 1. today's ranked names -------------------------------------------
-    picks = quality.rank(panel, cfg, asof, top=args.top)
+    # ---- 1. today's ranked names (filtered by extension & sector) -----------
+    raw_picks = quality.rank(panel, cfg, asof, top=args.top * 3)
+    if not raw_picks.empty and "ext_sma50" in raw_picks.columns:
+        max_ext = float(cfg.get("quality", {}).get("max_ext_sma50", 0.20))
+        raw_picks = raw_picks[raw_picks["ext_sma50"].isna() | (raw_picks["ext_sma50"] <= max_ext)]
+    picks = sector.apply_sector_diversification(raw_picks, max_per_sector=args.max_per_sector, top=args.top)
     today = []
     for _, r in picks.iterrows():
         item = {k: r[k] for k in (
@@ -70,9 +78,35 @@ def main() -> int:
             "prox52", "efficiency", "ret20", "ret120", "turnover20",
             "penetration", "stop_proxy", "score", "coverage", "data_status",
             "candidates", "edge", "edge_age_days") if k in picks.columns}
+        item["industry"] = r.get("industry") or sector.get_sector(str(r["symbol"]))
         item["reason"] = quality.reason(r, cfg)
         item["gates"] = list(r["gates"])
         today.append(item)
+
+    cand_dicts = [{
+        "symbol": t["symbol"],
+        "entry_price": float(t["close"]),
+        "atr14": float(t.get("atrpct") or 0.03) * float(t["close"]),
+        "stop_price": float(t.get("stop_proxy")) if t.get("stop_proxy") is not None else None,
+    } for t in today]
+    if args.capital_per_stock:
+        allocations = sizing.allocate_fixed_capital_per_stock(
+            cand_dicts, capital_per_stock=args.capital_per_stock
+        )
+        rem_cash = 0.0
+    else:
+        allocations, rem_cash = sizing.allocate_portfolio_capital(
+            cand_dicts, total_portfolio_capital=args.capital, risk_per_trade_pct=0.01
+        )
+    alloc_map = {a.symbol: a for a in allocations}
+    for t in today:
+        al = alloc_map.get(t["symbol"])
+        if al:
+            t["shares"] = al.shares
+            t["capital_allocated"] = al.capital_allocated
+            t["risk_rupees"] = al.risk_rupees
+            t["stop_price"] = al.stop_price
+            t["capital_pct"] = al.capital_pct
 
     # ---- 2. historical evidence per strategy -------------------------------
     bars = {s: b.sort_values("Date").reset_index(drop=True)
@@ -94,12 +128,19 @@ def main() -> int:
     if today:
         best = winners[0] if winners else max(
             ev_rows, key=lambda x: x.get("expectancy") or -9)
-        headline = (
-            f"{today[0]['symbol']} ranks first today (quality score {today[0]['score']}). "
-            f"The rule with the best evidence is `{best['label']}`: it has fired "
-            f"{best['N']} times historically and averages {best['expectancy']} net per "
-            f"trade versus {null_exp} for the seeded random null — "
-            f"{'it beats the null' if best.get('beats_null') else 'it does NOT beat the null'}.")
+        if mkt_regime["regime"] == "DEFENSIVE" and not args.ignore_regime:
+            headline = (
+                f"MARKET REGIME DEFENSIVE ({mkt_regime['action']}): "
+                f"{mkt_regime['message']} "
+                f"Top defensive candidate is {today[0]['symbol']} (score {today[0]['score']}). "
+                f"Capital protection (CASH) advised.")
+        else:
+            headline = (
+                f"{today[0]['symbol']} ranks first today (quality score {today[0]['score']}). "
+                f"The rule with the best evidence is `{best['label']}`: it has fired "
+                f"{best['N']} times historically and averages {best['expectancy']} net per "
+                f"trade versus {null_exp} for the seeded random null — "
+                f"{'it beats the null' if best.get('beats_null') else 'it does NOT beat the null'}.")
     else:
         headline = ("No stock cleared every hard gate today. That is a real answer: "
                     "the engine is saying there is nothing worth buying right now.")
@@ -129,6 +170,7 @@ def main() -> int:
         "sufficiency": quality.data_sufficiency_report(panel, cfg, asof),
         "strategies": evidence.STRATEGIES, "evidence": ev_rows,
         "caveats": evidence.CAVEATS,
+        "regime": mkt_regime,
     }
 
     out = Path(args.outdir)
@@ -137,11 +179,31 @@ def main() -> int:
     (out / "decisions.json").write_text(json.dumps(payload, indent=2, default=str),
                                         encoding="utf-8")
 
+    print(f"\n==============================================================================")
+    print(f"MARKET REGIME: {mkt_regime['regime']} ({mkt_regime['action']})")
+    print(f"{mkt_regime['message']}")
+    print(f"==============================================================================\n")
     print(payload["headline"])
     if today:
         print()
         for t in today:
-            print(f"  {t['rank']:>2}. {t['symbol']:<12} score={t['score']:.2f}  {t['reason']}")
+            sec_lbl = f"[{t.get('industry', 'Unknown')}]"
+            print(f"  {t['rank']:>2}. {t['symbol']:<12} {sec_lbl:<25} score={t['score']:.2f}  {t['reason']}")
+        if args.capital_per_stock:
+            print(f"\n--- CAPITAL INFUSION (Fixed INR {args.capital_per_stock:,.0f} per Stock) ---")
+        else:
+            print("\n--- VOLATILITY RISK-PARITY CAPITAL INFUSION (1% Risk / Trade) ---")
+        print(f"  {'Symbol':<12} {'Shares':>7} {'Entry (INR)':>12} {'Infusion (INR)':>16} {'Alloc %':>9} {'Stop (INR)':>12} {'Risk (INR)':>12}")
+        print("  " + "-" * 84)
+        for t in today:
+            if "capital_allocated" in t:
+                print(f"  {t['symbol']:<12} {t['shares']:>7d} {t['close']:>12.2f} {t['capital_allocated']:>16.2f} {t.get('capital_pct', 0.0)*100:>8.1f}% {t.get('stop_price', 0.0):>12.2f} {t.get('risk_rupees', 0.0):>12.2f}")
+        print("  " + "-" * 84)
+        total_infusion = sum(t.get("capital_allocated", 0.0) for t in today)
+        if args.capital_per_stock:
+            print(f"  Total Portfolio Infusion: INR {total_infusion:,.2f} across {len(today)} stocks (INR {args.capital_per_stock:,.0f} per stock)")
+        else:
+            print(f"  Portfolio Capital: INR {args.capital:,.2f} | Total Allocated: INR {total_infusion:,.2f} | Cash: INR {rem_cash:,.2f}")
     print()
     print(f"{'strategy':<24}{'N':>8}{'expectancy':>12}{' 95% CI':>24}{'  vs null':>10}")
     for e in ev_rows:

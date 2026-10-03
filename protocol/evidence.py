@@ -99,7 +99,20 @@ def to_markdown(payload: dict[str, Any]) -> str:
         f"- Universe: {u['symbols']} symbols, {u['sessions']} sessions "
         f"({u['from']} → {u['to']})",
         f"- No-lookahead audit: **{'PASS' if payload['audit_passed'] else 'FAIL'}**",
-        "", "## 1. The one-line answer", "", f"**{payload['headline']}**", "",
+        "",
+    ]
+    reg = payload.get("regime")
+    if reg:
+        alert = "CAUTION" if reg.get("regime") == "DEFENSIVE" else "NOTE" if reg.get("regime") == "BULL" else "IMPORTANT"
+        L += [
+            f"> [!{alert}]",
+            f"> **MARKET REGIME: {reg.get('regime')} ({reg.get('action')})**",
+            f"> {reg.get('message')}",
+            f"> *Universe Index: {reg.get('ew_close')} (SMA20: {reg.get('sma20')}) | Breadth: {reg.get('pct_above_sma20')}% above 20d SMA*",
+            "",
+        ]
+    L += [
+        "## 1. The one-line answer", "", f"**{payload['headline']}**", "",
         "## 2. What you would buy today", "",
     ]
     if payload["today"]:

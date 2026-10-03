@@ -292,10 +292,8 @@ def reason(row: pd.Series, cfg: dict) -> str:
     parts = [(f, v) for f, v in parts if v is not None and pd.notna(v)]
     parts.sort(key=lambda kv: -float(kv[1]))
     top = ", ".join(f"{COMPONENTS[f][0].lower()} {float(v):.0%}" for f, v in parts[:3])
-    return (f"{row['symbol']} scored {row['score']:.2f}/1.00 against "
-            f"{int(row.get('candidates') or 0)} candidates today "
-            f"(strongest: {top}). Close INR {row['close']}, 52w-high "
-            f"{row['prox52']}, ATR% {row['atrpct']}, RVOL20 {row['rvol20']}, "
-            f"120d {row['ret120']}, turnover INR "
-            f"{round(float(row['turnover20'] or 0)):,}. Coverage "
-            f"{float(row.get('coverage') or 0):.0%} ({row.get('data_status')}).")
+    return (
+        f"{row['symbol']} scored {row['score']:.2f}/1.00 against {int(row.get('candidates') or 0)} "
+        f"candidates (top: {top}). Close INR {row['close']:.2f}, 52w-high {row['prox52']:.2f}, "
+        f"ATR% {row['atrpct']:.2%}, RVOL20 {row['rvol20']:.2f}, turnover INR {round(float(row['turnover20'] or 0)):,}."
+    )

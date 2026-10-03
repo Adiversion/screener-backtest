@@ -1,0 +1,194 @@
+"""Codified GitHub Momentum Screeners for Comparative Benchmarking.
+
+Implementations of prominent open-source quant and momentum screeners:
+1. Minervini Trend Template (RyanJHamby/stock-screener, icedevil2001)
+2. Qullamaggie Breakout & High Tight Flag (axidzz/Qullamaggie-Setups)
+3. CANSLIM Growth / Pivot Breakout (William O'Neil)
+4. PKScreener Volatility Contraction Pattern (pkjmesra/PKScreener)
+5. Protocol v2 Fortified Screener (Our current regime-gated engine)
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+
+@dataclass
+class ScreenerResult:
+    screener_name: str
+    symbol: str
+    close: float
+    rvol20: float
+    ret20: float
+    adr20: float
+    ext_sma50: float
+    score: float
+
+
+def compute_screener_features(sub_history: pd.DataFrame, asof_date: pd.Timestamp | str) -> pd.DataFrame:
+    """Computes technical indicators for all symbols up to asof_date."""
+    asof = pd.Timestamp(asof_date).normalize()
+    filtered = sub_history[pd.to_datetime(sub_history["Date"]).dt.normalize() <= asof].copy()
+    active_symbols = set(filtered[pd.to_datetime(filtered["Date"]).dt.normalize() == asof]["Symbol"])
+
+    records = []
+    # Process only active symbols
+    for sym, group in filtered[filtered["Symbol"].isin(active_symbols)].groupby("Symbol"):
+        if len(group) < 200:
+            continue
+        c = group["Close"].values
+        o = group["Open"].values
+        h = group["High"].values
+        l = group["Low"].values
+        v = group["Volume"].values
+
+        close_now = c[-1]
+        sma50 = float(np.mean(c[-50:]))
+        sma150 = float(np.mean(c[-150:]))
+        sma200 = float(np.mean(c[-200:]))
+        sma200_1m = float(np.mean(c[-222:-22])) if len(c) >= 222 else sma200
+
+        # Exponential moving averages
+        s_c = pd.Series(c)
+        ema10 = float(s_c.ewm(span=10, adjust=False).mean().iloc[-1])
+        ema20 = float(s_c.ewm(span=20, adjust=False).mean().iloc[-1])
+
+        # Volume and range features
+        vol_mean20 = float(np.mean(v[-21:-1])) if len(v) >= 21 else float(np.mean(v))
+        vol_mean50 = float(np.mean(v[-51:-1])) if len(v) >= 51 else vol_mean20
+        rvol20 = float(v[-1] / vol_mean20) if vol_mean20 > 0 else 0.0
+        rvol50 = float(v[-1] / vol_mean50) if vol_mean50 > 0 else 0.0
+
+        r10 = float(np.max(h[-11:-1])) if len(h) >= 11 else float(h[-1])
+        r20 = float(np.max(h[-21:-1])) if len(h) >= 21 else float(h[-1])
+        r60 = float(np.max(h[-61:-1])) if len(h) >= 61 else float(h[-1])
+        l20 = float(np.min(l[-21:-1])) if len(l) >= 21 else float(l[-1])
+        l60 = float(np.min(l[-61:-1])) if len(l) >= 61 else float(l[-1])
+
+        h52 = float(np.max(h[-253:-1])) if len(h) >= 253 else float(np.max(h[:-1]))
+        l52 = float(np.min(l[-253:-1])) if len(l) >= 253 else float(np.min(l[:-1]))
+
+        # ADR & Volatility Contraction
+        adr20 = float(np.mean((h[-20:] - l[-20:]) / c[-20:]))
+        turnover20 = float(np.mean(c[-20:] * v[-20:]))
+        ret20 = float((c[-1] / c[-21]) - 1.0) if len(c) >= 21 else 0.0
+        ret60 = float((c[-1] / c[-61]) - 1.0) if len(c) >= 61 else 0.0
+
+        # Base volume dry up (prior 3 sessions minimum volume vs 20d avg)
+        pre_vol_min = float(np.min(v[-4:-1]) / vol_mean20) if len(v) >= 4 and vol_mean20 > 0 else 1.0
+        range20 = float((r20 - l20) / close_now)
+        range60 = float((r60 - l60) / close_now)
+
+        records.append({
+            "Symbol": sym, "Close": close_now, "Open": o[-1], "High": h[-1], "Low": l[-1],
+            "Volume": v[-1], "sma50": sma50, "sma150": sma150, "sma200": sma200,
+            "sma200_1m": sma200_1m, "ema10": ema10, "ema20": ema20, "rvol20": rvol20,
+            "rvol50": rvol50, "r10": r10, "r20": r20, "h52": h52, "l52": l52,
+            "adr20": adr20, "turnover20": turnover20, "ret20": ret20, "ret60": ret60,
+            "pre_vol_min": pre_vol_min, "range20": range20, "range60": range60,
+            "ext_sma50": (close_now - sma50) / sma50 if sma50 > 0 else 0.0,
+        })
+    return pd.DataFrame(records)
+
+
+def screen_minervini(df: pd.DataFrame, top_n: int = 10, min_turnover_cr: float = 1.0) -> list[ScreenerResult]:
+    """Mark Minervini Trend Template Screener (RyanJHamby/stock-screener, icedevil2001)."""
+    sub = df[df["turnover20"] >= min_turnover_cr * 1e7].copy()
+    m = (
+        (sub["Close"] > sub["sma150"]) & (sub["Close"] > sub["sma200"]) &
+        (sub["sma150"] > sub["sma200"]) &
+        (sub["sma200"] >= sub["sma200_1m"] * 0.99) &
+        (sub["sma50"] > sub["sma150"]) & (sub["sma50"] > sub["sma200"]) &
+        (sub["Close"] > sub["sma50"]) &
+        (sub["Close"] >= 1.30 * sub["l52"]) &
+        (sub["Close"] >= 0.75 * sub["h52"]) &
+        (sub["ret20"] > 0)
+    )
+    passed = sub[m].copy()
+    # Rank by 60d momentum + 20d momentum
+    passed["score"] = passed["ret60"] * 0.6 + passed["ret20"] * 0.4
+    ranked = passed.sort_values("score", ascending=False).head(top_n)
+    return [
+        ScreenerResult("MINERVINI_TEMPLATE", r["Symbol"], r["Close"], r["rvol20"], r["ret20"], r["adr20"], r["ext_sma50"], r["score"])
+        for _, r in ranked.iterrows()
+    ]
+
+
+def screen_qullamaggie(df: pd.DataFrame, top_n: int = 10, min_turnover_cr: float = 1.0) -> list[ScreenerResult]:
+    """Kristjan Qullamaggie High Tight Flag & Breakout Screener (axidzz/Qullamaggie-Setups)."""
+    sub = df[df["turnover20"] >= min_turnover_cr * 1e7].copy()
+    m = (
+        (sub["ema10"] > sub["ema20"]) & (sub["ema20"] > sub["sma50"]) &
+        (sub["adr20"] >= 0.035) &  # High daily volatility asset (ADR% >= 3.5%)
+        (sub["Close"] > sub["r10"]) &  # Pivot breakout
+        (sub["rvol20"] >= 1.4) &  # Volume thrust
+        ((sub["Close"] - sub["ema10"]) / sub["ema10"] <= 0.08)  # Not over-extended from 10 EMA
+    )
+    passed = sub[m].copy()
+    passed["score"] = passed["adr20"] * passed["rvol20"]
+    ranked = passed.sort_values("score", ascending=False).head(top_n)
+    return [
+        ScreenerResult("QULLAMAGGIE_BREAKOUT", r["Symbol"], r["Close"], r["rvol20"], r["ret20"], r["adr20"], r["ext_sma50"], r["score"])
+        for _, r in ranked.iterrows()
+    ]
+
+
+def screen_canslim(df: pd.DataFrame, top_n: int = 10, min_turnover_cr: float = 1.0) -> list[ScreenerResult]:
+    """William O'Neil CANSLIM Pivot Breakout Screener."""
+    sub = df[df["turnover20"] >= min_turnover_cr * 1e7].copy()
+    m = (
+        (sub["Close"] > sub["sma50"]) & (sub["sma50"] > sub["sma200"]) &
+        (sub["Close"] >= 0.85 * sub["h52"]) &  # Within 15% of 52-week high
+        (sub["Close"] > sub["r20"]) &  # Fresh 20-day high breakout
+        (sub["Close"] <= 1.05 * sub["r20"]) &  # Anti-chasing: <= 5% above pivot
+        (sub["rvol50"] >= 1.5) &  # Volume surge >= 1.5x 50-day average
+        (sub["ret60"] > 0)
+    )
+    passed = sub[m].copy()
+    passed["score"] = passed["ret60"] * passed["rvol20"]
+    ranked = passed.sort_values("score", ascending=False).head(top_n)
+    return [
+        ScreenerResult("CANSLIM_PIVOT", r["Symbol"], r["Close"], r["rvol20"], r["ret20"], r["adr20"], r["ext_sma50"], r["score"])
+        for _, r in ranked.iterrows()
+    ]
+
+
+def screen_pkscreener_vcp(df: pd.DataFrame, top_n: int = 10, min_turnover_cr: float = 1.0) -> list[ScreenerResult]:
+    """PKScreener Volatility Contraction Pattern Screener (pkjmesra/PKScreener)."""
+    sub = df[df["turnover20"] >= min_turnover_cr * 1e7].copy()
+    m = (
+        (sub["Close"] > sub["sma50"]) & (sub["sma50"] > sub["sma200"]) &
+        (sub["range20"] < sub["range60"] * 0.85) &  # Volatility contraction
+        (sub["pre_vol_min"] <= 0.70) &  # Volume dry-up in prior sessions
+        (sub["Close"] > sub["r10"]) &  # Breakout of tight contraction
+        (sub["rvol20"] >= 1.25)
+    )
+    passed = sub[m].copy()
+    passed["score"] = (1.0 / (passed["range20"] + 0.01)) * passed["rvol20"]
+    ranked = passed.sort_values("score", ascending=False).head(top_n)
+    return [
+        ScreenerResult("PKSCREENER_VCP", r["Symbol"], r["Close"], r["rvol20"], r["ret20"], r["adr20"], r["ext_sma50"], r["score"])
+        for _, r in ranked.iterrows()
+    ]
+
+
+def screen_protocol_v2(df: pd.DataFrame, top_n: int = 10, min_turnover_cr: float = 1.0) -> list[ScreenerResult]:
+    """Our Protocol v2 Fortified Screener (Regime + Sector Cap + Climax Guard)."""
+    sub = df[df["turnover20"] >= min_turnover_cr * 1e7].copy()
+    m = (
+        (sub["Close"] > sub["sma50"]) & (sub["sma50"] > sub["sma200"]) &
+        (sub["ext_sma50"] <= 0.20) &  # Anti-climax extension cap
+        (sub["Close"] > sub["r20"]) &
+        (sub["ret20"] > 0)
+    )
+    passed = sub[m].copy()
+    # Blended score: momentum + volume surge + ADR
+    passed["score"] = passed["ret20"] * 0.4 + (passed["rvol20"] / 5.0) * 0.3 + (passed["adr20"] * 10.0) * 0.3
+    ranked = passed.sort_values("score", ascending=False).head(top_n)
+    return [
+        ScreenerResult("PROTOCOL_V2", r["Symbol"], r["Close"], r["rvol20"], r["ret20"], r["adr20"], r["ext_sma50"], r["score"])
+        for _, r in ranked.iterrows()
+    ]

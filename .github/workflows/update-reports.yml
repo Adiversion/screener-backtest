@@ -79,6 +79,10 @@ jobs:
         continue-on-error: true
         run: python scripts/build_site.py
 
+      - name: Build interactive screener dashboard
+        continue-on-error: true
+        run: python scripts/build_interactive_dashboard.py
+
       # Does the ranking actually rank? Measured over every scored observation.
       - name: Verdict audit (deciles vs forward outcomes)
         continue-on-error: true

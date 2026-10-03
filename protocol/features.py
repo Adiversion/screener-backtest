@@ -74,8 +74,19 @@ def build_features(bars: pd.DataFrame) -> pd.DataFrame:
     for n in (2, 20, 60, 120):
         df[f"ret{n}"] = close / close.shift(n) - 1.0
 
+    # Institutional 12-1 & 60-5 skipped momentum (QuantConnect & academic standard to avoid short-term reversal traps)
+    df["mom_60_5"] = close.shift(5) / close.shift(60) - 1.0
+    df["mom_12_1"] = close.shift(21) / close.shift(252) - 1.0
+    daily_ret = close.pct_change()
+    df["vol20_ann"] = daily_ret.rolling(20, min_periods=20).std() * np.sqrt(252)
+    df["mom_zscore"] = df["mom_60_5"] / df["vol20_ann"].replace(0, np.nan)
+
     df["prox52"] = close / df["R252"]
     df["pos_day_freq60"] = (close > close.shift(1)).rolling(60, min_periods=60).mean()
+    df["sma50"] = close.rolling(50, min_periods=50).mean()
+    df["sma200"] = close.rolling(200, min_periods=200).mean()
+    df["ext_sma50"] = (close - df["sma50"]) / df["sma50"]
+    df["stage2"] = (close > df["sma50"]) & (df["sma50"] > df["sma200"])
     # ---- ranking scores for the evidence-backed strategies ----------------
     # Derived from features already computed at or before this bar, so they add
     # no lookahead. Each is monotone such that a HIGHER score always means more

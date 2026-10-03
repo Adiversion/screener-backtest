@@ -25,7 +25,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from protocol import screen  # noqa: E402
+from protocol import regime, screen  # noqa: E402
 from protocol.config import get, load_config  # noqa: E402
 from protocol.data import load_history  # noqa: E402
 from protocol.features import build_panel  # noqa: E402
@@ -159,12 +159,18 @@ def main() -> int:
     picks = screen.rank_candidates(rows, cfg, top=args.top)
     lines = screen.story(rows, cfg)
 
+    mkt_regime = regime.get_regime_at(history, asof)
+    reg_alert = f"MARKET REGIME: {mkt_regime['regime']} ({mkt_regime['action']}) - {mkt_regime['message']}"
+    lines.insert(0, reg_alert)
+
     out = Path(args.outdir)
     out.mkdir(parents=True, exist_ok=True)
     rows.sort_values("tag").to_csv(out / "candidates.csv", index=False)
     counts = rows["tag"].value_counts().to_dict() if not rows.empty else {}
     md = ["# Candidate Screen", "", f"- as-of: {asof.date()}",
-          f"- tags: {counts}", "", "## Call", ""]
+          f"- tags: {counts}",
+          f"- regime: **{mkt_regime['regime']}** ({mkt_regime['action']})",
+          "", "## Call", ""]
     md += [f"- {ln}" for ln in lines]
     md += ["", "## Shortlist", "",
            picks[["rank", "symbol", "tag", "close", "reference", "rvol20", "retention",
