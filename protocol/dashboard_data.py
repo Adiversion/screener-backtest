@@ -14,6 +14,7 @@ import pandas as pd
 from protocol.data import load_history
 from protocol.corporate_events import get_corporate_audit
 from protocol.wyckoff_pa import evaluate_wyckoff_pa
+from protocol.universe_lookup import build_universe_lookup
 from protocol.github_screeners import (
     compute_screener_features,
     screen_canslim,
@@ -22,6 +23,7 @@ from protocol.github_screeners import (
     screen_protocol_v2,
     screen_qullamaggie,
     screen_relative_strength,
+    screen_stan_weinstein,
 )
 from protocol.regime import get_regime_at
 from protocol.sector import get_company_name, get_sector
@@ -55,11 +57,12 @@ def build_candidate_data(
         except Exception:
             pass
 
-    # Screen all 6 frameworks
+    # Screen all 7 frameworks
     groups = [
         ("Protocol Fortified", screen_protocol_v2(feat, top_n=15, min_turnover_cr=1.0)),
         ("Relative Strength Leader", screen_relative_strength(feat, top_n=15, min_turnover_cr=1.0)),
         ("Minervini Template", screen_minervini(feat, top_n=15, min_turnover_cr=1.0)),
+        ("Stan Weinstein Stage 2", screen_stan_weinstein(feat, top_n=15, min_turnover_cr=1.0)),
         ("Qullamaggie Breakout", screen_qullamaggie(feat, top_n=15, min_turnover_cr=1.0)),
         ("CANSLIM Pivot", screen_canslim(feat, top_n=15, min_turnover_cr=1.0)),
         ("PKScreener VCP", screen_pkscreener_vcp(feat, top_n=15, min_turnover_cr=1.0)),
@@ -115,6 +118,7 @@ def build_candidate_data(
             "institutional_delivery_count": inst_deliv_cnt,
         },
         "candidates": cand_list,
+        "universe_lookup": build_universe_lookup(feat, candidates, deliv_map),
         "default_capital_per_stock": 100000,
     }
 

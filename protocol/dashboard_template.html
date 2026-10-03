@@ -542,6 +542,7 @@
   .strat-tag.qullamaggie { background: rgba(6, 182, 212, 0.12); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.3); }
   .strat-tag.canslim { background: rgba(16, 185, 129, 0.12); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
   .strat-tag.pkscreener { background: rgba(59, 130, 246, 0.12); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+  .strat-tag.weinstein { background: rgba(234, 179, 8, 0.12); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.3); }
 
   /* RS Score Pill */
   .rs-score-badge {
@@ -831,10 +832,11 @@
     </select>
 
     <select id="strategyFilter" class="custom-select">
-      <option value="">All 6 Strategies</option>
+      <option value="">All 7 Strategies</option>
       <option value="Protocol Fortified">Protocol Fortified</option>
       <option value="Relative Strength Leader">Relative Strength Leader</option>
       <option value="Minervini Template">Minervini Template</option>
+      <option value="Stan Weinstein Stage 2">Stan Weinstein Stage 2</option>
       <option value="Qullamaggie Breakout">Qullamaggie Breakout</option>
       <option value="CANSLIM Pivot">CANSLIM Pivot</option>
       <option value="PKScreener VCP">PKScreener VCP</option>
@@ -868,6 +870,9 @@
       <input type="number" id="capInput" class="cap-custom-input" value="100000" step="10000"/>
     </div>
   </div>
+
+  <!-- Universal Stock Inspector Card -->
+  <div id="stockInspectorCard" style="display:none;margin-bottom:16px;"></div>
 
   <!-- Financial Table Card -->
   <div class="table-card">
@@ -1191,7 +1196,71 @@ function render() {
     });
   }
 
+  // Universal Stock Inspector Check
+  const inspectorBox = document.getElementById('stockInspectorCard');
+  let matchedLookup = null;
+  if (q && q.length >= 2 && D.universe_lookup) {
+    const directKey = q.toUpperCase();
+    if (D.universe_lookup[directKey]) {
+      matchedLookup = D.universe_lookup[directKey];
+    } else {
+      const foundKey = Object.keys(D.universe_lookup).find(k => k.startsWith(directKey));
+      if (foundKey) matchedLookup = D.universe_lookup[foundKey];
+    }
+  }
+
+  if (matchedLookup && inspectorBox) {
+    const isCand = matchedLookup.is_cand;
+    const statusBg = isCand ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)';
+    const statusColor = isCand ? '#34d399' : '#f87171';
+    const statusBorder = isCand ? 'rgba(16,185,129,0.35)' : 'rgba(239,68,68,0.35)';
+    const statusLabel = isCand ? 'QUALIFIED BUY CANDIDATE' : 'WATCHLIST / NOT A BUY SETUP TODAY';
+
+    inspectorBox.style.display = 'block';
+    inspectorBox.innerHTML = `
+      <div style="background:rgba(15,23,42,0.85);border:1px solid ${statusBorder};border-radius:12px;padding:16px 20px;backdrop-filter:blur(10px);box-shadow:0 8px 30px rgba(0,0,0,0.5);">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+          <div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:1.25rem;font-weight:800;color:#f8fafc;font-family:'JetBrains Mono',monospace;">${matchedLookup.symbol}</span>
+              <span style="font-size:0.85rem;color:#94a3b8;">${matchedLookup.company}</span>
+              <span style="font-size:0.75rem;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,0.06);color:#38bdf8;">${matchedLookup.sector}</span>
+            </div>
+            <div style="margin-top:8px;display:flex;gap:16px;flex-wrap:wrap;font-size:0.82rem;color:#cbd5e1;font-family:'JetBrains Mono',monospace;">
+              <span>Close: <strong style="color:#f8fafc;">₹${matchedLookup.close}</strong></span>
+              <span>20d Res: <strong>₹${matchedLookup.r20}</strong></span>
+              <span>52W High: <strong>₹${matchedLookup.h52}</strong></span>
+              <span>RS Rating: <strong style="color:#38bdf8;">${matchedLookup.rs}/99</strong></span>
+              <span>RVOL: <strong>${matchedLookup.rvol}x</strong></span>
+              <span>Delivery: <strong>${matchedLookup.deliv}%</strong></span>
+            </div>
+          </div>
+          <div>
+            <span style="display:inline-block;padding:5px 12px;border-radius:20px;background:${statusBg};color:${statusColor};border:1px solid ${statusBorder};font-size:0.75rem;font-weight:700;letter-spacing:0.04em;">
+              ${statusLabel}
+            </span>
+          </div>
+        </div>
+        <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08);font-size:0.84rem;line-height:1.5;color:#e2e8f0;">
+          <strong style="color:#94a3b8;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;">Technical Diagnostic:</strong> 
+          <span style="color:${isCand ? '#34d399' : '#cbd5e1'};">${matchedLookup.why}</span>
+        </div>
+      </div>
+    `;
+  } else if (inspectorBox) {
+    inspectorBox.style.display = 'none';
+  }
+
   const tb = document.getElementById('tableBody');
+  if (filtered.length === 0) {
+    tb.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:48px 20px;color:var(--text-muted);font-size:0.95rem;">
+      <div style="font-size:1.8rem;margin-bottom:8px;">🔍</div>
+      <div style="font-weight:600;color:#f1f5f9;margin-bottom:4px;">No qualified breakout candidates match your current search/filters.</div>
+      <div style="font-size:0.85rem;color:#94a3b8;">${matchedLookup ? 'Universal stock inspection for ' + matchedLookup.symbol + ' is displayed above.' : 'Try adjusting the search query, strategy, or setup filters.'}</div>
+    </td></tr>`;
+    return;
+  }
+
   tb.innerHTML = filtered.map((c, i) => {
     const shares = Math.floor(cap / c.close);
     const sharesHtml = shares > 0 ? `<span class="shares-val">${shares}</span>` : `<span style="color:var(--text-muted);font-size:0.78rem;">0 <small>(&gt;Cap)</small></span>`;
@@ -1204,6 +1273,7 @@ function render() {
       let cls = 'protocol';
       let shortName = s;
       if (s.includes('Minervini')) { cls = 'minervini'; shortName = 'Minervini'; }
+      else if (s.includes('Weinstein')) { cls = 'weinstein'; shortName = 'Weinstein Stage 2'; }
       else if (s.includes('Relative Strength')) { cls = 'rs'; shortName = 'RS Leader'; }
       else if (s.includes('Qullamaggie')) { cls = 'qullamaggie'; shortName = 'Qullamaggie'; }
       else if (s.includes('CANSLIM')) { cls = 'canslim'; shortName = 'CANSLIM'; }

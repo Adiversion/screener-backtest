@@ -239,3 +239,23 @@ def screen_protocol_v2(df: pd.DataFrame, top_n: int = 10, min_turnover_cr: float
         ScreenerResult("PROTOCOL_V2", r["Symbol"], r["Close"], r["rvol20"], r["ret20"], r["adr20"], r["ext_sma50"], r["score"])
         for _, r in ranked.iterrows()
     ]
+
+
+def screen_stan_weinstein(df: pd.DataFrame, top_n: int = 10, min_turnover_cr: float = 1.0) -> list[ScreenerResult]:
+    """Stan Weinstein Stage 2 Base Breakout Screener (30-Week / 150d SMA Inception)."""
+    sub = df[df["turnover20"] >= min_turnover_cr * 1e7].copy()
+    m = (
+        (sub["Close"] > sub["sma150"]) & (sub["sma150"] >= sub["sma200"]) &
+        (sub["Close"] > sub["r20"]) &  # Breaking out above Stage 1 base ceiling
+        (sub["rvol20"] >= 1.4) &  # Heavy volume expansion into Stage 2
+        (sub["rs_rating"] >= 65.0) &  # Mansfield RS outperformance
+        (sub["ext_sma50"] <= 0.25) &  # Early in trend, inside strict anti-chase gate
+        (sub["ret20"] > 0)
+    )
+    passed = sub[m].copy()
+    passed["score"] = passed["rs_rating"] * (passed["rvol20"] / 2.0)
+    ranked = passed.sort_values("score", ascending=False).head(top_n)
+    return [
+        ScreenerResult("STAN_WEINSTEIN_STAGE2", r["Symbol"], r["Close"], r["rvol20"], r["ret20"], r["adr20"], r["ext_sma50"], r["score"])
+        for _, r in ranked.iterrows()
+    ]
