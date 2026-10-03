@@ -259,6 +259,41 @@
       100% { transform: scale(0.95); opacity: 0.8; }
     }
 
+    /* Toast Notification Container */
+    #toastContainer {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 440px;
+      pointer-events: none;
+    }
+    .toast {
+      pointer-events: auto;
+      padding: 12px 16px;
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      font-size: 0.82rem;
+      line-height: 1.4;
+      color: #f8fafc;
+      animation: slideInRight 0.3s ease;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .toast.success { border-color: rgba(16,185,129,0.4); background: rgba(6, 32, 22, 0.95); }
+    .toast.error { border-color: rgba(244,63,94,0.4); background: rgba(38, 7, 16, 0.95); }
+    .toast.info { border-color: rgba(56,189,248,0.4); background: rgba(7, 24, 43, 0.95); }
+    @keyframes slideInRight {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
     /* Tables */
     .section-title {
       font-size: 1.05rem;
@@ -487,7 +522,7 @@
           <span id="tickerStatusText">INITIALIZING REAL-TIME FEED...</span>
         </div>
         <button id="refreshQuotesBtn" class="btn" onclick="refreshAllLiveQuotes()" style="color:#38bdf8;border-color:rgba(56,189,248,0.3);background:rgba(56,189,248,0.08);">
-          <span>⚡</span> Refresh Real Quotes (Cloudflare)
+          <span>⚡</span> Refresh Real Quotes (Finance-Query)
         </button>
         <button class="btn" onclick="importTopScreenerPicks()" style="color:#34d399;border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.08);">
           <span>⚡</span> 1-Click Import Top Screener Picks (₹1L Each)
@@ -496,14 +531,25 @@
           <span>🎯</span> Import Sniper Setups (65%+ WR)
         </button>
       </div>
-      <div>
-        <button class="btn" onclick="resetAccount()" style="color:#f87171;font-size:0.75rem;">🔄 Reset Account to ₹10L</button>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button id="autoTradeBtn" class="btn" onclick="toggleAutoTrade()" style="color:#10b981;border-color:rgba(16,185,129,0.4);background:rgba(16,185,129,0.12);font-weight:700;" title="Automatic Stop-Loss & 1.5R Profit Taking Engine">
+          <span>🤖</span> Auto-Pilot: ON
+        </button>
+        <button class="btn" onclick="exportPortfolioJson()" style="color:#e2e8f0;font-size:0.75rem;" title="Download portfolio backup file">
+          <span>💾</span> Export JSON
+        </button>
+        <button class="btn" onclick="document.getElementById('importFileInput').click()" style="color:#e2e8f0;font-size:0.75rem;" title="Import portfolio backup file">
+          <span>📥</span> Import JSON
+        </button>
+        <input type="file" id="importFileInput" style="display:none;" accept=".json" onchange="importPortfolioFile(event)">
+        <button class="btn" onclick="resetAccount()" style="color:#f87171;font-size:0.75rem;">🔄 Reset Account</button>
       </div>
     </div>
 
     <!-- Open Positions Table -->
     <div class="section-title">
       <span>📈</span> Active Open Positions (<span id="openCountHeader">0</span>)
+      <span style="font-size:0.72rem;font-weight:400;color:var(--text-muted);margin-left:8px;">• Guaranteed Persistent in LocalStorage & Auto-Protected</span>
     </div>
     <div class="table-card">
       <div class="table-scroll">
@@ -516,10 +562,10 @@
               <th class="num">Invested (₹)</th>
               <th class="num">Live Price (₹)</th>
               <th class="num">Unrealized P&L</th>
-              <th class="num">Stop Price (₹)</th>
-              <th class="num">Target 1.5R (₹)</th>
+              <th class="num">Auto Stop (₹)</th>
+              <th class="num">Auto Target 1.5R (₹)</th>
               <th style="text-align:center;">Target Progress</th>
-              <th style="text-align:center;">Risk & Trade Controls</th>
+              <th style="text-align:center;">Guard Status & Actions</th>
             </tr>
           </thead>
           <tbody id="positionsBody">
@@ -623,39 +669,39 @@
   <div id="dataSourceModal" class="modal-overlay" onclick="if(event.target===this)closeDataSourceModal()">
     <div class="modal-card" style="max-width:760px;">
       <div class="modal-header">
-        <h3 style="color:#f59e0b;font-size:1.15rem;font-weight:700;">📡 How to Get Real-Time NSE Ticker Data for ₹0 on GitHub</h3>
+        <h3 style="color:#f59e0b;font-size:1.15rem;font-weight:700;">📡 Real-Time NSE Ticker Architecture (Zero-Cost & Keyless)</h3>
         <div class="close-icon" onclick="closeDataSourceModal()">&times;</div>
       </div>
       <div style="font-size:0.85rem;line-height:1.7;color:#cbd5e1;">
         <p style="margin-bottom:12px;">
-          Many retail traders mistakenly believe they must pay ₹4,000/month for commercial API feeds. This paper trading station uses <b>real zero-cost market feeds with zero synthetic simulation</b>:
+          This paper trading station utilizes <b>real zero-cost market feeds with zero synthetic simulation</b>, powered by open-source GitHub architecture:
         </p>
         
         <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;margin-bottom:12px;">
-          <b style="color:#38bdf8;">1. Yahoo Finance Live WebSocket Streamer (<code>wss://streamer.finance.yahoo.com/</code>)</b>
+          <b style="color:#38bdf8;">1. Finance-Query Live WebSocket Streamer (GitHub: <code>Verdenroz/finance-query</code>)</b>
           <p style="margin-top:4px;">
-            The browser connects directly to Yahoo Finance's live WebSocket server. Incoming binary packets are decoded client-side using a zero-dependency Protobuf decoder (from <code>D:\GSheetScreener\nse-momentum-engine</code>) extracting real LTP, volume, and tick direction. When the market is open, genuine ticks stream continuously with zero cost.
+            Endpoint: <code>wss://finance-query.com/v2/stream</code> & REST: <code>https://finance-query.com/v2/quote/{SYMBOL}.NS</code>. Clean, high-throughput Rust-backed streaming engine (<a href="https://verdenroz.github.io/finance-query/library/streaming/" target="_blank" style="color:#38bdf8;text-decoration:underline;">Documentation</a>). Delivers real-time JSON tick updates for NSE stocks without delays or complex binary decoders.
           </p>
         </div>
 
         <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;margin-bottom:12px;">
-          <b style="color:#34d399;">2. Cloudflare Worker Keyless CORS Proxy (<code>nse-quote.audittool-api.workers.dev</code>)</b>
+          <b style="color:#34d399;">2. Direct Yahoo Finance Streamer + Zero-Dependency Protobuf Decoder</b>
           <p style="margin-top:4px;">
-            Endpoint: <code>https://nse-quote.audittool-api.workers.dev/?symbol={SYMBOL}.NS</code>. Keyless Cloudflare Edge Worker that queries Yahoo Finance's underlying JSON quote cache to fetch audited Last Traded Prices (LTP) without rate limits or CORS restrictions.
+            Endpoint: <code>wss://streamer.finance.yahoo.com/</code>. Standby fallback streaming WebSocket decoded client-side using pure JavaScript bit-shifting extracted from <code>D:\GSheetScreener\nse-momentum-engine</code>.
           </p>
         </div>
 
         <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;margin-bottom:12px;">
-          <b style="color:#fbbf24;">3. Shoonya / Finvasia API (GitHub: <code>Shoonya-API/NorenRestApiPy</code>)</b>
+          <b style="color:#fbbf24;">3. Keyless Cloudflare Edge Worker Proxy</b>
           <p style="margin-top:4px;">
-            Finvasia offers a 100% free lifetime trading account with <b>zero brokerage and zero API charges</b>. Their official WebSocket gives sub-second tick-by-tick streaming for every single NSE cash equity and F&O contract.
+            Endpoint: <code>https://nse-quote.audittool-api.workers.dev/?symbol={SYMBOL}.NS</code>. Keyless Cloudflare Edge Worker providing CORS-free quote verification during market off-hours.
           </p>
         </div>
 
         <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;">
-          <b style="color:#a855f7;">4. Official NSE Website Live Quote Scraping (GitHub: <code>nsepython</code>)</b>
+          <b style="color:#a855f7;">4. Shoonya / Finvasia API (GitHub: <code>Shoonya-API/NorenRestApiPy</code>)</b>
           <p style="margin-top:4px;">
-            Endpoint: <code>https://www.nseindia.com/api/quote-equity?symbol={SYMBOL}</code>. Direct exchange quote cache refreshed continuously by NSE web servers.
+            100% free lifetime trading account with 0 brokerage and 0 API charges for broker-direct execution.
           </p>
         </div>
       </div>
@@ -820,8 +866,9 @@
       if (streamState === 'LIVE_TICK') {
         textEl.textContent = `⚡ LIVE STREAM ACTIVE • ${ms.istTimeString}`;
         if (dot) dot.style.background = '#10b981';
-      } else if (streamState === 'WS_CONNECTED') {
-        textEl.textContent = ms.isOpen ? `🟢 WEBSOCKET CONNECTED • STREAMING REAL TICKS` : `${ms.statusLabel} • WS CONNECTED (AWAITING OPEN)`;
+      } else if (streamState === 'FQ_CONNECTED' || streamState === 'WS_CONNECTED') {
+        const modeLabel = currentStreamerMode === 'finance-query' ? 'FINANCE-QUERY WS' : 'YAHOO STREAMER';
+        textEl.textContent = ms.isOpen ? `🟢 ${modeLabel} CONNECTED • STREAMING REAL TICKS` : `${ms.statusLabel} • ${modeLabel} READY`;
         if (dot) dot.style.background = ms.isOpen ? '#10b981' : '#f59e0b';
       } else if (!ms.isOpen) {
         textEl.textContent = `🔴 ${ms.statusLabel} • REAL LTP / AUDITED CLOSE (ZERO SIMULATION)`;
@@ -832,9 +879,10 @@
       }
     }
 
-    // Live Yahoo Finance WebSocket Streamer
-    let yahooWs = null;
-    let yahooWsReconnectTimer = null;
+    // Multi-Source Live WebSocket Streamer (Finance-Query + Yahoo Fallback)
+    let liveWs = null;
+    let wsReconnectTimer = null;
+    let currentStreamerMode = 'finance-query'; // 'finance-query' or 'yahoo'
 
     function getAllSubscribedSymbols() {
       const set = new Set(['^NSEI']);
@@ -845,62 +893,98 @@
       return Array.from(set);
     }
 
-    function connectYahooStream() {
-      clearTimeout(yahooWsReconnectTimer);
-      const symbols = getAllSubscribedSymbols();
+    function subscribeSymbolsToStream(symbols) {
+      if (!liveWs || liveWs.readyState !== WebSocket.OPEN) return;
+      try {
+        if (currentStreamerMode === 'finance-query') {
+          liveWs.send(JSON.stringify({ action: 'subscribe', symbols: symbols }));
+        } else {
+          liveWs.send(JSON.stringify({ subscribe: symbols }));
+        }
+      } catch (_) {}
+    }
 
-      if (yahooWs) {
-        try { yahooWs.close(); } catch (_) {}
-        yahooWs = null;
+    function handleLiveTick(sym, newPrice) {
+      if (!sym || newPrice == null || isNaN(newPrice) || newPrice <= 0) return;
+      const oldPrice = livePrices[sym] ? livePrices[sym].price : newPrice;
+      const tickDir = newPrice > oldPrice ? 1 : (newPrice < oldPrice ? -1 : 0);
+
+      if (!livePrices[sym]) {
+        livePrices[sym] = { price: newPrice, prevClose: newPrice, tickDirection: tickDir };
+      } else {
+        livePrices[sym].price = newPrice;
+        livePrices[sym].tickDirection = tickDir;
       }
 
+      // Real-time flash on DOM
+      const el = document.getElementById('livePrice_' + sym);
+      if (el) {
+        el.textContent = '₹' + newPrice.toFixed(2);
+        if (tickDir !== 0) {
+          el.className = 'mono ' + (tickDir === 1 ? 'flash-up tick-up' : 'flash-down tick-down');
+        }
+      }
+
+      updateOpenPositionsPnl();
+      renderTickerTape();
+      updateStatusPill('LIVE_TICK');
+    }
+
+    function connectLiveStream(mode = 'finance-query') {
+      clearTimeout(wsReconnectTimer);
+      const symbols = getAllSubscribedSymbols();
+
+      if (liveWs) {
+        try { liveWs.close(); } catch (_) {}
+        liveWs = null;
+      }
+
+      currentStreamerMode = mode;
       updateStatusPill('CONNECTING');
 
+      const wsUrl = mode === 'finance-query' 
+        ? 'wss://finance-query.com/v2/stream' 
+        : 'wss://streamer.finance.yahoo.com/';
+
       try {
-        const ws = new WebSocket('wss://streamer.finance.yahoo.com/');
-        yahooWs = ws;
+        const ws = new WebSocket(wsUrl);
+        liveWs = ws;
 
         ws.onopen = () => {
-          try {
-            if (ws.readyState === WebSocket.OPEN) {
-              ws.send(JSON.stringify({ subscribe: symbols }));
-              updateStatusPill('WS_CONNECTED');
-            }
-          } catch (_) {}
+          if (ws.readyState === WebSocket.OPEN) {
+            subscribeSymbolsToStream(symbols);
+            updateStatusPill(mode === 'finance-query' ? 'FQ_CONNECTED' : 'WS_CONNECTED');
+          }
         };
 
         ws.onmessage = (event) => {
           try {
-            const tick = decodeYahooProtobuf(event.data);
-            if (!tick || tick.price == null || isNaN(tick.price)) return;
-            const sym = String(tick.id || '').replace(/\.NS$/i, '').toUpperCase();
-            if (!sym) return;
+            if (typeof event.data === 'string') {
+              // Try JSON (Finance-Query protocol)
+              try {
+                const parsed = JSON.parse(event.data);
+                if (parsed) {
+                  const s = (parsed.symbol || parsed.id || '').replace(/\.NS$/i, '').toUpperCase();
+                  const p = parsed.price != null ? parseFloat(parsed.price) : (parsed.regularMarketPrice != null ? parseFloat(parsed.regularMarketPrice) : null);
+                  if (s && p != null && !isNaN(p)) {
+                    handleLiveTick(s, p);
+                    return;
+                  }
+                }
+              } catch (_) {}
 
-            const newPrice = parseFloat(tick.price.toFixed(2));
-            const oldPrice = livePrices[sym] ? livePrices[sym].price : newPrice;
-            const tickDir = newPrice > oldPrice ? 1 : (newPrice < oldPrice ? -1 : 0);
-
-            if (!livePrices[sym]) {
-              livePrices[sym] = { price: newPrice, prevClose: newPrice, tickDirection: tickDir };
-            } else {
-              livePrices[sym].price = newPrice;
-              livePrices[sym].tickDirection = tickDir;
+              // Try Protobuf Base64 (Yahoo Finance protocol)
+              try {
+                const tick = decodeYahooProtobuf(event.data);
+                if (tick && tick.price != null && !isNaN(tick.price)) {
+                  const s = String(tick.id || '').replace(/\.NS$/i, '').toUpperCase();
+                  handleLiveTick(s, parseFloat(tick.price.toFixed(2)));
+                  return;
+                }
+              } catch (_) {}
             }
-
-            // Real-time flash on DOM
-            const el = document.getElementById('livePrice_' + sym);
-            if (el) {
-              el.textContent = '₹' + newPrice.toFixed(2);
-              if (tickDir !== 0) {
-                el.className = 'mono ' + (tickDir === 1 ? 'flash-up tick-up' : 'flash-down tick-down');
-              }
-            }
-
-            updateOpenPositionsPnl();
-            renderTickerTape();
-            updateStatusPill('LIVE_TICK');
           } catch (err) {
-            console.warn('Protobuf decode error:', err);
+            console.warn('Live tick parse error:', err);
           }
         };
 
@@ -909,33 +993,59 @@
         };
 
         ws.onclose = () => {
-          if (yahooWs === ws) yahooWs = null;
+          if (liveWs === ws) liveWs = null;
           updateStatusPill('IDLE');
           if (document.visibilityState === 'visible') {
-            yahooWsReconnectTimer = setTimeout(connectYahooStream, 7000);
+            const nextMode = mode === 'finance-query' ? 'yahoo' : 'finance-query';
+            wsReconnectTimer = setTimeout(() => connectLiveStream(nextMode), 6000);
           }
         };
       } catch (e) {
         console.warn('WebSocket init error:', e);
         updateStatusPill('IDLE');
+        if (mode === 'finance-query') {
+          wsReconnectTimer = setTimeout(() => connectLiveStream('yahoo'), 3000);
+        }
       }
     }
 
-    // Cloudflare Worker CORS Proxy for On-Demand Real Quote Fetching
+    // Dual REST Endpoints for On-Demand Real Quote Fetching
+    const FQ_REST_BASE = 'https://finance-query.com/v2/quote';
     const WORKER_PROXY = 'https://nse-quote.audittool-api.workers.dev';
 
-    async function fetchWorkerQuote(symbol) {
+    async function fetchRealQuote(symbol) {
       const symNs = toYahooSymbol(symbol);
+
+      // 1. Primary: Finance-Query REST API (CORS enabled: Access-Control-Allow-Origin: *)
+      try {
+        const res = await fetch(`${FQ_REST_BASE}/${encodeURIComponent(symNs)}`, { cache: 'no-store' });
+        if (res.ok) {
+          const json = await res.json();
+          const p = json.regularMarketPrice ?? json.currentPrice ?? json.price;
+          if (p != null && !isNaN(parseFloat(p))) {
+            return {
+              price: parseFloat(parseFloat(p).toFixed(2)),
+              prevClose: json.regularMarketPreviousClose ? parseFloat(parseFloat(json.regularMarketPreviousClose).toFixed(2)) : null,
+              asOf: json.regularMarketTime ? new Date(json.regularMarketTime * 1000).toISOString() : new Date().toISOString()
+            };
+          }
+        }
+      } catch (e) {
+        console.warn(`Finance-Query REST fetch error for ${symbol}:`, e);
+      }
+
+      // 2. Secondary Fallback: Cloudflare Worker CORS Proxy
       try {
         const res = await fetch(`${WORKER_PROXY}/?symbol=${encodeURIComponent(symNs)}`, { cache: 'no-store' });
-        if (!res.ok) return null;
-        const json = await res.json();
-        if (json && json.price != null && !isNaN(parseFloat(json.price))) {
-          return {
-            price: parseFloat(parseFloat(json.price).toFixed(2)),
-            prevClose: json.previousClose ? parseFloat(parseFloat(json.previousClose).toFixed(2)) : null,
-            asOf: json.asOf
-          };
+        if (res.ok) {
+          const json = await res.json();
+          if (json && json.price != null && !isNaN(parseFloat(json.price))) {
+            return {
+              price: parseFloat(parseFloat(json.price).toFixed(2)),
+              prevClose: json.previousClose ? parseFloat(parseFloat(json.previousClose).toFixed(2)) : null,
+              asOf: json.asOf
+            };
+          }
         }
       } catch (e) {
         console.warn(`Worker proxy fetch error for ${symbol}:`, e);
@@ -945,7 +1055,7 @@
 
     async function refreshAllLiveQuotes() {
       const refreshBtn = document.getElementById('refreshQuotesBtn');
-      if (refreshBtn) refreshBtn.innerHTML = '<span>⏳</span> Fetching Real Quotes...';
+      if (refreshBtn) refreshBtn.innerHTML = '<span>⏳</span> Fetching Real Quotes (Finance-Query)...';
 
       const symbols = Array.from(new Set([
         ...portfolio.positions.map(p => p.symbol),
@@ -954,7 +1064,7 @@
 
       let updatedCount = 0;
       for (const sym of symbols) {
-        const quote = await fetchWorkerQuote(sym);
+        const quote = await fetchRealQuote(sym);
         if (quote && quote.price > 0) {
           const oldPrice = livePrices[sym] ? livePrices[sym].price : quote.price;
           const tickDir = quote.price > oldPrice ? 1 : (quote.price < oldPrice ? -1 : 0);
@@ -975,82 +1085,192 @@
       renderTickerTape();
 
       if (refreshBtn) {
-        refreshBtn.innerHTML = `<span>✓</span> Updated ${updatedCount} Quotes`;
+        refreshBtn.innerHTML = `<span>✓</span> Updated ${updatedCount} Real Quotes`;
         setTimeout(() => {
-          refreshBtn.innerHTML = '<span>⚡</span> Refresh Real Quotes (Cloudflare)';
+          refreshBtn.innerHTML = '<span>⚡</span> Refresh Real Quotes (Finance-Query)';
         }, 3000);
       }
     }
 
+    let autoTradeEnabled = true;
+
+    function showToastNotification(msg, type = 'info') {
+      let container = document.getElementById('toastContainer');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        document.body.appendChild(container);
+      }
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `<div>${msg}</div>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => toast.remove(), 400);
+      }, 5000);
+    }
+
+    function toggleAutoTrade() {
+      autoTradeEnabled = !autoTradeEnabled;
+      const btn = document.getElementById('autoTradeBtn');
+      if (btn) {
+        if (autoTradeEnabled) {
+          btn.innerHTML = '<span>🤖</span> Auto-Pilot: ON';
+          btn.style.color = '#10b981';
+          btn.style.borderColor = 'rgba(16,185,129,0.4)';
+          btn.style.background = 'rgba(16,185,129,0.12)';
+          showToastNotification('🤖 USIC Auto-Pilot Active: Stop-Loss and +1.5R Take-Profit will execute automatically.', 'info');
+        } else {
+          btn.innerHTML = '<span>⏸️</span> Auto-Pilot: OFF';
+          btn.style.color = '#94a3b8';
+          btn.style.borderColor = 'rgba(255,255,255,0.2)';
+          btn.style.background = 'rgba(255,255,255,0.05)';
+          showToastNotification('⏸️ USIC Auto-Pilot Paused: Positions are in manual mode.', 'info');
+        }
+      }
+    }
+
+    function exportPortfolioJson() {
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(portfolio, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute('href', dataStr);
+      downloadAnchor.setAttribute('download', `astra_paper_portfolio_${new Date().toISOString().split('T')[0]}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToastNotification('💾 Portfolio saved! Downloaded to your disk (persistent across browser wipes).', 'success');
+    }
+
+    function importPortfolioFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (imported && (imported.positions || imported.cash != null)) {
+            portfolio = imported;
+            savePortfolio();
+            showToastNotification('📥 Portfolio backup successfully loaded and restored!', 'success');
+          } else {
+            alert('Invalid portfolio JSON structure.');
+          }
+        } catch (err) {
+          alert('Error parsing JSON file: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    function checkAutomaticExecution(pos, idx) {
+      if (!autoTradeEnabled) return false;
+      const cur = pos.currentPrice;
+      if (!cur || cur <= 0) return false;
+
+      // 1. Automatic Stop Loss Execution
+      if (cur <= pos.stopPrice) {
+        const exitLoss = (pos.shares * cur) - (pos.shares * pos.buyPrice);
+        const exitRoi = ((cur - pos.buyPrice) / pos.buyPrice) * 100;
+        portfolio.cash += pos.shares * cur;
+        const isBreakevenExit = pos.stopPrice >= pos.buyPrice;
+        const reason = isBreakevenExit 
+          ? `🛡️ Auto Breakeven Exit at ₹${cur.toFixed(2)} (+${exitRoi.toFixed(2)}%)`
+          : `🛑 Auto Stop-Loss Triggered at ₹${cur.toFixed(2)} (${exitRoi.toFixed(2)}%)`;
+        
+        portfolio.closedTrades.push({
+          symbol: pos.symbol,
+          shares: pos.shares,
+          buyPrice: pos.buyPrice,
+          exitPrice: cur,
+          pnl: exitLoss,
+          roi: exitRoi,
+          entryDate: pos.entryDate,
+          exitDate: new Date().toISOString().split('T')[0],
+          exitReason: reason
+        });
+        showToastNotification(`🛑 Stop Executed: ${pos.symbol} closed at ₹${cur.toFixed(2)} (${exitRoi.toFixed(2)}%)`, exitLoss >= 0 ? 'info' : 'error');
+        portfolio.positions.splice(idx, 1);
+        savePortfolio();
+        return true;
+      }
+
+      // 2. Automatic Target 1 (+1.5R) Scale-Out
+      const target1 = pos.target1Price || pos.targetPrice || (pos.buyPrice + 1.5 * (pos.buyPrice - (pos.initialStopPrice || pos.stopPrice)));
+      if (!pos.scaledOut && cur >= target1) {
+        const halfShares = Math.floor(pos.shares / 2);
+        if (halfShares > 0) {
+          const pnlHalf = (halfShares * cur) - (halfShares * pos.buyPrice);
+          const roiHalf = ((cur - pos.buyPrice) / pos.buyPrice) * 100;
+          portfolio.cash += halfShares * cur;
+          portfolio.closedTrades.push({
+            symbol: pos.symbol,
+            shares: halfShares,
+            buyPrice: pos.buyPrice,
+            exitPrice: cur,
+            pnl: pnlHalf,
+            roi: roiHalf,
+            entryDate: pos.entryDate,
+            exitDate: new Date().toISOString().split('T')[0],
+            exitReason: `🎯 Auto Target 1.5R Locked (50% Scale-Out at ₹${cur.toFixed(2)})`
+          });
+          pos.shares -= halfShares;
+          pos.scaledOut = true;
+          pos.stopPrice = pos.buyPrice; // Stop raised to Breakeven entry price!
+          showToastNotification(`🎯 Target 1.5R Reached! ${pos.symbol}: 50% profit banked (+₹${Math.round(pnlHalf).toLocaleString('en-IN')}). Stop raised to Breakeven (₹${pos.buyPrice.toFixed(2)})!`, 'success');
+          savePortfolio();
+          return false;
+        }
+      }
+
+      // 3. Automatic Target 2 (+2.5R) Runner Exit
+      const target2 = pos.target2Price || (pos.buyPrice + 2.5 * (pos.buyPrice - (pos.initialStopPrice || pos.stopPrice)));
+      if (pos.scaledOut && cur >= target2) {
+        const pnlFinal = (pos.shares * cur) - (pos.shares * pos.buyPrice);
+        const roiFinal = ((cur - pos.buyPrice) / pos.buyPrice) * 100;
+        portfolio.cash += pos.shares * cur;
+        portfolio.closedTrades.push({
+          symbol: pos.symbol,
+          shares: pos.shares,
+          buyPrice: pos.buyPrice,
+          exitPrice: cur,
+          pnl: pnlFinal,
+          roi: roiFinal,
+          entryDate: pos.entryDate,
+          exitDate: new Date().toISOString().split('T')[0],
+          exitReason: `🏆 Auto Target 2.5R Runner Locked (+${roiFinal.toFixed(2)}%)`
+        });
+        showToastNotification(`🏆 Target 2.5R Runner Closed! ${pos.symbol} locked at ₹${cur.toFixed(2)} (+${roiFinal.toFixed(2)}%)!`, 'success');
+        portfolio.positions.splice(idx, 1);
+        savePortfolio();
+        return true;
+      }
+
+      return false;
+    }
+
     function updateOpenPositionsPnl() {
-      portfolio.positions.forEach(pos => {
+      let stateChanged = false;
+      for (let i = portfolio.positions.length - 1; i >= 0; i--) {
+        const pos = portfolio.positions[i];
         const cur = livePrices[pos.symbol] ? livePrices[pos.symbol].price : pos.currentPrice;
         pos.currentPrice = cur;
         pos.curVal = pos.shares * cur;
         pos.unrealizedPnl = pos.curVal - (pos.shares * pos.buyPrice);
         pos.roi = ((cur - pos.buyPrice) / pos.buyPrice) * 100;
-      });
+
+        const removed = checkAutomaticExecution(pos, i);
+        if (removed) stateChanged = true;
+      }
       renderHUD();
-      renderPositionsFast();
-    }
-
-    function renderTickerTape() {
-      const track = document.getElementById('tickerTrack');
-      if (!track) return;
-      const symbols = Object.keys(livePrices);
-      if (symbols.length === 0) return;
-
-      const itemsHtml = symbols.map(s => {
-        const item = livePrices[s];
-        const chg = ((item.price - item.prevClose) / item.prevClose) * 100;
-        const isUp = chg >= 0;
-        return `
-          <div class="ticker-item">
-            <span class="sym">${s}</span>
-            <span class="price">₹${item.price.toFixed(2)}</span>
-            <span class="chg ${isUp ? 'tick-up' : 'tick-down'}">${isUp ? '▲' : '▼'} ${chg >= 0 ? '+' : ''}${chg.toFixed(2)}%</span>
-          </div>
-        `;
-      }).join('');
-      // Duplicate to ensure seamless infinite scroll
-      track.innerHTML = itemsHtml + itemsHtml;
-    }
-
-    function renderHUD() {
-      const invested = portfolio.positions.reduce((acc, p) => acc + (p.shares * p.buyPrice), 0);
-      const currentVal = portfolio.positions.reduce((acc, p) => acc + (p.curVal || (p.shares * p.currentPrice)), 0);
-      const totalAccVal = portfolio.cash + currentVal;
-      const unrealizedPnl = currentVal - invested;
-      const unrealizedRoi = invested > 0 ? (unrealizedPnl / invested) * 100 : 0.0;
-      const realizedPnl = portfolio.closedTrades.reduce((acc, t) => acc + t.pnl, 0);
-
-      document.getElementById('hudTotalVal').textContent = '₹' + Math.round(totalAccVal).toLocaleString('en-IN');
-      const unEl = document.getElementById('hudUnrealizedVal');
-      unEl.textContent = `${unrealizedPnl >= 0 ? '+' : ''}₹${Math.round(unrealizedPnl).toLocaleString('en-IN')} (${unrealizedRoi >= 0 ? '+' : ''}${unrealizedRoi.toFixed(2)}%)`;
-      unEl.style.color = unrealizedPnl >= 0 ? '#10b981' : '#f43f5e';
-
-      const reEl = document.getElementById('hudRealizedVal');
-      reEl.textContent = `${realizedPnl >= 0 ? '+' : ''}₹${Math.round(realizedPnl).toLocaleString('en-IN')}`;
-      reEl.style.color = realizedPnl >= 0 ? '#10b981' : '#f43f5e';
-
-      document.getElementById('hudCashVal').textContent = '₹' + Math.round(portfolio.cash).toLocaleString('en-IN');
-      document.getElementById('hudInvestedVal').textContent = 'Invested: ₹' + Math.round(invested).toLocaleString('en-IN');
-      document.getElementById('hudPositionsCount').textContent = `${portfolio.positions.length} Open Positions`;
-      document.getElementById('hudClosedCount').textContent = `${portfolio.closedTrades.length} Closed Trades`;
-      document.getElementById('openCountHeader').textContent = portfolio.positions.length;
-
-      // Win Rate calculation
-      if (portfolio.closedTrades.length > 0) {
-        const wins = portfolio.closedTrades.filter(t => t.pnl > 0).length;
-        const wr = (wins / portfolio.closedTrades.length) * 100;
-        document.getElementById('hudWinRate').textContent = wr.toFixed(1) + '%';
-        const grossGains = portfolio.closedTrades.filter(t => t.pnl > 0).reduce((acc, t) => acc + t.pnl, 0);
-        const grossLosses = Math.abs(portfolio.closedTrades.filter(t => t.pnl < 0).reduce((acc, t) => acc + t.pnl, 0));
-        const pf = grossLosses > 0 ? (grossGains / grossLosses).toFixed(2) : (grossGains > 0 ? '∞' : '0.00');
-        document.getElementById('hudProfitFactor').textContent = `Profit Factor: ${pf}`;
+      if (stateChanged) {
+        renderPositions();
+        renderClosed();
       } else {
-        document.getElementById('hudWinRate').textContent = '--%';
-        document.getElementById('hudProfitFactor').textContent = 'Profit Factor: --';
+        renderPositionsFast();
       }
     }
 
@@ -1075,15 +1295,27 @@
         const roi = ((cur - p.buyPrice) / p.buyPrice) * 100;
         const isUp = pnl >= 0;
 
-        // Target 1.5R progress
-        const targetDist = p.targetPrice - p.buyPrice;
+        const target1 = p.target1Price || p.targetPrice || (p.buyPrice * 1.075);
+        const targetDist = target1 - p.buyPrice;
         const curProgress = targetDist > 0 ? Math.min(100, Math.max(0, ((cur - p.buyPrice) / targetDist) * 100)) : 0;
+        
+        const isBreakeven = p.stopPrice >= p.buyPrice;
+        const stopHtml = isBreakeven 
+          ? `<span class="pos-tag" style="background:rgba(16,185,129,0.18);color:#34d399;border:1px solid rgba(16,185,129,0.4);" title="Trade is 100% Risk-Free">🛡️ BE ₹${p.stopPrice.toFixed(2)}</span>`
+          : `<span class="mono" style="color:#f87171;font-weight:600;">₹${p.stopPrice.toFixed(2)}</span>`;
+
+        const target1Html = p.scaledOut
+          ? `<span class="pos-tag" style="background:rgba(56,189,248,0.18);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);" title="50% Profit Booked into Cash Margin">✅ 50% LOCKED</span>`
+          : `<span class="mono" style="color:#34d399;font-weight:600;">₹${target1.toFixed(2)}</span>`;
 
         return `
           <tr>
             <td>
               <div style="font-weight:700;color:#38bdf8;font-size:0.92rem;">${p.symbol}</div>
-              <span class="pos-tag ${p.isSniper ? 'pos-sniper' : 'pos-standard'}">${p.setupType || 'Breakout'}</span>
+              <div style="display:flex;gap:4px;margin-top:2px;">
+                <span class="pos-tag ${p.isSniper ? 'pos-sniper' : 'pos-standard'}">${p.setupType || 'Breakout'}</span>
+                ${p.scaledOut ? '<span class="pos-tag" style="background:rgba(56,189,248,0.12);color:#38bdf8;">RUNNER 50%</span>' : ''}
+              </div>
             </td>
             <td class="num mono" style="font-weight:700;">${p.shares}</td>
             <td class="num mono">₹${p.buyPrice.toFixed(2)}</td>
@@ -1092,17 +1324,16 @@
             <td class="num mono" style="font-weight:700;color:${isUp ? '#10b981' : '#f43f5e'};">
               ${isUp ? '+' : ''}₹${Math.round(pnl).toLocaleString('en-IN')} (${roi >= 0 ? '+' : ''}${roi.toFixed(1)}%)
             </td>
-            <td class="num mono" style="color:#f87171;">₹${p.stopPrice.toFixed(2)}</td>
-            <td class="num mono" style="color:#34d399;">₹${p.targetPrice.toFixed(2)}</td>
+            <td class="num mono">${stopHtml}</td>
+            <td class="num mono">${target1Html}</td>
             <td style="text-align:center;">
               <span class="mono" style="font-size:0.7rem;color:var(--text-secondary);">${curProgress.toFixed(0)}%</span>
               <div class="progress-track"><div class="progress-fill" style="width:${curProgress}%;"></div></div>
             </td>
             <td style="text-align:center;">
-              <div style="display:flex;gap:4px;justify-content:center;">
-                <button class="btn-action-sm btn-lock" title="Sell 50% & Move Stop to Breakeven" onclick="lockTarget1(${idx})">Lock 1.5R</button>
-                <button class="btn-action-sm" title="Move Stop to Buy Price" onclick="moveToBreakeven(${idx})">BE Stop</button>
-                <button class="btn-action-sm btn-close" title="Close Position at Market" onclick="closePosition(${idx})">Close</button>
+              <div style="display:flex;gap:4px;justify-content:center;align-items:center;">
+                <span class="pos-tag" style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);font-size:0.68rem;" title="Auto-Pilot will auto-sell if stop or target is hit">🤖 Auto-Guarded</span>
+                <button class="btn-action-sm btn-close" title="Close Position Manually" onclick="closePosition(${idx})">Close</button>
               </div>
             </td>
           </tr>
@@ -1202,6 +1433,8 @@
 
       const invested = shares * cand.close;
       portfolio.cash -= invested;
+      const stopPrice = cand.stop || (cand.close * 0.95);
+      const riskPerShare = Math.max(0.1, cand.close - stopPrice);
       portfolio.positions.push({
         symbol: cand.symbol,
         setupType: cand.strategies[0],
@@ -1209,16 +1442,16 @@
         shares: shares,
         buyPrice: cand.close,
         currentPrice: cand.close,
-        stopPrice: cand.stop,
-        targetPrice: cand.close + 1.5 * (cand.close - cand.stop),
+        initialStopPrice: stopPrice,
+        stopPrice: stopPrice,
+        target1Price: +(cand.close + 1.5 * riskPerShare).toFixed(2),
+        target2Price: +(cand.close + 2.5 * riskPerShare).toFixed(2),
+        targetPrice: +(cand.close + 1.5 * riskPerShare).toFixed(2),
+        scaledOut: false,
         entryDate: D.asof || new Date().toISOString().split('T')[0]
       });
 
-      if (yahooWs && yahooWs.readyState === WebSocket.OPEN) {
-        try {
-          yahooWs.send(JSON.stringify({ subscribe: [toYahooSymbol(cand.symbol)] }));
-        } catch (_) {}
-      }
+      subscribeSymbolsToStream([toYahooSymbol(cand.symbol)]);
 
       savePortfolio();
       renderWatchlist();
@@ -1334,12 +1567,9 @@
       if (!livePrices[sym]) {
         livePrices[sym] = { price: price, open: price, prevClose: price, tickDirection: 0 };
       }
-      if (yahooWs && yahooWs.readyState === WebSocket.OPEN) {
-        try {
-          yahooWs.send(JSON.stringify({ subscribe: [toYahooSymbol(sym)] }));
-        } catch (_) {}
-      }
+      subscribeSymbolsToStream([toYahooSymbol(sym)]);
 
+      const riskPerShare = Math.max(0.1, price - stop);
       portfolio.positions.push({
         symbol: sym,
         setupType: 'Manual Discretionary',
@@ -1347,8 +1577,12 @@
         shares: shares,
         buyPrice: price,
         currentPrice: price,
+        initialStopPrice: stop,
         stopPrice: stop,
-        targetPrice: target,
+        target1Price: +(price + 1.5 * riskPerShare).toFixed(2),
+        target2Price: +(price + 2.5 * riskPerShare).toFixed(2),
+        targetPrice: target || +(price + 1.5 * riskPerShare).toFixed(2),
+        scaledOut: false,
         entryDate: new Date().toISOString().split('T')[0]
       });
 
@@ -1363,11 +1597,11 @@
     renderClosed();
     renderTickerTape();
 
-    // Connect Real-Time Yahoo WebSocket Streamer (Zero Simulation)
+    // Connect Real-Time Live WebSocket Streamer (Finance-Query + Yahoo Fallback, Zero Simulation)
     updateStatusPill('INITIAL');
-    connectYahooStream();
+    connectLiveStream('finance-query');
     setInterval(() => {
-      updateStatusPill(yahooWs && yahooWs.readyState === WebSocket.OPEN ? 'WS_CONNECTED' : 'IDLE');
+      updateStatusPill(liveWs && liveWs.readyState === WebSocket.OPEN ? 'WS_CONNECTED' : 'IDLE');
     }, 15000);
 
     // Auto-import via URL parameter e.g. ?symbol=XYZ or ?buy=XYZ
