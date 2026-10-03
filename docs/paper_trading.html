@@ -1423,6 +1423,79 @@
       }
     }
 
+    function renderHUD() {
+      const cash = portfolio.cash || 0;
+      let invested = 0;
+      let curVal = 0;
+
+      (portfolio.positions || []).forEach(p => {
+        const cur = p.currentPrice || (livePrices[p.symbol] ? livePrices[p.symbol].price : p.buyPrice);
+        invested += p.shares * p.buyPrice;
+        curVal += p.shares * cur;
+      });
+
+      const unrealized = curVal - invested;
+      const unrealizedRoi = invested > 0 ? (unrealized / invested) * 100 : 0;
+      const totalVal = cash + curVal;
+
+      let realized = 0;
+      let winCount = 0;
+      let winSum = 0;
+      let lossSum = 0;
+
+      (portfolio.closedTrades || []).forEach(t => {
+        realized += (t.pnl || 0);
+        if ((t.pnl || 0) > 0) {
+          winCount++;
+          winSum += t.pnl;
+        } else {
+          lossSum += Math.abs(t.pnl || 0);
+        }
+      });
+
+      const totalClosed = (portfolio.closedTrades || []).length;
+      const winRate = totalClosed > 0 ? ((winCount / totalClosed) * 100).toFixed(1) + '%' : '--%';
+      const profitFactor = lossSum > 0 ? (winSum / lossSum).toFixed(2) : (winSum > 0 ? '∞' : '--');
+
+      const elTotal = document.getElementById('hudTotalVal');
+      if (elTotal) elTotal.textContent = '₹' + Math.round(totalVal).toLocaleString('en-IN');
+
+      const elUnrealized = document.getElementById('hudUnrealizedVal');
+      if (elUnrealized) {
+        const sign = unrealized >= 0 ? '+' : '';
+        elUnrealized.textContent = `₹${sign}${Math.round(unrealized).toLocaleString('en-IN')} (${sign}${unrealizedRoi.toFixed(2)}%)`;
+        elUnrealized.style.color = unrealized >= 0 ? '#34d399' : '#f87171';
+      }
+
+      const elPositionsCount = document.getElementById('hudPositionsCount');
+      if (elPositionsCount) elPositionsCount.textContent = `${(portfolio.positions || []).length} Open Positions`;
+
+      const elOpenHeader = document.getElementById('openCountHeader');
+      if (elOpenHeader) elOpenHeader.textContent = (portfolio.positions || []).length;
+
+      const elRealized = document.getElementById('hudRealizedVal');
+      if (elRealized) {
+        const sign = realized >= 0 ? '+' : '';
+        elRealized.textContent = `₹${sign}${Math.round(realized).toLocaleString('en-IN')}`;
+        elRealized.style.color = realized >= 0 ? '#34d399' : '#f87171';
+      }
+
+      const elClosedCount = document.getElementById('hudClosedCount');
+      if (elClosedCount) elClosedCount.textContent = `${totalClosed} Closed Trades`;
+
+      const elCash = document.getElementById('hudCashVal');
+      if (elCash) elCash.textContent = '₹' + Math.round(cash).toLocaleString('en-IN');
+
+      const elInvested = document.getElementById('hudInvestedVal');
+      if (elInvested) elInvested.textContent = 'Invested: ₹' + Math.round(invested).toLocaleString('en-IN');
+
+      const elWinRate = document.getElementById('hudWinRate');
+      if (elWinRate) elWinRate.textContent = winRate;
+
+      const elPf = document.getElementById('hudProfitFactor');
+      if (elPf) elPf.textContent = `Profit Factor: ${profitFactor}`;
+    }
+
     function renderPositions() {
       const tb = document.getElementById('positionsBody');
       if (portfolio.positions.length === 0) {
@@ -1562,6 +1635,34 @@
           </tr>
         `;
       }).reverse().join('');
+    }
+
+    function renderTickerTape() {
+      const track = document.getElementById('tickerTrack');
+      if (!track) return;
+      const symbols = Object.keys(livePrices);
+      if (symbols.length === 0) {
+        track.innerHTML = '<span style="color:var(--text-muted);font-size:0.75rem;">Connecting to real-time ticker stream...</span>';
+        return;
+      }
+      const items = [...symbols, ...symbols].map(sym => {
+        const data = livePrices[sym];
+        const p = data.price || 0;
+        const prev = data.prevClose || p;
+        const chg = prev > 0 ? ((p - prev) / prev) * 100 : 0;
+        const isUp = chg >= 0;
+        const sign = isUp ? '+' : '';
+        const cls = isUp ? 'tick-up' : 'tick-down';
+        const arrow = isUp ? '▲' : '▼';
+        return `
+          <div class="ticker-item">
+            <span class="sym">${sym}</span>
+            <span class="price">₹${p.toFixed(2)}</span>
+            <span class="chg ${cls}">${arrow} ${sign}${chg.toFixed(2)}%</span>
+          </div>
+        `;
+      }).join('');
+      track.innerHTML = items;
     }
 
     // Trade Operations
