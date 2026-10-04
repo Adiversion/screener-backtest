@@ -190,6 +190,12 @@ def _build_single_candidate(f: pd.Series, deliv_pct: float | None, ind_df: pd.Da
     ind_info = get_symbol_industry_momentum(sym, ind_df) if ind_df is not None else {}
     audit_sniper = evaluate_sniper_gates(f, deliv_pct=deliv_pct, ind_rank=ind_info.get("rs_rank"))
 
+    r60 = float(f["r60"]) if "r60" in f and not pd.isna(f["r60"]) else (
+        float(f["R60"]) if "R60" in f and not pd.isna(f["R60"]) else r20
+    )
+    has_overhead_ceiling = (r60 > r20 * 1.015)
+    ceiling_cleared = (not has_overhead_ceiling) or (close >= r60)
+
     badges: list[str] = [
         "52W HIGH BREAKOUT" if is_52w else "",
         f"RS {rs_rating:.0f} (TOP {max(1, 100-int(round(rs_rating)))}%)" if rs_rating >= 90.0 else "",
@@ -199,6 +205,9 @@ def _build_single_candidate(f: pd.Series, deliv_pct: float | None, ind_df: pd.Da
         "CAUTION: EXTENDED >20%" if is_extended else "",
         "🎯 SNIPER QUALIFIED (65%+ WR)" if audit_sniper.is_sniper else "",
         f"SECTOR TAILWIND: {str(ind_info.get('tier','')).split(':')[0]}" if ind_info.get("is_tailwind") else "",
+        "60D BASE CEILING CLEARED" if (has_overhead_ceiling and ceiling_cleared) else (
+            f"CAUTION: OVERHEAD CEILING (₹{r60:.1f})" if (has_overhead_ceiling and not ceiling_cleared) else ""
+        ),
     ]
     badges = [b for b in badges if b]
 
