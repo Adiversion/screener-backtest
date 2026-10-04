@@ -720,6 +720,23 @@
     margin: 12px 0;
     text-align: center;
   }
+  .fwd-replay-btn {
+    padding: 3px 9px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.08);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .fwd-replay-btn:hover {
+    background: rgba(56, 189, 248, 0.22);
+    border-color: #38bdf8;
+    color: #fff;
+  }
   .fwd-log-toggle {
     background: transparent;
     border: none;
@@ -747,18 +764,111 @@
     text-align: left;
   }
 
-  /* Bento Grid Layout */
-  .bento-hud {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
-    gap: 14px;
-    margin-bottom: 22px;
+  /* Full-width Slim Regime Directive Strip */
+  .regime-directive-strip {
+    background: linear-gradient(135deg, rgba(20, 27, 45, 0.85) 0%, rgba(13, 17, 27, 0.95) 100%);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--rose);
+    border-radius: 10px;
+    padding: 9px 16px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.3);
   }
 
-  @media (max-width: 1200px) {
-    .bento-hud { grid-template-columns: 1fr 1fr; }
+  .regime-directive-strip.bull-state {
+    border-left: 4px solid var(--emerald);
   }
-  @media (max-width: 768px) {
+
+  .regime-left {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1 1 520px;
+  }
+
+  .regime-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .regime-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .regime-msg-inline {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    line-height: 1.35;
+  }
+
+  .regime-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    background: rgba(0, 0, 0, 0.28);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    padding: 6px 12px;
+  }
+
+  .regime-stat-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.74rem;
+  }
+
+  .stat-lbl {
+    color: var(--text-muted);
+  }
+
+  .stat-val {
+    color: #f1f5f9;
+  }
+
+  .gauge-track-mini {
+    width: 75px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    overflow: hidden;
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  .regime-divider {
+    width: 1px;
+    height: 14px;
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  /* Bento Grid Layout - 4 Compact Core KPIs */
+  .bento-hud {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  @media (max-width: 1050px) {
+    .bento-hud { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 580px) {
     .bento-hud { grid-template-columns: 1fr; }
   }
 
@@ -767,28 +877,27 @@
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 16px 18px;
+    border-radius: 10px;
+    padding: 10px 14px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     transition: all 0.2s ease;
+    min-height: 72px;
   }
 
   .bento-tile:hover {
     border-color: var(--border-hover);
     transform: translateY(-1px);
-    box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 6px 20px -4px rgba(0, 0, 0, 0.4);
   }
 
   .bento-directive {
-    grid-column: span 1;
-    background: linear-gradient(145deg, rgba(20, 27, 45, 0.8) 0%, rgba(13, 17, 27, 0.9) 100%);
-    border-left: 3px solid var(--rose);
+    /* styling handled by .regime-directive-strip */
   }
 
   .bento-directive.bull-state {
-    border-left: 3px solid var(--emerald);
+    border-left: 4px solid var(--emerald);
   }
 
   .tile-label {
@@ -894,8 +1003,8 @@
 
   .search-wrapper {
     position: relative;
-    flex: 1;
-    min-width: 240px;
+    flex: 1.5;
+    min-width: 300px;
   }
 
   .search-icon {
@@ -942,6 +1051,7 @@
     outline: none;
     cursor: pointer;
     color-scheme: dark;
+    max-width: 250px;
   }
 
   .custom-select:focus {
@@ -1278,6 +1388,10 @@
   .strat-tag.weinstein { background: rgba(234, 179, 8, 0.12); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.3); }
   .strat-tag.turtle { background: rgba(20, 184, 166, 0.15); color: #2dd4bf; border: 1px solid rgba(20, 184, 166, 0.35); }
   .strat-tag.darvas { background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.35); }
+  .strat-tag.wyckoff { background: rgba(99, 102, 241, 0.15); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.4); }
+  .strat-tag.sector { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.4); }
+  .strat-tag.deliv { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); }
+  .strat-tag.connors { background: rgba(236, 72, 153, 0.15); color: #f472b6; border: 1px solid rgba(236, 72, 153, 0.4); }
 
   /* RS Score Pill */
   .rs-score-badge {
@@ -1470,7 +1584,32 @@
     background: linear-gradient(145deg, rgba(244, 63, 94, 0.1) 0%, rgba(25, 14, 17, 0.4) 100%);
     border-color: var(--rose-border);
   }
+
+  .chart-link-pill {
+    padding: 3px 8px;
+    font-size: 0.70rem;
+    font-weight: 600;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.1);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: 4px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+  }
+  .chart-link-pill:hover {
+    background: rgba(56, 189, 248, 0.25);
+    border-color: #38bdf8;
+    color: #fff;
+  }
 </style>
+<script src="lightweight-charts.standalone.production.js"></script>
+<script>
+  if (typeof LightweightCharts === 'undefined') {
+    document.write('<script src="https://unpkg.com/lightweight-charts@5.0.3/dist/lightweight-charts.standalone.production.js"><\/script>');
+  }
+</script>
 </head>
 <body>
 <div class="container">
@@ -1485,7 +1624,7 @@
           <span>As-Of Session:</span>
           <span class="session-pill mono" id="asofDate">2026-10-01</span>
           <span>•</span>
-          <span>10-Framework Confluence Engine</span>
+          <span>12-Framework Confluence Engine • Causal NSE Architecture</span>
         </p>
       </div>
     </div>
@@ -1545,86 +1684,81 @@
     </div>
   </div>
 
-  <!-- Cinematic Hero Story Banner -->
-  <div class="hero-banner">
-    <div class="hero-badge">⟁ INSTITUTIONAL BREAKOUT ARCHITECTURE • 9 AUDITED GATES</div>
-    <h2 class="hero-heading">Algorithmic Breakout Detection & Wyckoff Order Flow Engine</h2>
-    <p class="hero-sub">
-      Causal daily auction surveillance across the 2,000+ NSE cash equity universe. Engineered with Mark Minervini SEPA, William O'Neil CANSLIM, Kristjan Qullamaggie High-Tight Flags, Stan Weinstein Stage 2, Richard Dennis Turtle Trading, and Nicolas Darvas Box breakout frameworks.
-    </p>
-    <div class="hero-ribbon">
-      <div class="ribbon-chip"><span>⚡</span> <b>2,000+</b> NSE Universe Monitored</div>
-      <div class="ribbon-chip"><span>🛡️</span> <b>Zero</b> Lookahead Bias (Strict Causal .shift(1))</div>
-      <div class="ribbon-chip"><span>🌊</span> <b>Wyckoff</b> Closing Range & Volume-Spread VSA</div>
-      <div class="ribbon-chip"><span>🏛️</span> <b>Demat Delivery &ge;50%</b> Absorption Hurdle</div>
-      <div class="ribbon-chip"><span>⚖️</span> <b>Dynamic</b> Risk Parity & Capital Sizing</div>
+  <!-- Top Full-Width Market Regime Directive Strip -->
+  <div class="regime-directive-strip bento-directive" id="directiveTile">
+    <div class="regime-left">
+      <div class="regime-title-wrap">
+        <span class="regime-shield">🛡️</span>
+        <span class="regime-label">Market Regime Directive</span>
+        <span id="ftdBadge" style="font-size:0.70rem;padding:2px 8px;border-radius:4px;background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);display:none;font-weight:600;"></span>
+      </div>
+      <div id="regimeMsg" class="regime-msg-inline"></div>
+    </div>
+    <div class="regime-right">
+      <div class="regime-stat-item">
+        <span class="stat-lbl">Breadth (&gt;SMA20):</span>
+        <span class="mono stat-val" id="breadthVal" style="font-weight:700;">--%</span>
+        <div class="gauge-track-mini"><div class="gauge-fill" id="breadthGauge" style="width:0%;"></div></div>
+      </div>
+      <div class="regime-divider"></div>
+      <div class="regime-stat-item">
+        <span class="stat-lbl">Universe Idx:</span>
+        <b class="mono stat-val" id="mktIndexVal">--</b>
+      </div>
+      <div class="regime-divider"></div>
+      <div class="regime-stat-item">
+        <span class="stat-lbl">20d SMA:</span>
+        <b class="mono stat-val" id="mktSmaVal">--</b>
+      </div>
     </div>
   </div>
 
-  <!-- Bento HUD (Market Directive & Primary KPIs) -->
+  <!-- Bento HUD: 4 Compact Core KPIs -->
   <div class="bento-hud">
-    <!-- Tile 1: Primary Market Directive (Wide) -->
-    <div class="bento-tile bento-directive" id="directiveTile">
-      <div>
-        <div class="tile-label">
-          <span>🛡️</span> Market Regime Directive
-        </div>
-        <div id="regimeMsg" style="font-weight:700;font-size:0.96rem;margin-top:6px;line-height:1.45;"></div>
-      </div>
-      <div>
-        <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.75rem;margin-top:8px;">
-          <span style="color:var(--text-muted);">NSE Breadth (% &gt; SMA20):</span>
-          <span class="mono" id="breadthVal" style="font-weight:700;">21.3%</span>
-        </div>
-        <div class="gauge-track">
-          <div class="gauge-fill" id="breadthGauge" style="width: 21.3%;"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:0.73rem;color:var(--text-muted);">
-          <span>Universe Index: <b class="mono" id="mktIndexVal" style="color:#cbd5e1;">970.16</b></span>
-          <span>Market 20d SMA: <b class="mono" id="mktSmaVal" style="color:#cbd5e1;">1000.18</b></span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tile 2: Net New Highs Breadth -->
-    <div class="bento-tile">
+    <!-- Tile 1: Net New Highs Breadth -->
+    <div class="bento-tile bento-tile-compact">
       <div class="tile-label"><span>📊</span> Net New Highs (52W)</div>
       <div class="tile-metric mono" id="nnhVal">-85</div>
       <div class="tile-sub" id="nnhBreakdown">12 Highs / 97 Lows</div>
     </div>
 
-    <!-- Tile 3: Qualified Setups -->
-    <div class="bento-tile">
+    <!-- Tile 2: Qualified Setups -->
+    <div class="bento-tile bento-tile-compact">
       <div class="tile-label"><span>🎯</span> Qualified Setups</div>
       <div class="tile-metric mono" id="kpiTotal" style="color:#38bdf8;">0</div>
       <div class="tile-sub">Cleared Quant Hurdles</div>
     </div>
 
-    <!-- Tile 4: High Conviction -->
-    <div class="bento-tile">
+    <!-- Tile 3: High Conviction -->
+    <div class="bento-tile bento-tile-compact">
       <div class="tile-label"><span>⭐</span> High Conviction</div>
       <div class="tile-metric mono" id="kpiConviction" style="color:#34d399;">0</div>
       <div class="tile-sub">3+ Matched Frameworks</div>
     </div>
 
-    <!-- Tile 5: Inst. Delivery & RVOL -->
-    <div class="bento-tile">
+    <!-- Tile 4: Inst. Delivery & RVOL -->
+    <div class="bento-tile bento-tile-compact">
       <div class="tile-label"><span>🏛️</span> Inst. Delivery (≥50%)</div>
       <div class="tile-metric mono" id="kpiDeliv" style="color:#22d3ee;">0</div>
       <div class="tile-sub">Avg RVOL: <b class="mono" id="kpiRvol">2.6x</b></div>
     </div>
   </div>
 
-  <!-- Quick Institutional Insights Bar -->
-  <div class="quick-links">
-    <button class="btn-chip" onclick="openSniperModal()" style="border-color:rgba(245,158,11,0.4);color:#f59e0b;background:rgba(245,158,11,0.08);"><span>🎯</span> 65%+ Win Rate Sniper Playbook</button>
-    <button class="btn-chip" onclick="openWalkForwardModal()" style="border-color:rgba(52,211,153,0.4);color:#34d399;background:rgba(52,211,153,0.08);"><span>🛡️</span> Walk-Forward OOS (61,007 Trades)</button>
-    <button class="btn-chip" onclick="openUsicModal()" style="border-color:rgba(251,191,36,0.4);color:#fbbf24;background:rgba(251,191,36,0.08);"><span>🏆</span> USIC Champions Playbook (+1,499%)</button>
-    <button class="btn-chip" onclick="openPrinciplesModal()"><span>🏛️</span> 5 Institutional Quant Truths</button>
-    <button class="btn-chip" onclick="openRsGuideModal()"><span>⚡</span> Why Relative Strength Beats 20-Day Return</button>
-    <button class="btn-chip" onclick="openWyckoffGuideModal()"><span>🌊</span> Wyckoff Effort vs Result & Price Acceptance</button>
-    <button class="btn-chip" onclick="openCaseStudyModal()"><span>📖</span> Forensic Case Study: JINDALPOLY</button>
-    <button class="btn-chip" onclick="openNseGuideModal()"><span>⏱️</span> NSE 6-Feed Timing & Surveillance Guide</button>
+  <!-- Consolidated Institutional Playbooks & Research Bar -->
+  <div class="playbooks-bar" style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;background:rgba(15,23,42,0.6);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:8px 14px;">
+    <div style="display:flex;align-items:center;gap:6px;font-size:0.78rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">
+      <span>📚</span> Institutional Playbooks:
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+      <button class="btn-chip" onclick="openSniperModal()" style="border-color:rgba(245,158,11,0.4);color:#f59e0b;background:rgba(245,158,11,0.08);padding:4px 10px;font-size:0.75rem;">🎯 65%+ Sniper</button>
+      <button class="btn-chip" onclick="openUsicModal()" style="border-color:rgba(251,191,36,0.4);color:#fbbf24;background:rgba(251,191,36,0.08);padding:4px 10px;font-size:0.75rem;">🏆 USIC Playbook</button>
+      <button class="btn-chip" onclick="openWalkForwardModal()" style="border-color:rgba(52,211,153,0.4);color:#34d399;background:rgba(52,211,153,0.08);padding:4px 10px;font-size:0.75rem;">🛡️ Walk-Forward OOS</button>
+      <button class="btn-chip" onclick="openWyckoffGuideModal()" style="padding:4px 10px;font-size:0.75rem;">🌊 Wyckoff VSA</button>
+      <button class="btn-chip" onclick="openRsGuideModal()" style="padding:4px 10px;font-size:0.75rem;">⚡ RS vs 20d</button>
+      <button class="btn-chip" onclick="openPrinciplesModal()" style="padding:4px 10px;font-size:0.75rem;">🏛️ 5 Truths</button>
+      <button class="btn-chip" onclick="openCaseStudyModal()" style="padding:4px 10px;font-size:0.75rem;">📖 JINDALPOLY</button>
+      <button class="btn-chip" onclick="openNseGuideModal()" style="padding:4px 10px;font-size:0.75rem;">⏱️ NSE Feeds</button>
+    </div>
   </div>
 
   <!-- Interactive Sector RS Momentum Matrix (WealthLab Standard) -->
@@ -1653,8 +1787,7 @@
     </select>
 
     <select id="strategyFilter" class="custom-select">
-      <option value="">All 10 Strategies</option>
-      <option value="Sniper Mode (65%+ WR)">🎯 Sniper Mode (65%+ Win Rate)</option>
+      <option value="">All 12 Strategies</option>
       <option value="Protocol Fortified">Protocol Fortified</option>
       <option value="Relative Strength Leader">Relative Strength Leader</option>
       <option value="Minervini Template">Minervini Template</option>
@@ -1664,6 +1797,10 @@
       <option value="PKScreener VCP">PKScreener VCP</option>
       <option value="Turtle Trading">🐢 Turtle Trading (Donchian Breakout)</option>
       <option value="Darvas Box">📦 Darvas Box (Consolidation Breakout)</option>
+      <option value="Wyckoff Closing Range">🕯️ Wyckoff Closing Range (Absorption)</option>
+      <option value="Sector Momentum Leader">🏭 Sector Momentum Leader (Tailwind)</option>
+      <option value="Institutional Delivery Absorption">📦 Institutional Delivery (Demat ≥50%)</option>
+      <option value="Connors RSI Pullback">📉 Connors RSI Pullback (Stage 2 Dip)</option>
     </select>
 
     <select id="tagFilter" class="custom-select">
@@ -1678,6 +1815,7 @@
       <option value="52w">52-Week High Breakouts</option>
       <option value="vol">Volume Ignitions (≥5x)</option>
       <option value="deliv">Institutional Delivery (≥50%)</option>
+      <option value="crsi_dip">📉 Oversold Pullback (CRSI ≤ 25)</option>
       <option value="safe">Safe Extension (≤20%)</option>
       <option value="caution">Extended Caution (&gt;20%)</option>
     </select>
@@ -1687,18 +1825,21 @@
       <span id="basketToggleLabel">Basket Mode: OFF</span>
     </div>
 
-    <div class="cap-group">
-      <span class="cap-label">Position Sizing:</span>
-      <button class="cap-chip" onclick="setCapital(50000)">₹50k</button>
-      <button class="cap-chip active" id="chip1L" onclick="setCapital(100000)">₹1L</button>
-      <button class="cap-chip" onclick="setCapital(200000)">₹2L</button>
-      <button class="cap-chip" onclick="setCapital(500000)">₹5L</button>
-      <input type="number" id="capInput" class="cap-custom-input" value="100000" step="10000"/>
-    </div>
-
     <div class="view-switch">
       <button id="viewTableBtn" class="view-btn active" onclick="setViewMode('table')">📊 Table</button>
       <button id="viewCardsBtn" class="view-btn" onclick="setViewMode('cards')">🎴 Cards</button>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+      <button class="view-btn" onclick="copyTradingViewWatchlist()" title="Copy comma-separated list of symbols formatted for TradingView (NSE:SYM)" style="background:rgba(56,189,248,0.1);color:#38bdf8;border-color:rgba(56,189,248,0.3);">
+        📋 Copy TV Watchlist
+      </button>
+      <button class="view-btn" onclick="downloadTradingViewWatchlist()" title="Download .txt watchlist for TradingView import" style="background:rgba(59,130,246,0.1);color:#60a5fa;border-color:rgba(59,130,246,0.3);">
+        ⬇️ TV .txt
+      </button>
+      <button class="view-btn" onclick="exportCsvCandidates()" title="Download full candidate list with trade plans as CSV" style="background:rgba(16,185,129,0.1);color:#34d399;border-color:rgba(16,185,129,0.3);">
+        📥 Export CSV
+      </button>
     </div>
   </div>
 
@@ -1715,11 +1856,8 @@
             <th>Symbol / Company</th>
             <th>Frameworks</th>
             <th class="num">Entry / Res (₹)</th>
-            <th class="num">Stop / Support</th>
-            <th class="num">Target 2R</th>
-            <th class="num" id="sharesHeader">Shares (₹100k)</th>
-            <th class="num">Infusion</th>
-            <th class="num">Max Risk</th>
+            <th class="num">Stop / Support (₹)</th>
+            <th class="num">Target 2R (₹)</th>
             <th class="num">RVOL / Deliv</th>
             <th class="num">SMA50 Ext</th>
             <th class="num">RS / Trend</th>
@@ -1759,8 +1897,26 @@
       <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;" id="fwdFilterChips"></div>
     </div>
 
-    <!-- Interactive Trades List -->
-    <div class="fwd-trades-grid" id="fwdTradesGrid"></div>
+    <!-- Interactive Forward Verification Stock List Table -->
+    <div class="table-scroll" style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;overflow-x:auto;background:rgba(14,19,31,0.6);">
+      <table style="width:100%;border-collapse:collapse;" class="fwd-table">
+        <thead>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.1);background:rgba(15,23,42,0.85);font-size:0.74rem;text-transform:uppercase;color:var(--text-muted);">
+            <th style="padding:10px 12px;text-align:left;width:30px;">#</th>
+            <th style="padding:10px 12px;text-align:left;">Symbol / Company</th>
+            <th style="padding:10px 12px;text-align:left;">Frameworks</th>
+            <th style="padding:10px 12px;text-align:right;">Entry (Next Open)</th>
+            <th style="padding:10px 12px;text-align:right;">Fwd Max High</th>
+            <th style="padding:10px 12px;text-align:center;">Trade Outcome</th>
+            <th style="padding:10px 12px;text-align:right;">USIC Staged P&L</th>
+            <th style="padding:10px 12px;text-align:right;">Buy & Hold</th>
+            <th style="padding:10px 12px;text-align:right;">Alpha Saved</th>
+            <th style="padding:10px 12px;text-align:center;">Day-by-Day</th>
+          </tr>
+        </thead>
+        <tbody id="fwdTableBody"></tbody>
+      </table>
+    </div>
   </section>
 
 </div>
@@ -1778,6 +1934,36 @@
         <div id="mBadges" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;"></div>
       </div>
       <div class="close-icon" onclick="closeModal('stockModal')">&times;</div>
+    </div>
+
+    <!-- Interactive Technical Breakout & Order Flow Chart -->
+    <div class="modal-section" style="margin-bottom:14px;background:rgba(9,13,22,0.6);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:12px 14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+        <div class="modal-section-title" style="margin:0;font-size:0.88rem;">
+          <span>📈</span> Daily Breakout Chart & Order Flow Structure
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <!-- Legend indicators -->
+          <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">
+            <span><b style="color:#38bdf8;">—</b> EMA10</span>
+            <span><b style="color:#fbbf24;">—</b> EMA20</span>
+            <span><b style="color:#3b82f6;">—</b> SMA50</span>
+            <span><b style="color:#a855f7;">—</b> SMA200</span>
+            <span><b style="color:#ef4444;">--</b> Stop</span>
+            <span><b style="color:#10b981;">--</b> Target</span>
+          </div>
+          <!-- External direct chart links -->
+          <div style="display:flex;gap:4px;">
+            <a id="mTvLink" href="#" target="_blank" class="chart-link-pill" title="Open chart on TradingView">TV ↗</a>
+            <a id="mChartinkLink" href="#" target="_blank" class="chart-link-pill" title="Open chart on Chartink">Chartink ↗</a>
+            <a id="mScreenerLink" href="#" target="_blank" class="chart-link-pill" title="Open fundamentals on Screener.in">Screener ↗</a>
+          </div>
+        </div>
+      </div>
+      <!-- Chart Canvas Container -->
+      <div id="stockChartContainer" style="width:100%;height:320px;background:#060911;border:1px solid rgba(255,255,255,0.06);border-radius:8px;position:relative;overflow:hidden;"></div>
+      <!-- Dynamic OHLCV Legend Bar -->
+      <div id="chartLegendBar" style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:0.72rem;padding:5px 8px;background:rgba(15,23,42,0.85);border-radius:0 0 8px 8px;color:#94a3b8;font-family:'JetBrains Mono',monospace;min-height:24px;"></div>
     </div>
 
     <div class="modal-stats-grid" id="mGrid"></div>
@@ -2354,6 +2540,19 @@ rbt.textContent = D.regime.name + ' (' + D.regime.action + ')';
 rb.className = 'regime-badge ' + (isBull ? 'bull' : 'defensive');
 if (isBull) dt.classList.add('bull-state');
 
+if (D.regime.ftd_status) {
+  const fb = document.getElementById('ftdBadge');
+  if (fb) {
+    fb.style.display = 'inline-block';
+    fb.textContent = D.regime.ftd_status;
+    if (D.regime.is_ftd || D.regime.ftd_active) {
+      fb.style.borderColor = 'rgba(16,185,129,0.5)';
+      fb.style.background = 'rgba(16,185,129,0.15)';
+      fb.style.color = '#34d399';
+    }
+  }
+}
+
 document.getElementById('regimeMsg').textContent = D.regime.message;
 const breadth = D.regime.breadth || 0;
 document.getElementById('breadthVal').textContent = breadth.toFixed(1) + '%';
@@ -2424,10 +2623,10 @@ function setCapital(val) {
 }
 
 function getFrameworkTier(count) {
-  if (count >= 8) return { cls: 'tier-elite', icon: '🔥', text: `${count}/10 FRAMEWORKS ACHIEVED` };
-  if (count >= 6) return { cls: 'tier-high', icon: '⚡', text: `${count}/10 FRAMEWORKS ACHIEVED` };
-  if (count >= 4) return { cls: 'tier-mid', icon: '✨', text: `${count}/10 FRAMEWORKS ACHIEVED` };
-  return { cls: 'tier-subtle', icon: '🔹', text: `${count}/10 FRAMEWORKS ACHIEVED` };
+  if (count >= 9) return { cls: 'tier-elite', icon: '🔥', text: `${count}/12 FRAMEWORKS ACHIEVED` };
+  if (count >= 6) return { cls: 'tier-high', icon: '⚡', text: `${count}/12 FRAMEWORKS ACHIEVED` };
+  if (count >= 4) return { cls: 'tier-mid', icon: '✨', text: `${count}/12 FRAMEWORKS ACHIEVED` };
+  return { cls: 'tier-subtle', icon: '🔹', text: `${count}/12 FRAMEWORKS ACHIEVED` };
 }
 
 function render() {
@@ -2435,9 +2634,8 @@ function render() {
   const sec = document.getElementById('sectorFilter').value;
   const strat = document.getElementById('strategyFilter').value;
   const tag = document.getElementById('tagFilter').value;
-  const cap = parseFloat(document.getElementById('capInput').value) || 100000;
-  const capLabel = cap >= 100000 ? '₹' + (cap/100000).toFixed(cap % 100000 === 0 ? 0 : 1) + 'L' : '₹' + (cap/1000).toFixed(0) + 'k';
-  document.getElementById('sharesHeader').textContent = 'Shares (' + capLabel + ')';
+  const cap = 100000;
+  const capLabel = '₹1L';
 
   let filtered = D.candidates.filter(c => {
     const mQ = !q || c.symbol.toLowerCase().includes(q) || (c.company && c.company.toLowerCase().includes(q)) || (c.sector && c.sector.toLowerCase().includes(q));
@@ -2445,10 +2643,11 @@ function render() {
     const mStrat = !strat || c.strategies.includes(strat);
     let mTag = true;
     if (tag === '52w') mTag = c.breakout_type === '52-Week High Breakout';
-    else if (tag === 'sniper') mTag = c.is_sniper || c.strategies.includes('Sniper Mode (65%+ WR)');
+    else if (tag === 'sniper') mTag = c.is_sniper;
     else if (tag === 'sector_leader') mTag = c.is_sector_tailwind;
     else if (tag === 'vol') mTag = c.rvol >= 5.0;
     else if (tag === 'deliv') mTag = c.deliv_pct >= 50.0;
+    else if (tag === 'crsi_dip') mTag = c.crsi !== undefined && c.crsi <= 25.0;
     else if (tag === 'safe') mTag = !c.is_extended;
     else if (tag === 'caution') mTag = c.is_extended;
     else if (tag === 'rs') mTag = c.rs_rating >= 80.0;
@@ -2689,8 +2888,7 @@ function render() {
     const stratTags = (c.strategies || []).map(s => {
       let cls = 'protocol';
       let shortName = s;
-      if (s.includes('Sniper')) { cls = 'sniper'; shortName = '🎯 Sniper 65%+'; }
-      else if (s.includes('Minervini')) { cls = 'minervini'; shortName = 'Minervini'; }
+      if (s.includes('Minervini')) { cls = 'minervini'; shortName = 'Minervini'; }
       else if (s.includes('Weinstein')) { cls = 'weinstein'; shortName = 'Weinstein Stage 2'; }
       else if (s.includes('Relative Strength')) { cls = 'rs'; shortName = 'RS Leader'; }
       else if (s.includes('Qullamaggie')) { cls = 'qullamaggie'; shortName = 'Qullamaggie'; }
@@ -2698,13 +2896,20 @@ function render() {
       else if (s.includes('PKScreener')) { cls = 'pkscreener'; shortName = 'PKScreener VCP'; }
       else if (s.includes('Turtle')) { cls = 'turtle'; shortName = 'Turtle Trading'; }
       else if (s.includes('Darvas')) { cls = 'darvas'; shortName = 'Darvas Box'; }
+      else if (s.includes('Wyckoff')) { cls = 'wyckoff'; shortName = '🕯️ Wyckoff CR'; }
+      else if (s.includes('Sector Momentum')) { cls = 'sector'; shortName = '🏭 Sector Tail'; }
+      else if (s.includes('Institutional Delivery')) { cls = 'deliv'; shortName = '📦 Demat Deliv'; }
+      else if (s.includes('Connors RSI')) { cls = 'connors'; shortName = '📉 CRSI Dip'; }
       else if (s.includes('Protocol')) { shortName = 'Protocol Fortified'; }
       return `<span class="strat-tag ${cls}">${shortName}</span>`;
     }).join('');
 
     let alertBadges = '';
-    if (c.is_sniper || c.strategies.includes('Sniper Mode (65%+ WR)')) {
+    if (c.is_sniper) {
       alertBadges += '<span class="badge-pill" style="background:rgba(245,158,11,0.18);color:#fbbf24;border:1px solid rgba(245,158,11,0.45);font-weight:700;" title="Passed all 7 High-Precision Confluence Gates (65.3% Win Rate, 3.82 PF)">🎯 65%+ Sniper</span>';
+    }
+    if (c.crsi !== undefined && c.crsi <= 25.0) {
+      alertBadges += `<span class="badge-pill" style="background:rgba(236,72,153,0.18);color:#f472b6;border:1px solid rgba(236,72,153,0.45);font-weight:700;" title="Connors RSI oversold dip (${c.crsi}) within Stage 2 uptrend">📉 CRSI ${c.crsi} Dip</span>`;
     }
     if (c.is_sector_tailwind) {
       alertBadges += `<span class="badge-pill" style="background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.35);" title="Industry Group Tailwind: ${c.industry_tier || ''}">Sector Leader</span>`;
@@ -2755,7 +2960,7 @@ function render() {
         <div class="framework-cell-wrap">
           <div class="framework-score-banner ${fwTier.cls}">
             <span class="score-icon">${fwTier.icon}</span>
-            <span class="score-text"><b>${stratCount}/10</b> FRAMEWORKS ACHIEVED</span>
+            <span class="score-text"><b>${stratCount}/12</b> FRAMEWORKS ACHIEVED</span>
           </div>
           <div class="strat-grid">${stratTags}</div>
         </div>
@@ -2769,9 +2974,6 @@ function render() {
         <span style="font-size:0.69rem;color:#f87171;font-weight:700;" title="Structural Support Floor">SUP: ₹${(c.support || c.stop).toFixed(2)}</span>
       </td>
       <td class="num mono" style="color:#34d399">₹${c.target_2r.toFixed(2)}<br/><small style="font-size:0.72rem;opacity:0.85;">(+${c.target_2r_pct}%)</small></td>
-      <td class="num mono">${sharesHtml}</td>
-      <td class="num mono">${infStr}</td>
-      <td class="num mono" style="color:var(--text-secondary);">${riskStr}</td>
       <td class="num mono">
         <span>${c.rvol.toFixed(1)}x</span><br/>
         <small style="${delivHighlight}">${c.deliv_pct > 0 ? c.deliv_pct + '% Deliv' : '-'}</small>
@@ -2866,7 +3068,7 @@ function render() {
             <div style="margin:10px 0 6px 0;">
               <div class="framework-score-banner ${fwTier.cls}" style="margin-bottom:6px;">
                 <span class="score-icon">${fwTier.icon}</span>
-                <span class="score-text"><b>${stratCount}/10</b> FRAMEWORKS ACHIEVED</span>
+                <span class="score-text"><b>${stratCount}/12</b> FRAMEWORKS ACHIEVED</span>
               </div>
               <div style="display:flex;flex-wrap:wrap;gap:4px;">
                 ${stratTags}
@@ -2879,7 +3081,7 @@ function render() {
               <span><span style="color:#94a3b8;font-weight:700;">RESISTANCE:</span> <strong class="mono" style="color:#38bdf8;">₹${(c.resistance || c.breakout_ref || c.r20).toFixed(2)}</strong></span>
             </div>
 
-            <div class="card-metrics-grid">
+            <div class="card-metrics-grid" style="grid-template-columns:repeat(auto-fit, minmax(105px, 1fr));">
               <div class="card-metric-cell">
                 <span class="card-metric-label">Stop Loss</span>
                 <span class="card-metric-val" style="color:var(--rose);">₹${c.stop.toFixed(2)} <small>(-${c.stop_pct}%)</small></span>
@@ -2887,10 +3089,6 @@ function render() {
               <div class="card-metric-cell">
                 <span class="card-metric-label">Target 2R</span>
                 <span class="card-metric-val" style="color:#34d399;">₹${c.target_2r.toFixed(2)} <small>(+${c.target_2r_pct}%)</small></span>
-              </div>
-              <div class="card-metric-cell">
-                <span class="card-metric-label">Shares (${capLabel})</span>
-                <span class="card-metric-val">${sharesHtml}</span>
               </div>
               <div class="card-metric-cell">
                 <span class="card-metric-label">RVOL</span>
@@ -2908,7 +3106,7 @@ function render() {
           </div>
 
           <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);font-size:0.75rem;">
-            <div style="color:var(--text-muted);font-family:'JetBrains Mono',monospace;">Risk: <b style="color:var(--text-secondary);">${riskStr}</b></div>
+            <div style="color:var(--text-muted);font-family:'JetBrains Mono',monospace;">Protocol: <b style="color:${c.is_extended ? 'var(--rose)' : '#34d399'};">${c.is_extended ? 'Wait Pullback' : 'Execute Breakout'}</b></div>
             <div style="display:flex;gap:6px;">
               <a href="paper_trading.html?symbol=${c.symbol}" class="btn-inspect" style="background:rgba(56,189,248,0.12);color:#38bdf8;border-color:rgba(56,189,248,0.3);text-decoration:none;display:inline-flex;align-items:center;min-height:36px;padding:6px 10px;" title="Live Paper Trade">💼 Trade</a>
               <button class="btn-inspect" onclick="openModal('${c.symbol}')" style="min-height:36px;padding:6px 14px;">Inspect Rationale →</button>
@@ -3074,6 +3272,7 @@ function navigateToPage(pageName, targetElementId) {
 
 window.addEventListener('DOMContentLoaded', () => {
   const path = window.location.pathname.toLowerCase();
+  const pageFile = path.split('/').pop().split('\\').pop();
   const hash = window.location.hash.toLowerCase();
   const params = new URLSearchParams(window.location.search);
   const secParam = params.get('sector');
@@ -3081,14 +3280,19 @@ window.addEventListener('DOMContentLoaded', () => {
   if (secParam) {
     setTimeout(() => filterBySector(secParam), 80);
   }
+
+  const inspectParam = params.get('inspect');
+  if (inspectParam) {
+    setTimeout(() => openModal(inspectParam), 150);
+  }
   
-  if (path.includes('screener') || hash.includes('screener')) {
+  if (pageFile.startsWith('screener') || hash.includes('screener')) {
     setTimeout(() => scrollToSection('toolbarSection'), 120);
-  } else if (path.includes('inspector') || hash.includes('inspector')) {
+  } else if (pageFile.startsWith('inspector') || hash.includes('inspector')) {
     setTimeout(focusSearch, 120);
-  } else if (path.includes('macro') || hash.includes('macro')) {
+  } else if (pageFile.startsWith('macro') || hash.includes('macro')) {
     setTimeout(() => scrollToSection('directiveTile'), 120);
-  } else if (path.includes('verifier') || hash.includes('verifier')) {
+  } else if (pageFile.startsWith('verifier') || hash.includes('verifier')) {
     setTimeout(() => scrollToSection('forwardVerifierSection'), 120);
   }
 });
@@ -3107,7 +3311,7 @@ function openModal(sym) {
   const stratCount = (c.strategies || []).length;
   const fwTier = getFrameworkTier(stratCount);
 
-  let bHtml = `<span class="framework-score-banner ${fwTier.cls}" style="margin-right:4px;"><span class="score-icon">${fwTier.icon}</span><span class="score-text"><b>${stratCount}/10</b> FRAMEWORKS ACHIEVED</span></span>`;
+  let bHtml = `<span class="framework-score-banner ${fwTier.cls}" style="margin-right:4px;"><span class="score-icon">${fwTier.icon}</span><span class="score-text"><b>${stratCount}/12</b> FRAMEWORKS ACHIEVED</span></span>`;
   c.badges.forEach(b => {
     let cls = (b.includes('CAUTION') || b.includes('SERIES') || b.includes('GSM') || b.includes('EARNINGS') || b.includes('CIRCUIT') || b.includes('CHURN') || b.includes('UPTHRUST')) ? 'warning-be' : (b.includes('52W') ? 'ath' : 'badge-pill');
     bHtml += `<span class="badge-pill ${cls}">${b}</span>`;
@@ -3115,7 +3319,7 @@ function openModal(sym) {
   document.getElementById('mBadges').innerHTML = bHtml;
 
   const mFwCount = document.getElementById('mFwCount');
-  if (mFwCount) mFwCount.textContent = `${stratCount}/10 Achieved`;
+  if (mFwCount) mFwCount.textContent = `${stratCount}/12 Achieved`;
   const mStratGrid = document.getElementById('mStratGrid');
   if (mStratGrid) {
     mStratGrid.innerHTML = (c.strategies || []).map(s => {
@@ -3177,6 +3381,302 @@ function openModal(sym) {
   `;
 
   document.getElementById('stockModal').classList.add('open');
+  renderStockChart(c);
+}
+
+let currentStockChartInstance = null;
+
+function renderStockChart(c) {
+  const tvLink = document.getElementById('mTvLink');
+  const chartinkLink = document.getElementById('mChartinkLink');
+  const screenerLink = document.getElementById('mScreenerLink');
+  if (tvLink) tvLink.href = 'https://www.tradingview.com/chart/?symbol=NSE:' + encodeURIComponent(c.symbol);
+  if (chartinkLink) chartinkLink.href = 'https://chartink.com/stocks/' + encodeURIComponent(c.symbol.toLowerCase()) + '.html';
+  if (screenerLink) screenerLink.href = 'https://www.screener.in/company/' + encodeURIComponent(c.symbol) + '/consolidated/';
+
+  const container = document.getElementById('stockChartContainer');
+  const legendBar = document.getElementById('chartLegendBar');
+  if (!container) return;
+
+  if (currentStockChartInstance) {
+    try {
+      currentStockChartInstance.remove();
+    } catch (e) {}
+    currentStockChartInstance = null;
+  }
+  container.innerHTML = '';
+
+  if (typeof LightweightCharts === 'undefined') {
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#94a3b8;font-size:0.85rem;">TradingView Lightweight Charts engine is loading...</div>';
+    return;
+  }
+
+  const rawCandles = c.candles || [];
+  if (!rawCandles || rawCandles.length === 0) {
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#94a3b8;font-size:0.85rem;">Historical daily candle tape loading for this symbol...</div>';
+    if (legendBar) legendBar.innerHTML = '';
+    return;
+  }
+
+  const candleData = [];
+  const volumeData = [];
+  const ema10Data = [];
+  const ema20Data = [];
+  const sma50Data = [];
+  const sma200Data = [];
+
+  rawCandles.forEach(d => {
+    candleData.push({
+      time: d.time,
+      open: d.open,
+      high: d.high,
+      low: d.low,
+      close: d.close,
+    });
+
+    const isUp = d.close >= d.open;
+    volumeData.push({
+      time: d.time,
+      value: d.volume,
+      color: isUp ? 'rgba(16, 185, 129, 0.45)' : 'rgba(239, 68, 68, 0.45)',
+    });
+
+    if (d.ema10 !== null && d.ema10 !== undefined) ema10Data.push({ time: d.time, value: d.ema10 });
+    if (d.ema20 !== null && d.ema20 !== undefined) ema20Data.push({ time: d.time, value: d.ema20 });
+    if (d.sma50 !== null && d.sma50 !== undefined) sma50Data.push({ time: d.time, value: d.sma50 });
+    if (d.sma200 !== null && d.sma200 !== undefined) sma200Data.push({ time: d.time, value: d.sma200 });
+  });
+
+  const chart = LightweightCharts.createChart(container, {
+    width: container.clientWidth || 800,
+    height: 320,
+    layout: {
+      background: { type: LightweightCharts.ColorType.Solid, color: '#060911' },
+      textColor: '#94a3b8',
+      fontSize: 11,
+      fontFamily: "'JetBrains Mono', monospace",
+      attributionLogo: false,
+    },
+    grid: {
+      vertLines: { color: 'rgba(255, 255, 255, 0.04)' },
+      horzLines: { color: 'rgba(255, 255, 255, 0.04)' },
+    },
+    crosshair: {
+      mode: LightweightCharts.CrosshairMode.Normal,
+    },
+    rightPriceScale: {
+      borderColor: 'rgba(255, 255, 255, 0.1)',
+      autoScale: true,
+    },
+    timeScale: {
+      borderColor: 'rgba(255, 255, 255, 0.1)',
+      timeVisible: true,
+      secondsVisible: false,
+    },
+  });
+
+  currentStockChartInstance = chart;
+
+  const candleSeries = chart.addSeries(LightweightCharts.CandlestickSeries, {
+    upColor: '#10b981',
+    downColor: '#ef4444',
+    borderUpColor: '#10b981',
+    borderDownColor: '#ef4444',
+    wickUpColor: '#10b981',
+    wickDownColor: '#ef4444',
+  });
+  candleSeries.setData(candleData);
+
+  const volumeSeries = chart.addSeries(LightweightCharts.HistogramSeries, {
+    priceFormat: { type: 'volume' },
+    priceScaleId: 'volume',
+  });
+  chart.priceScale('volume').applyOptions({
+    scaleMargins: {
+      top: 0.8,
+      bottom: 0,
+    },
+  });
+  volumeSeries.setData(volumeData);
+
+  if (ema10Data.length) {
+    const ema10 = chart.addSeries(LightweightCharts.LineSeries, { color: '#38bdf8', lineWidth: 1.5, lastValueVisible: false, priceLineVisible: false });
+    ema10.setData(ema10Data);
+  }
+  if (ema20Data.length) {
+    const ema20 = chart.addSeries(LightweightCharts.LineSeries, { color: '#fbbf24', lineWidth: 1.5, lastValueVisible: false, priceLineVisible: false });
+    ema20.setData(ema20Data);
+  }
+  if (sma50Data.length) {
+    const sma50 = chart.addSeries(LightweightCharts.LineSeries, { color: '#3b82f6', lineWidth: 1.5, lastValueVisible: false, priceLineVisible: false });
+    sma50.setData(sma50Data);
+  }
+  if (sma200Data.length) {
+    const sma200 = chart.addSeries(LightweightCharts.LineSeries, { color: '#a855f7', lineWidth: 1.5, lastValueVisible: false, priceLineVisible: false });
+    sma200.setData(sma200Data);
+  }
+
+  const boPrice = c.breakout_ref || c.resistance || c.r20;
+  if (boPrice) {
+    candleSeries.createPriceLine({
+      price: boPrice,
+      color: '#38bdf8',
+      lineWidth: 1.5,
+      lineStyle: LightweightCharts.LineStyle.Dashed,
+      axisLabelVisible: true,
+      title: 'BREAKOUT',
+    });
+  }
+
+  if (c.stop) {
+    candleSeries.createPriceLine({
+      price: c.stop,
+      color: '#ef4444',
+      lineWidth: 1.5,
+      lineStyle: LightweightCharts.LineStyle.Dashed,
+      axisLabelVisible: true,
+      title: 'STOP',
+    });
+  }
+
+  if (c.target_2r) {
+    candleSeries.createPriceLine({
+      price: c.target_2r,
+      color: '#10b981',
+      lineWidth: 1.5,
+      lineStyle: LightweightCharts.LineStyle.Dashed,
+      axisLabelVisible: true,
+      title: '2R TARGET',
+    });
+  }
+
+  function setLegend(bar) {
+    if (!legendBar) return;
+    if (!bar) {
+      const last = rawCandles[rawCandles.length - 1];
+      if (last) {
+        const chg = last.open ? (((last.close - last.open) / last.open) * 100).toFixed(2) : '0.00';
+        const chgColor = last.close >= last.open ? '#10b981' : '#ef4444';
+        legendBar.innerHTML = `
+          <span><b>${last.time}</b></span>
+          <span>O: <b style="color:#f1f5f9;">₹${last.open.toFixed(2)}</b></span>
+          <span>H: <b style="color:#f1f5f9;">₹${last.high.toFixed(2)}</b></span>
+          <span>L: <b style="color:#f1f5f9;">₹${last.low.toFixed(2)}</b></span>
+          <span>C: <b style="color:${chgColor};">₹${last.close.toFixed(2)}</b> (${chg >= 0 ? '+' : ''}${chg}%)</span>
+          <span>Vol: <b style="color:#22d3ee;">${(last.volume || 0).toLocaleString()}</b></span>
+        `;
+      }
+      return;
+    }
+    const cData = bar.seriesData.get(candleSeries);
+    const vData = bar.seriesData.get(volumeSeries);
+    if (cData) {
+      const chg = cData.open ? (((cData.close - cData.open) / cData.open) * 100).toFixed(2) : '0.00';
+      const chgColor = cData.close >= cData.open ? '#10b981' : '#ef4444';
+      legendBar.innerHTML = `
+        <span><b>${bar.time}</b></span>
+        <span>O: <b style="color:#f1f5f9;">₹${cData.open.toFixed(2)}</b></span>
+        <span>H: <b style="color:#f1f5f9;">₹${cData.high.toFixed(2)}</b></span>
+        <span>L: <b style="color:#f1f5f9;">₹${cData.low.toFixed(2)}</b></span>
+        <span>C: <b style="color:${chgColor};">₹${cData.close.toFixed(2)}</b> (${chg >= 0 ? '+' : ''}${chg}%)</span>
+        <span>Vol: <b style="color:#22d3ee;">${(vData && vData.value ? vData.value : 0).toLocaleString()}</b></span>
+      `;
+    }
+  }
+
+  setLegend(null);
+  chart.subscribeCrosshairMove(setLegend);
+  chart.timeScale().fitContent();
+
+  setTimeout(() => {
+    if (chart && container) {
+      chart.applyOptions({ width: container.clientWidth });
+      chart.timeScale().fitContent();
+    }
+  }, 60);
+}
+
+window.addEventListener('resize', () => {
+  if (currentStockChartInstance) {
+    const container = document.getElementById('stockChartContainer');
+    if (container && container.clientWidth > 0) {
+      currentStockChartInstance.applyOptions({ width: container.clientWidth });
+    }
+  }
+});
+
+function getTradingViewWatchlistString() {
+  const syms = (D.candidates || []).map(c => 'NSE:' + c.symbol);
+  return syms.join(', ');
+}
+
+function copyTradingViewWatchlist() {
+  const text = getTradingViewWatchlistString();
+  if (!text) { alert('No candidates available to copy.'); return; }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('Copied ' + D.candidates.length + ' symbols to clipboard for TradingView!');
+    }).catch(() => {
+      prompt('Copy your TradingView watchlist symbols below:', text);
+    });
+  } else {
+    prompt('Copy your TradingView watchlist symbols below:', text);
+  }
+}
+
+function downloadTradingViewWatchlist() {
+  const text = getTradingViewWatchlistString();
+  if (!text) return;
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `ASTRA_QUANT_WATCHLIST_${D.asof || 'NSE'}.txt`;
+  a.click();
+  showToast('Downloaded TradingView watchlist .txt file');
+}
+
+function exportCsvCandidates() {
+  if (!D.candidates || !D.candidates.length) { alert('No candidates available.'); return; }
+  const headers = ['Symbol', 'Company', 'Sector', 'Close (INR)', 'Breakout Ref (INR)', 'Stop Loss (INR)', 'Target 2R (INR)', 'RVOL', 'Delivery Pct', 'RS Rating', '50d SMA Ext Pct', 'Frameworks Count', 'Frameworks'];
+  const rows = D.candidates.map(c => [
+    c.symbol,
+    `"${(c.company || c.symbol).replace(/"/g, '""')}"`,
+    `"${(c.sector || '').replace(/"/g, '""')}"`,
+    c.close,
+    c.breakout_ref || c.resistance,
+    c.stop,
+    c.target_2r,
+    c.rvol,
+    c.deliv_pct,
+    c.rs_rating,
+    c.ext50,
+    (c.strategies || []).length,
+    `"${(c.strategies || []).join('; ')}"`
+  ]);
+  const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `ASTRA_QUANT_SCREENED_${D.asof || 'NSE'}.csv`;
+  a.click();
+  showToast('Downloaded candidate trade plans as CSV');
+}
+
+function showToast(msg) {
+  let toast = document.getElementById('appToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'appToast';
+    toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#0284c7;color:#fff;padding:10px 18px;border-radius:8px;font-size:0.85rem;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.5);z-index:999999;transition:all 0.3s ease;opacity:0;transform:translateY(10px);pointer-events:none;';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  toast.style.transform = 'translateY(0)';
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(10px)';
+  }, 2800);
 }
 
 function openPrinciplesModal() { document.getElementById('principlesModal').classList.add('open'); }
@@ -3186,7 +3686,15 @@ function openRsGuideModal() { document.getElementById('rsGuideModal').classList.
 function openWyckoffGuideModal() { document.getElementById('wyckoffGuideModal').classList.add('open'); }
 function openCaseStudyModal() { document.getElementById('caseStudyModal').classList.add('open'); }
 function openNseGuideModal() { document.getElementById('nseGuideModal').classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  if (id === 'stockModal' && currentStockChartInstance) {
+    try {
+      currentStockChartInstance.remove();
+    } catch (e) {}
+    currentStockChartInstance = null;
+  }
+}
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
@@ -3202,7 +3710,6 @@ document.getElementById('sectorFilter').onchange = () => {
 };
 document.getElementById('strategyFilter').onchange = render;
 document.getElementById('tagFilter').onchange = render;
-document.getElementById('capInput').oninput = render;
 
 if (window.innerWidth < 768) {
   const tb = document.getElementById('viewTableBtn');
@@ -3292,24 +3799,20 @@ function renderForwardVerifier() {
     const alCol = kpis.alpha_saved >= 0 ? '#34d399' : '#fb7185';
     kpiGrid.innerHTML = `
       <div class="fwd-kpi-box">
-        <span class="fwd-kpi-label">Candidates Tracked</span>
-        <span class="fwd-kpi-val">${session.trades ? session.trades.length : 0} Stocks</span>
+        <span class="fwd-kpi-label">Win / Protected Rate</span>
+        <span class="fwd-kpi-val" style="color:#34d399;">${(kpis.win_rate || 0).toFixed(1)}%</span>
       </div>
       <div class="fwd-kpi-box">
-        <span class="fwd-kpi-label">USIC Staged Avg Return</span>
+        <span class="fwd-kpi-label">USIC Staged Return</span>
         <span class="fwd-kpi-val" style="color:${stCol};">${kpis.avg_staged_pnl > 0 ? '+' : ''}${(kpis.avg_staged_pnl || 0).toFixed(2)}%</span>
       </div>
       <div class="fwd-kpi-box">
-        <span class="fwd-kpi-label">Buy & Hold Return</span>
+        <span class="fwd-kpi-label">Buy & Hold Benchmark</span>
         <span class="fwd-kpi-val" style="color:${bhCol};">${kpis.avg_static_pnl > 0 ? '+' : ''}${(kpis.avg_static_pnl || 0).toFixed(2)}%</span>
       </div>
       <div class="fwd-kpi-box">
-        <span class="fwd-kpi-label">Alpha Saved by Rules</span>
+        <span class="fwd-kpi-label">Alpha Saved by Risk Rules</span>
         <span class="fwd-kpi-val" style="color:${alCol};">+${(kpis.alpha_saved || 0).toFixed(2)}% (+${Math.round((kpis.alpha_saved || 0) * 100)} bps)</span>
-      </div>
-      <div class="fwd-kpi-box">
-        <span class="fwd-kpi-label">Win / Protected Rate</span>
-        <span class="fwd-kpi-val">${(kpis.win_rate || 0).toFixed(1)}%</span>
       </div>
     `;
   }
@@ -3327,9 +3830,9 @@ function renderForwardVerifier() {
     }).join('');
   }
 
-  // 4. Trade Cards
-  const grid = document.getElementById('fwdTradesGrid');
-  if (!grid) return;
+  // 4. Forward Verification Stock List Table
+  const tableBody = document.getElementById('fwdTableBody');
+  if (!tableBody) return;
 
   let trades = session.trades || [];
   if (currentFwdFilter !== 'ALL') {
@@ -3337,101 +3840,106 @@ function renderForwardVerifier() {
   }
 
   if (!trades.length) {
-    grid.innerHTML = `<div style="grid-column:1/-1;padding:32px;text-align:center;color:var(--text-muted);background:rgba(15,23,42,0.5);border-radius:12px;">No candidate trades passed the filters for this session.</div>`;
+    tableBody.innerHTML = `<tr><td colspan="10" style="padding:32px;text-align:center;color:var(--text-muted);">No candidate trades passed the filters for this session.</td></tr>`;
     return;
   }
 
-  grid.innerHTML = trades.map((t, idx) => {
+  tableBody.innerHTML = trades.map((t, idx) => {
     const isWin = t.staged_pnl_pct > 0;
     const isLoss = t.staged_pnl_pct < -1.0;
     const badgeCls = isWin ? 'fwd-badge-win' : (isLoss ? 'fwd-badge-loss' : 'fwd-badge-be');
-    const statusText = isWin ? `+${t.staged_pnl_pct}% WIN` : (isLoss ? `${t.staged_pnl_pct}% STOPPED` : `${t.staged_pnl_pct}% PROTECTED`);
+    const statusText = isWin ? `🎯 +${t.staged_pnl_pct}% WIN` : (isLoss ? `🛑 ${t.staged_pnl_pct}% STOP` : `🛡️ ${t.staged_pnl_pct}% PROT`);
     const alphaCol = t.alpha_saved_pct >= 0 ? '#34d399' : '#fb7185';
+    const stagedCol = isWin ? '#34d399' : (isLoss ? '#fb7185' : '#38bdf8');
+    const staticCol = t.static_pnl_pct > 0 ? '#34d399' : '#fb7185';
 
     const logsHtml = (t.daily_logs || []).map(l => {
       const evCol = l.is_event ? '#38bdf8' : '#94a3b8';
       return `
-        <tr>
-          <td class="mono" style="color:#e2e8f0;">${l.date}</td>
-          <td class="mono" style="text-align:right;">₹${l.open.toFixed(2)}</td>
-          <td class="mono" style="text-align:right;color:#34d399;">₹${l.high.toFixed(2)}</td>
-          <td class="mono" style="text-align:right;color:#fb7185;">₹${l.low.toFixed(2)}</td>
-          <td class="mono" style="text-align:right;font-weight:600;">₹${l.close.toFixed(2)}</td>
-          <td style="color:${evCol};font-weight:${l.is_event ? '600' : '400'};">${l.event}</td>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+          <td class="mono" style="color:#e2e8f0;padding:6px 10px;font-size:0.72rem;">${l.date}</td>
+          <td class="mono" style="text-align:right;padding:6px 10px;font-size:0.72rem;">₹${l.open.toFixed(2)}</td>
+          <td class="mono" style="text-align:right;color:#34d399;padding:6px 10px;font-size:0.72rem;">₹${l.high.toFixed(2)}</td>
+          <td class="mono" style="text-align:right;color:#fb7185;padding:6px 10px;font-size:0.72rem;">₹${l.low.toFixed(2)}</td>
+          <td class="mono" style="text-align:right;font-weight:600;padding:6px 10px;font-size:0.72rem;">₹${l.close.toFixed(2)}</td>
+          <td style="color:${evCol};font-weight:${l.is_event ? '600' : '400'};padding:6px 10px;font-size:0.72rem;">${l.event}</td>
         </tr>
       `;
     }).join('');
 
     return `
-      <div class="fwd-trade-card">
-        <div class="fwd-trade-header">
-          <div>
-            <span class="mono" style="font-size:1.15rem;font-weight:800;color:#38bdf8;">${t.symbol}</span>
-            <span style="font-size:0.75rem;color:var(--text-muted);margin-left:6px;">${t.sector || ''}</span>
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+        <td style="color:var(--text-muted);font-size:0.75rem;padding:10px 12px;">${idx + 1}</td>
+        <td style="padding:10px 12px;">
+          <div style="font-weight:800;font-size:0.95rem;color:#38bdf8;font-family:'JetBrains Mono',monospace;">${t.symbol}</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);">${t.company || t.symbol} • ${t.sector || ''}</div>
+        </td>
+        <td style="padding:10px 12px;">
+          <div style="display:flex;flex-wrap:wrap;gap:4px;max-width:240px;">
+            ${(t.strategies || []).map(s => `<span class="strat-tag protocol" style="font-size:0.68rem;padding:2px 6px;">${s}</span>`).join('')}
           </div>
+        </td>
+        <td class="mono num" style="padding:10px 12px;text-align:right;">
+          <b>₹${t.entry_price.toFixed(2)}</b><br/>
+          <small style="color:var(--text-muted);font-size:0.68rem;">${t.entry_date}</small>
+        </td>
+        <td class="mono num" style="padding:10px 12px;text-align:right;color:#34d399;">
+          ₹${t.max_high.toFixed(2)}<br/>
+          <small style="font-size:0.68rem;">(+${t.max_fwd_gain.toFixed(1)}%)</small>
+        </td>
+        <td style="padding:10px 12px;text-align:center;">
           <span class="fwd-badge ${badgeCls}">${statusText}</span>
-        </div>
-        <div style="font-size:0.75rem;color:#94a3b8;margin-bottom:8px;">${t.company || t.symbol}</div>
-
-        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px;">
-          ${(t.strategies || []).map(s => `<span class="badge" style="font-size:0.65rem;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#cbd5e1;">${s}</span>`).join('')}
-        </div>
-
-        <div style="font-size:0.75rem;color:#cbd5e1;line-height:1.4;margin-bottom:10px;background:rgba(255,255,255,0.02);padding:8px 10px;border-radius:6px;border-left:2px solid #38bdf8;">
-          ${t.verdict}
-        </div>
-
-        <div class="fwd-pnl-comparison">
-          <div>
-            <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;">USIC Staged</div>
-            <div class="mono" style="font-weight:700;font-size:0.95rem;color:${isWin ? '#34d399' : (isLoss ? '#fb7185' : '#38bdf8')};">${t.staged_pnl_pct > 0 ? '+' : ''}${t.staged_pnl_pct}%</div>
+        </td>
+        <td class="mono num" style="padding:10px 12px;text-align:right;font-weight:700;color:${stagedCol};">
+          ${t.staged_pnl_pct > 0 ? '+' : ''}${t.staged_pnl_pct}%
+        </td>
+        <td class="mono num" style="padding:10px 12px;text-align:right;color:${staticCol};">
+          ${t.static_pnl_pct > 0 ? '+' : ''}${t.static_pnl_pct}%
+        </td>
+        <td class="mono num" style="padding:10px 12px;text-align:right;font-weight:700;color:${alphaCol};">
+          ${t.alpha_saved_pct >= 0 ? '+' : ''}${t.alpha_saved_pct}%
+        </td>
+        <td style="padding:10px 12px;text-align:center;">
+          <button id="fwdBtn_${idx}" class="fwd-replay-btn" onclick="toggleFwdLog('fwdLog_${idx}', 'fwdBtn_${idx}')">Replay ▾</button>
+        </td>
+      </tr>
+      <tr id="fwdLog_${idx}" style="display:none;background:rgba(9,13,22,0.95);border-bottom:2px solid rgba(56,189,248,0.25);">
+        <td colspan="10" style="padding:12px 16px;">
+          <div style="font-size:0.75rem;color:#cbd5e1;margin-bottom:8px;background:rgba(255,255,255,0.03);padding:6px 10px;border-radius:6px;border-left:3px solid #38bdf8;">
+            <b>Verdict:</b> ${t.verdict}
           </div>
-          <div>
-            <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;">Buy & Hold</div>
-            <div class="mono" style="font-weight:700;font-size:0.95rem;color:${t.static_pnl_pct > 0 ? '#34d399' : '#fb7185'};">${t.static_pnl_pct > 0 ? '+' : ''}${t.static_pnl_pct}%</div>
-          </div>
-          <div>
-            <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;">Alpha Saved</div>
-            <div class="mono" style="font-weight:700;font-size:0.95rem;color:${alphaCol};">+${t.alpha_saved_pct}%</div>
-          </div>
-        </div>
-
-        <div style="display:flex;justify-content:space-between;font-size:0.74rem;color:var(--text-muted);margin-bottom:8px;font-family:'JetBrains Mono',monospace;">
-          <span>Entry: ₹${t.entry_price.toFixed(2)}</span>
-          <span>Stop: ₹${t.stop_price.toFixed(2)}</span>
-          <span>T1: ₹${t.target1_price.toFixed(2)}</span>
-        </div>
-
-        <button class="fwd-log-toggle" onclick="toggleFwdLog('fwdLog_${idx}')">
-          <span>📅 View Day-by-Day Price & Event Ledger ▾</span>
-        </button>
-
-        <div id="fwdLog_${idx}" style="display:none;margin-top:8px;">
-          <div style="overflow-x:auto;">
-            <table class="fwd-log-table">
+          <div style="max-height:220px;overflow-y:auto;border:1px solid rgba(255,255,255,0.06);border-radius:6px;">
+            <table style="width:100%;border-collapse:collapse;">
               <thead>
-                <tr>
-                  <th>Date</th>
-                  <th style="text-align:right;">Open</th>
-                  <th style="text-align:right;">High</th>
-                  <th style="text-align:right;">Low</th>
-                  <th style="text-align:right;">Close</th>
-                  <th>Execution Event</th>
+                <tr style="background:rgba(255,255,255,0.05);color:var(--text-muted);font-size:0.68rem;text-transform:uppercase;">
+                  <th style="padding:6px 10px;text-align:left;">Date</th>
+                  <th style="padding:6px 10px;text-align:right;">Open</th>
+                  <th style="padding:6px 10px;text-align:right;">High</th>
+                  <th style="padding:6px 10px;text-align:right;">Low</th>
+                  <th style="padding:6px 10px;text-align:right;">Close</th>
+                  <th style="padding:6px 10px;text-align:left;">Order Flow Event & Action</th>
                 </tr>
               </thead>
               <tbody>${logsHtml}</tbody>
             </table>
           </div>
-        </div>
-      </div>
+        </td>
+      </tr>
     `;
   }).join('');
 }
 
-function toggleFwdLog(id) {
+function toggleFwdLog(id, btnId) {
   const el = document.getElementById(id);
+  const btn = document.getElementById(btnId);
   if (!el) return;
-  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  if (el.style.display === 'none') {
+    el.style.display = 'table-row';
+    if (btn) btn.textContent = 'Hide ▲';
+  } else {
+    el.style.display = 'none';
+    if (btn) btn.textContent = 'Replay ▾';
+  }
 }
 
 initSectorTrack();

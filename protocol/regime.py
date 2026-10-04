@@ -22,9 +22,10 @@ def compute_market_regime(history: pd.DataFrame) -> pd.DataFrame:
     """Compute market benchmark index, moving averages, and breadth."""
     df = history.sort_values("Date").copy()
     
-    # 1. Equal-weight universe daily mean close
+    # 1. Equal-weight universe daily mean close & total volume
     agg = df.groupby("Date").agg(
         ew_close=("Close", "mean"),
+        ew_volume=("Volume", "sum"),
         total_symbols=("Symbol", "count")
     ).reset_index()
     
@@ -60,6 +61,61 @@ def compute_market_regime(history: pd.DataFrame) -> pd.DataFrame:
         return "NEUTRAL"
         
     mkt["regime"] = mkt.apply(_classify, axis=1)
+
+    # 3. William O'Neil Follow-Through Day (FTD) tracking
+    in_rally = False
+    rally_day = 0
+    day1_low = 0.0
+    last_ftd_idx = -999
+    
+    is_ftd_list: list[bool] = []
+    rally_day_list: list[int] = []
+    ftd_active_list: list[bool] = []
+    
+    for i in range(len(mkt)):
+        if i == 0:
+            is_ftd_list.append(False)
+            rally_day_list.append(0)
+            ftd_active_list.append(False)
+            continue
+            
+        c = float(mkt.iloc[i]["ew_close"])
+        c_prev = float(mkt.iloc[i-1]["ew_close"])
+        v = float(mkt.iloc[i]["ew_volume"])
+        v_prev = float(mkt.iloc[i-1]["ew_volume"])
+        ret = (c / c_prev) - 1.0 if c_prev > 0 else 0.0
+        is_under_sma20 = (c < mkt.iloc[i]["sma20"]) if pd.notna(mkt.iloc[i]["sma20"]) else False
+        
+        current_ftd = False
+        if not in_rally:
+            if is_under_sma20 and ret > 0:
+                in_rally = True
+                rally_day = 1
+                day1_low = min(c, c_prev)
+            else:
+                rally_day = 0
+        else:
+            if c < day1_low:
+                in_rally = False
+                rally_day = 0
+            else:
+                rally_day += 1
+                # O'Neil FTD: Day 4+, gain >= 1.25%, volume higher than previous day
+                if rally_day >= 4 and ret >= 0.0125 and v > v_prev:
+                    current_ftd = True
+                    last_ftd_idx = i
+                    in_rally = False
+                    rally_day = 0
+                    
+        is_ftd_list.append(current_ftd)
+        rally_day_list.append(rally_day)
+        # FTD remains active for up to 25 trading sessions unless market severely breaks down
+        is_active = (i - last_ftd_idx <= 25) and (not is_under_sma20 or mkt.iloc[i]["pct_above_sma20"] >= 0.35)
+        ftd_active_list.append(bool(is_active))
+        
+    mkt["is_ftd"] = is_ftd_list
+    mkt["rally_day"] = rally_day_list
+    mkt["ftd_active"] = ftd_active_list
     return mkt
 
 
@@ -103,7 +159,25 @@ def get_regime_at(history: pd.DataFrame, asof: pd.Timestamp) -> dict[str, Any]:
     else:
         msg = (f"Market is in NEUTRAL/CHOPPY regime: Breadth is mixed ({p20}% above SMA20). "
                f"Cautious sizing recommended.")
-               
+
+    is_ftd = bool(last.get("is_ftd", False))
+    ftd_active = bool(last.get("ftd_active", False))
+    rally_day = int(last.get("rally_day", 0))
+    
+    # Locate most recent FTD date in mkt history
+    ftd_sub = mkt[mkt["is_ftd"]]
+    last_ftd_date = str(pd.Timestamp(ftd_sub.iloc[-1]["Date"]).date()) if not ftd_sub.empty else None
+    
+    if is_ftd:
+        ftd_status = "🎯 FOLLOW-THROUGH DAY CONFIRMED (Day " + str(rally_day) + ")"
+        msg += f" Institutional Follow-Through Day (FTD) triggered today on elevated volume! Early accumulation phase."
+    elif ftd_active:
+        ftd_status = f"CONFIRMED UPTREND (FTD Active from {last_ftd_date})"
+    elif rally_day > 0:
+        ftd_status = f"RALLY ATTEMPT: DAY {rally_day} (Watching for FTD)"
+    else:
+        ftd_status = "MARKET CORRECTION / DEFENSIVE"
+
     return {
         "date": str(pd.Timestamp(last["Date"]).date()),
         "regime": regime,
@@ -115,4 +189,9 @@ def get_regime_at(history: pd.DataFrame, asof: pd.Timestamp) -> dict[str, Any]:
         "is_risk_on": is_risk_on,
         "action": action,
         "message": msg,
+        "is_ftd": is_ftd,
+        "ftd_active": ftd_active,
+        "rally_day": rally_day,
+        "last_ftd_date": last_ftd_date,
+        "ftd_status": ftd_status,
     }

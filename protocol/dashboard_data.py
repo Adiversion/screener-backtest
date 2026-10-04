@@ -20,14 +20,15 @@ from protocol.github_screeners import (
     compute_screener_features, screen_canslim, screen_darvas_box,
     screen_minervini, screen_pkscreener_vcp, screen_protocol_v2,
     screen_qullamaggie, screen_relative_strength, screen_stan_weinstein,
-    screen_turtle_trading,
+    screen_turtle_trading, screen_wyckoff_closing_range, screen_sector_momentum_leader,
+    screen_connors_rsi_pullback, screen_institutional_delivery,
 )
 from protocol.regime import get_regime_at
 from protocol.sector import (
     get_company_name, get_sector, compute_industry_momentum,
     get_symbol_industry_momentum
 )
-from protocol.sniper_mode import screen_sniper_mode, evaluate_sniper_gates
+from protocol.sniper_mode import evaluate_sniper_gates
 from protocol.forward_verifier import build_forward_verification_suite
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -68,9 +69,10 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp = "2026
 
     ind_df = compute_industry_momentum(feat)
 
-    # Screen all 10 frameworks (including Sniper Mode 65%+ WR)
+    # Screen all 12 independent, non-overlapping frameworks
+    # NOTE: Sniper Mode (65%+ WR) is NOT a screener here — it is a composite 7-gate
+    # badge evaluated per-candidate via evaluate_sniper_gates (is_sniper field).
     groups = [
-        ("Sniper Mode (65%+ WR)", screen_sniper_mode(feat, top_n=15, min_turnover_cr=1.0, deliv_map=deliv_map, ind_df=ind_df)),
         ("Protocol Fortified", screen_protocol_v2(feat, top_n=15, min_turnover_cr=1.0)),
         ("Relative Strength Leader", screen_relative_strength(feat, top_n=15, min_turnover_cr=1.0)),
         ("Minervini Template", screen_minervini(feat, top_n=15, min_turnover_cr=1.0)),
@@ -80,6 +82,10 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp = "2026
         ("PKScreener VCP", screen_pkscreener_vcp(feat, top_n=15, min_turnover_cr=1.0)),
         ("Turtle Trading", screen_turtle_trading(feat, top_n=15, min_turnover_cr=1.0)),
         ("Darvas Box", screen_darvas_box(feat, top_n=15, min_turnover_cr=1.0)),
+        ("Wyckoff Closing Range", screen_wyckoff_closing_range(feat, top_n=15, min_turnover_cr=1.0)),
+        ("Sector Momentum Leader", screen_sector_momentum_leader(feat, top_n=15, min_turnover_cr=1.0, ind_df=ind_df)),
+        ("Institutional Delivery Absorption", screen_institutional_delivery(feat, deliv_map=deliv_map, top_n=15, min_turnover_cr=1.0)),
+        ("Connors RSI Pullback", screen_connors_rsi_pullback(feat, top_n=15, min_turnover_cr=1.0)),
     ]
 
     feat_by_sym = {row["Symbol"]: row for _, row in feat.iterrows()}
@@ -97,6 +103,41 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp = "2026
                 candidates[sym] = cand
             else:
                 candidates[sym]["strategies"].append(strat_name)
+
+    # Attach recent 120 daily OHLCV candles and EMAs/SMAs to each candidate for interactive charting
+    cand_symbols = set(candidates.keys())
+    sub_df = df[(df["Symbol"].isin(cand_symbols)) & (df["Date"] <= asof)].copy()
+    sub_df.sort_values(by=["Symbol", "Date"], inplace=True)
+    
+    for sym, cand in candidates.items():
+        sym_history = sub_df[sub_df["Symbol"] == sym].tail(220).copy()
+        if sym_history.empty:
+            cand["candles"] = []
+            continue
+        
+        sym_history["ema10"] = sym_history["Close"].ewm(span=10, adjust=False).mean()
+        sym_history["ema20"] = sym_history["Close"].ewm(span=20, adjust=False).mean()
+        sym_history["sma50"] = sym_history["Close"].rolling(50).mean()
+        sym_history["sma200"] = sym_history["Close"].rolling(200).mean()
+        sym_history["vol_sma"] = sym_history["Volume"].rolling(20).mean()
+
+        display_bars = sym_history.tail(120)
+        cand_candles = []
+        for r in display_bars.itertuples():
+            cand_candles.append({
+                "time": str(pd.to_datetime(r.Date).strftime("%Y-%m-%d")),
+                "open": round(float(r.Open), 2),
+                "high": round(float(r.High), 2),
+                "low": round(float(r.Low), 2),
+                "close": round(float(r.Close), 2),
+                "volume": int(r.Volume),
+                "ema10": round(float(r.ema10), 2) if not pd.isna(r.ema10) else None,
+                "ema20": round(float(r.ema20), 2) if not pd.isna(r.ema20) else None,
+                "sma50": round(float(r.sma50), 2) if not pd.isna(r.sma50) else None,
+                "sma200": round(float(r.sma200), 2) if not pd.isna(r.sma200) else None,
+                "vol_sma": int(r.vol_sma) if not pd.isna(r.vol_sma) else None,
+            })
+        cand["candles"] = cand_candles
 
     # Sort: Frameworks count DESC, Safe extension priority, then 20d return DESC
     def sort_key(c: dict[str, Any]) -> tuple:
@@ -122,6 +163,11 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp = "2026
             "lows_52w": l52_cnt,
             "net_new_highs": net_new_highs,
             "message": reg.get("message", ""),
+            "ftd_status": reg.get("ftd_status", ""),
+            "is_ftd": bool(reg.get("is_ftd", False)),
+            "ftd_active": bool(reg.get("ftd_active", False)),
+            "rally_day": int(reg.get("rally_day", 0)),
+            "last_ftd_date": reg.get("last_ftd_date", None),
         },
         "kpis": {
             "total_candidates": total_cands,
@@ -196,6 +242,8 @@ def _build_single_candidate(f: pd.Series, deliv_pct: float | None, ind_df: pd.Da
     has_overhead_ceiling = (r60 > r20 * 1.015)
     ceiling_cleared = (not has_overhead_ceiling) or (close >= r60)
 
+    crsi_val = float(f.get("crsi", 50.0)) if "crsi" in f and not pd.isna(f["crsi"]) else 50.0
+
     badges: list[str] = [
         "52W HIGH BREAKOUT" if is_52w else "",
         f"RS {rs_rating:.0f} (TOP {max(1, 100-int(round(rs_rating)))}%)" if rs_rating >= 90.0 else "",
@@ -205,6 +253,7 @@ def _build_single_candidate(f: pd.Series, deliv_pct: float | None, ind_df: pd.Da
         "CAUTION: EXTENDED >20%" if is_extended else "",
         "🎯 SNIPER QUALIFIED (65%+ WR)" if audit_sniper.is_sniper else "",
         f"SECTOR TAILWIND: {str(ind_info.get('tier','')).split(':')[0]}" if ind_info.get("is_tailwind") else "",
+        f"OVERSOLD DIP (CRSI {crsi_val:.0f})" if crsi_val <= 25.0 else "",
         "60D BASE CEILING CLEARED" if (has_overhead_ceiling and ceiling_cleared) else (
             f"CAUTION: OVERHEAD CEILING (₹{r60:.1f})" if (has_overhead_ceiling and not ceiling_cleared) else ""
         ),
@@ -268,6 +317,7 @@ def _build_single_candidate(f: pd.Series, deliv_pct: float | None, ind_df: pd.Da
         "volume": vol,
         "turnover_cr": turnover_cr,
         "deliv_pct": dp,
+        "crsi": round(crsi_val, 1),
         "adr": round(adr20 * 100, 1),
         "rs_rating": round(rs_rating, 1),
         "ret20": round(ret20 * 100, 1),
