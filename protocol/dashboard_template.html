@@ -1179,12 +1179,71 @@
     border: 1px solid rgba(245, 158, 11, 0.35);
   }
 
+  /* Framework Score Counter Banner & Strategy Grid */
+  .framework-cell-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+  }
+
+  .framework-score-banner {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.67rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    width: fit-content;
+    white-space: nowrap;
+    text-transform: uppercase;
+    line-height: 1.2;
+  }
+
+  .framework-score-banner .score-icon {
+    font-size: 0.72rem;
+  }
+
+  .framework-score-banner .score-text b {
+    font-size: 0.78rem;
+    font-weight: 800;
+  }
+
+  .framework-score-banner.tier-elite {
+    background: rgba(16, 185, 129, 0.16);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.45);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
+  }
+
+  .framework-score-banner.tier-high {
+    background: rgba(56, 189, 248, 0.16);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.45);
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.12);
+  }
+
+  .framework-score-banner.tier-mid {
+    background: rgba(245, 158, 11, 0.16);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+  }
+
+  .framework-score-banner.tier-subtle {
+    background: rgba(148, 163, 184, 0.12);
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+  }
+
   /* Strategy Tags */
   .strat-grid {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
-    max-width: 260px;
+    max-width: 270px;
   }
 
   .strat-tag {
@@ -1412,7 +1471,7 @@
           <span>As-Of Session:</span>
           <span class="session-pill mono" id="asofDate">2026-10-01</span>
           <span>•</span>
-          <span>9-Framework Engine</span>
+          <span>10-Framework Confluence Engine</span>
         </p>
       </div>
     </div>
@@ -1708,6 +1767,11 @@
     </div>
 
     <div class="modal-stats-grid" id="mGrid"></div>
+
+    <div class="modal-section">
+      <div class="modal-section-title"><span>⚡</span> Confluence Strategy Frameworks (<span id="mFwCount" style="color:#38bdf8;font-family:'JetBrains Mono',monospace;"></span>)</div>
+      <div id="mStratGrid" class="strat-grid" style="max-width:100%;gap:6px;margin-top:6px;"></div>
+    </div>
 
     <div class="modal-section">
       <div class="modal-section-title"><span>🎯</span> Deep Technical Rationale & Breakdown</div>
@@ -2085,7 +2149,7 @@
         <ul style="margin:0 0 0 20px;line-height:1.7;font-size:0.85rem;">
           <li><b>Unconstrained Baseline vs Institutional Suite:</b> Across all 2,317 NSE cash stocks, unconstrained raw breakouts average ~38.4% win rate because ~62% of raw price surges in sideways or bear markets are bull traps.</li>
           <li><b>The Power of Market Regime Gating:</b> During Fold 1 (2022 Bear Market), taking all raw breakouts produced negative drag. By honoring the <b>DEFENSIVE regime directive (100% Cash)</b> when breadth is under 20%, our protocol completely sidesteps bear market drawdowns.</li>
-          <li><b>The 9-Framework Synergistic Boost:</b> When raw breakouts are filtered through <b>RS Leader (≥80)</b>, <b>Demat Delivery (≥50%)</b>, <b>Wyckoff Closing Range (≥65%)</b>, and <b>Stage 2 Alignment</b>, win rate rises to <b>52%+</b> with a Profit Factor of <b>2.10+</b>.</li>
+          <li><b>The 10-Framework Synergistic Boost:</b> When raw breakouts are filtered through <b>RS Leader (≥80)</b>, <b>Demat Delivery (≥50%)</b>, <b>Wyckoff Closing Range (≥65%)</b>, and <b>Stage 2 Alignment</b>, win rate rises to <b>52%+</b> with a Profit Factor of <b>2.10+</b>.</li>
         </ul>
       </div>
     </div>
@@ -2332,6 +2396,13 @@ function setCapital(val) {
   render();
 }
 
+function getFrameworkTier(count) {
+  if (count >= 8) return { cls: 'tier-elite', icon: '🔥', text: `${count}/10 FRAMEWORKS ACHIEVED` };
+  if (count >= 6) return { cls: 'tier-high', icon: '⚡', text: `${count}/10 FRAMEWORKS ACHIEVED` };
+  if (count >= 4) return { cls: 'tier-mid', icon: '✨', text: `${count}/10 FRAMEWORKS ACHIEVED` };
+  return { cls: 'tier-subtle', icon: '🔹', text: `${count}/10 FRAMEWORKS ACHIEVED` };
+}
+
 function render() {
   const q = document.getElementById('searchBox').value.trim().toLowerCase();
   const sec = document.getElementById('sectorFilter').value;
@@ -2408,6 +2479,10 @@ function render() {
       statusBorder = 'rgba(239,68,68,0.35)';
       statusLabel = 'STAGE 4 DOWNTREND (NON-QUALIFIED)';
     }
+
+    const passCount = (matchedLookup.frameworks || []).filter(f => f.passed).length;
+    const totalCount = (matchedLookup.frameworks || []).length || 10;
+    const inspTier = getFrameworkTier(passCount);
 
     const fwHtml = (matchedLookup.frameworks || []).map(f => {
       const passCls = f.passed ? 'background:rgba(16,185,129,0.12);color:#34d399;border:1px solid rgba(16,185,129,0.3);' : 'background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.25);';
@@ -2501,10 +2576,16 @@ function render() {
           </div>
         </div>
 
-        <!-- 9-Framework Forensic Checklist -->
+        <!-- 10-Framework Forensic Checklist -->
         <div>
-          <div style="font-size:0.75rem;text-transform:uppercase;color:#94a3b8;font-weight:700;letter-spacing:0.05em;margin-bottom:8px;">
-            9-Framework Gate Audit (Pass / Fail Checklist)
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+            <div style="font-size:0.75rem;text-transform:uppercase;color:#94a3b8;font-weight:700;letter-spacing:0.05em;">
+              10-Framework Gate Audit (Pass / Fail Checklist)
+            </div>
+            <div class="framework-score-banner ${inspTier.cls}">
+              <span class="score-icon">${inspTier.icon}</span>
+              <span class="score-text"><b>${passCount}/${totalCount}</b> FRAMEWORKS ACHIEVED</span>
+            </div>
           </div>
           <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:8px;">
             ${fwHtml}
@@ -2549,7 +2630,10 @@ function render() {
     const infStr = infusion > 0 ? '₹' + infusion.toLocaleString('en-IN', {maximumFractionDigits: 0}) : '₹0';
     const riskStr = risk > 0 ? '₹' + risk.toLocaleString('en-IN', {maximumFractionDigits: 0}) : '₹0';
 
-    const stratTags = c.strategies.map(s => {
+    const stratCount = (c.strategies || []).length;
+    const fwTier = getFrameworkTier(stratCount);
+
+    const stratTags = (c.strategies || []).map(s => {
       let cls = 'protocol';
       let shortName = s;
       if (s.includes('Sniper')) { cls = 'sniper'; shortName = '🎯 Sniper 65%+'; }
@@ -2614,7 +2698,15 @@ function render() {
           </div>
         </div>
       </td>
-      <td><div class="strat-grid">${stratTags}</div></td>
+      <td>
+        <div class="framework-cell-wrap">
+          <div class="framework-score-banner ${fwTier.cls}">
+            <span class="score-icon">${fwTier.icon}</span>
+            <span class="score-text"><b>${stratCount}/10</b> FRAMEWORKS ACHIEVED</span>
+          </div>
+          <div class="strat-grid">${stratTags}</div>
+        </div>
+      </td>
       <td class="num mono">
         <b>₹${c.close.toFixed(2)}</b><br/>
         <span style="font-size:0.69rem;color:#38bdf8;font-weight:700;" title="Resistance Ceiling">RES: ₹${(c.resistance || c.breakout_ref || c.r20).toFixed(2)}</span>
@@ -2657,10 +2749,14 @@ function render() {
       const infStr = infusion > 0 ? '₹' + infusion.toLocaleString('en-IN', {maximumFractionDigits: 0}) : '₹0';
       const riskStr = risk > 0 ? '₹' + risk.toLocaleString('en-IN', {maximumFractionDigits: 0}) : '₹0';
 
-      const stratTags = c.strategies.map(s => {
+      const stratCount = (c.strategies || []).length;
+      const fwTier = getFrameworkTier(stratCount);
+
+      const stratTags = (c.strategies || []).map(s => {
         let cls = 'protocol';
         let shortName = s;
-        if (s.includes('Minervini')) { cls = 'minervini'; shortName = 'Minervini'; }
+        if (s.includes('Sniper')) { cls = 'sniper'; shortName = '🎯 Sniper 65%+'; }
+        else if (s.includes('Minervini')) { cls = 'minervini'; shortName = 'Minervini'; }
         else if (s.includes('Weinstein')) { cls = 'weinstein'; shortName = 'Weinstein Stage 2'; }
         else if (s.includes('Relative Strength')) { cls = 'rs'; shortName = 'RS Leader'; }
         else if (s.includes('Qullamaggie')) { cls = 'qullamaggie'; shortName = 'Qullamaggie'; }
@@ -2714,8 +2810,14 @@ function render() {
               </div>
             </div>
 
-            <div style="margin:10px 0;display:flex;flex-wrap:wrap;gap:4px;">
-              ${stratTags}
+            <div style="margin:10px 0 6px 0;">
+              <div class="framework-score-banner ${fwTier.cls}" style="margin-bottom:6px;">
+                <span class="score-icon">${fwTier.icon}</span>
+                <span class="score-text"><b>${stratCount}/10</b> FRAMEWORKS ACHIEVED</span>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                ${stratTags}
+              </div>
             </div>
 
             <!-- Explicit Support & Resistance Levels -->
@@ -2858,12 +2960,36 @@ function openModal(sym) {
   document.getElementById('mClose').textContent = '₹' + c.close.toFixed(2);
   document.getElementById('mComp').textContent = (c.company || c.symbol) + ' • ' + c.sector;
   
-  let bHtml = '';
+  const stratCount = (c.strategies || []).length;
+  const fwTier = getFrameworkTier(stratCount);
+
+  let bHtml = `<span class="framework-score-banner ${fwTier.cls}" style="margin-right:4px;"><span class="score-icon">${fwTier.icon}</span><span class="score-text"><b>${stratCount}/10</b> FRAMEWORKS ACHIEVED</span></span>`;
   c.badges.forEach(b => {
     let cls = (b.includes('CAUTION') || b.includes('SERIES') || b.includes('GSM') || b.includes('EARNINGS') || b.includes('CIRCUIT') || b.includes('CHURN') || b.includes('UPTHRUST')) ? 'warning-be' : (b.includes('52W') ? 'ath' : 'badge-pill');
     bHtml += `<span class="badge-pill ${cls}">${b}</span>`;
   });
   document.getElementById('mBadges').innerHTML = bHtml;
+
+  const mFwCount = document.getElementById('mFwCount');
+  if (mFwCount) mFwCount.textContent = `${stratCount}/10 Achieved`;
+  const mStratGrid = document.getElementById('mStratGrid');
+  if (mStratGrid) {
+    mStratGrid.innerHTML = (c.strategies || []).map(s => {
+      let cls = 'protocol';
+      let shortName = s;
+      if (s.includes('Sniper')) { cls = 'sniper'; shortName = '🎯 Sniper 65%+'; }
+      else if (s.includes('Minervini')) { cls = 'minervini'; shortName = 'Minervini'; }
+      else if (s.includes('Weinstein')) { cls = 'weinstein'; shortName = 'Weinstein Stage 2'; }
+      else if (s.includes('Relative Strength')) { cls = 'rs'; shortName = 'RS Leader'; }
+      else if (s.includes('Qullamaggie')) { cls = 'qullamaggie'; shortName = 'Qullamaggie'; }
+      else if (s.includes('CANSLIM')) { cls = 'canslim'; shortName = 'CANSLIM'; }
+      else if (s.includes('PKScreener')) { cls = 'pkscreener'; shortName = 'PKScreener VCP'; }
+      else if (s.includes('Turtle')) { cls = 'turtle'; shortName = 'Turtle Trading'; }
+      else if (s.includes('Darvas')) { cls = 'darvas'; shortName = 'Darvas Box'; }
+      else if (s.includes('Protocol')) { shortName = 'Protocol Fortified'; }
+      return `<span class="strat-tag ${cls}" style="font-size:0.75rem;padding:3px 8px;">${shortName}</span>`;
+    }).join('');
+  }
 
   const w = c.wyckoff || {};
   document.getElementById('mGrid').innerHTML = `

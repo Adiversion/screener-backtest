@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 
 from protocol.sector import get_company_name, get_sector
+from protocol.sniper_mode import evaluate_sniper_gates
 
 
 def build_universe_lookup(
@@ -180,6 +181,20 @@ def build_universe_lookup(
             "name": "Darvas Box",
             "passed": bool(d_pass),
             "verdict": "Darvas Box Breakout Confirmed" if d_pass else "; ".join(d_reasons)
+        })
+
+        # 10. Sniper Mode (65%+ WR)
+        audit_sniper = evaluate_sniper_gates(row, deliv_pct=dp)
+        failed_sniper = [g for g, p in audit_sniper.gate_details.items() if not p]
+        sniper_verdict = (
+            "Passed All 7 High-Precision Confluence Gates"
+            if audit_sniper.is_sniper
+            else f"Failed {len(failed_sniper)}/7 gates: {'; '.join(failed_sniper[:2])}"
+        )
+        frameworks.append({
+            "name": "Sniper Mode (65%+ WR)",
+            "passed": bool(audit_sniper.is_sniper),
+            "verdict": sniper_verdict,
         })
 
         # Wyckoff Auction State

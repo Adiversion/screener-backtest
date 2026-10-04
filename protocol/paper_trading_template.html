@@ -1682,7 +1682,10 @@
             <td class="num mono">${c.rvol}x</td>
             <td class="num mono" style="color:#c084fc;font-weight:700;">${c.rs_rating}</td>
             <td>
-              <span class="pos-tag pos-standard">${c.strategies[0]}</span>
+              <div style="display:flex;flex-direction:column;gap:3px;">
+                <span class="mono" style="font-size:0.7rem;font-weight:700;color:#38bdf8;">${c.strategies.length}/10 FRAMEWORKS</span>
+                <span class="pos-tag pos-standard" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;" title="${c.strategies.join(', ')}">${c.strategies[0]}</span>
+              </div>
             </td>
             <td style="text-align:center;">
               <button class="btn btn-action-sm ${isAlreadyBought ? '' : 'btn-primary'}" onclick="buyCandidate('${c.symbol}')" ${isAlreadyBought ? 'disabled style="opacity:0.5;"' : ''}>
