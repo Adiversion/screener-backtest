@@ -158,6 +158,10 @@ def simulate_single_stock_forward(
         )
     )
 
+    max_high = round(float(sub["High"].max()), 2)
+    min_low = round(float(sub["Low"].min()), 2)
+    max_fwd_gain = round(((max_high - entry_price) / entry_price) * 100, 2)
+
     return {
         "symbol": symbol,
         "company": get_company_name(symbol),
@@ -169,6 +173,9 @@ def simulate_single_stock_forward(
         "target2_price": target2_price,
         "target1_hit": target1_hit,
         "status": status,
+        "max_high": max_high,
+        "min_low": min_low,
+        "max_fwd_gain": max_fwd_gain,
         "staged_pnl_pct": staged_pnl_pct,
         "static_pnl_pct": static_pnl_pct,
         "alpha_saved_pct": round(staged_pnl_pct - static_pnl_pct, 2),
@@ -332,7 +339,18 @@ def build_forward_verification_suite(
         }
         available_dates.append(d_str)
 
+    trades_by_symbol: dict[str, list[dict[str, Any]]] = {}
+    for d_str, rec in date_records.items():
+        for t in rec.get("trades", []):
+            sym = t["symbol"]
+            item = dict(t)
+            item["session_date"] = d_str
+            item["session_label"] = rec.get("label", d_str)
+            trades_by_symbol.setdefault(sym, []).append(item)
+
     return {
         "available_dates": available_dates,
         "sessions": date_records,
+        "trades_by_symbol": trades_by_symbol,
+        "all_symbols": sorted(list(trades_by_symbol.keys())),
     }

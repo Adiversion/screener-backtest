@@ -1632,14 +1632,10 @@
     <div class="nav-right">
       <div class="nav-links-desktop">
         <a href="macro.html" class="nav-link-btn" onclick="event.preventDefault(); navigateToPage('macro', 'directiveTile');">🛡️ Macro HUD</a>
-        <a href="inspector.html" class="nav-link-btn" onclick="event.preventDefault(); navigateToPage('inspector');">🔍 Inspector</a>
         <a href="screener.html" class="nav-link-btn" onclick="event.preventDefault(); navigateToPage('screener', 'toolbarSection');">🎯 Screener</a>
+        <a href="inspector.html" class="nav-link-btn" onclick="event.preventDefault(); navigateToPage('inspector');">🔍 Inspector</a>
         <a href="verifier.html" class="nav-link-btn highlight" onclick="event.preventDefault(); navigateToPage('verifier', 'forwardVerifierSection');" style="border-color:rgba(56,189,248,0.4);color:#38bdf8;background:rgba(56,189,248,0.08);">⚡ 7-14D Verifier</a>
-        <button class="nav-link-btn highlight" onclick="openSniperModal()" style="border-color:rgba(245,158,11,0.4);color:#f59e0b;background:rgba(245,158,11,0.08);">🎯 65%+ Sniper</button>
-        <button class="nav-link-btn highlight" onclick="openUsicModal()">🏆 USIC Playbook</button>
-        <a href="paper_trading.html" class="nav-link-btn highlight" style="border-color:rgba(56,189,248,0.4);color:#38bdf8;background:rgba(56,189,248,0.08);">💼 Paper Trading</a>
-        <button class="nav-link-btn" onclick="openWalkForwardModal()" style="border-color:rgba(52,211,153,0.4);color:#34d399;">🛡️ Walk-Forward OOS</button>
-        <button class="nav-link-btn" onclick="openPrinciplesModal()">🏛️ Quant Truths</button>
+        <a href="paper_trading.html" class="nav-link-btn highlight" style="border-color:rgba(52,211,153,0.4);color:#34d399;background:rgba(52,211,153,0.08);">💼 Paper Trading</a>
       </div>
 
       <div id="regimeBadge" class="regime-badge defensive">
@@ -1877,46 +1873,93 @@
     <div class="fwd-header">
       <div class="fwd-title">
         <h2><span>⚡</span> 7–14 Day Forward Trade Verification & Replay Engine</h2>
-        <p>Audits what actually happened to every screened stock over subsequent sessions under USIC Staged Execution rules (-5% stop loss, +1.5R scale-out to breakeven, +2.5R target). Test any past date to see empirical trade outcomes without hindsight bias.</p>
+        <p>Audits empirical trade outcomes under USIC Staged Execution rules (-5% stop loss, +1.5R scale-out to breakeven, +2.5R target). Audit pre-screened historical sessions OR look up any individual stock with live Cloudflare Edge surveillance.</p>
       </div>
-      <div class="fwd-controls">
-        <label for="fwdDateSelect" style="font-size:0.75rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Screening Session:</label>
-        <select id="fwdDateSelect" class="custom-select" onchange="renderForwardVerifier()" style="min-width:250px;font-weight:600;"></select>
+      <div class="fwd-controls" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div class="view-switch-pill" style="display:flex;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:2px;">
+          <button id="btnFwdModeSession" class="btn-chip active" onclick="setFwdMode('session')" style="font-size:0.75rem;padding:4px 12px;border:none;">📅 By Session</button>
+          <button id="btnFwdModeStock" class="btn-chip" onclick="setFwdMode('stock')" style="font-size:0.75rem;padding:4px 12px;border:none;">🔍 Individual Stock</button>
+        </div>
+        <div id="fwdSessionControls" style="display:flex;align-items:center;gap:8px;">
+          <label for="fwdDateSelect" style="font-size:0.72rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Session:</label>
+          <select id="fwdDateSelect" class="custom-select" onchange="renderForwardVerifier()" style="min-width:230px;font-weight:600;font-size:0.8rem;"></select>
+        </div>
       </div>
     </div>
 
-    <!-- Dynamic Regime Alert on Selected Date -->
-    <div id="fwdRegimeBanner" class="fwd-regime-alert"></div>
+    <!-- On-Demand Individual Stock Search & Cloudflare Live Replay Bar -->
+    <div id="fwdCustomSearchSection" style="margin-bottom:18px;background:rgba(15,23,42,0.85);border:1px solid rgba(56,189,248,0.25);border-radius:12px;padding:14px 18px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:1.1rem;">🔍</span>
+          <span style="font-size:0.88rem;font-weight:800;color:#f8fafc;letter-spacing:0.02em;">ON-DEMAND INDIVIDUAL STOCK VERIFIER</span>
+          <span class="badge-pill" style="font-size:0.68rem;background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);">Cloudflare Edge Worker • Live Surveillance</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button id="fwdCloudLiveBtn" class="btn" onclick="fetchFwdCloudflareLiveQuote()" style="font-size:0.75rem;padding:5px 12px;color:#38bdf8;border:1px solid rgba(56,189,248,0.4);background:rgba(56,189,248,0.1);font-weight:700;">
+            <span>📡</span> Live Cloudflare Edge Quote
+          </button>
+        </div>
+      </div>
+      
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+        <div style="position:relative;flex:1;min-width:260px;">
+          <input type="text" id="fwdStockInput" class="search-input" placeholder="Type ANY Stock Symbol (e.g. CUPID, RELIANCE, RAMRAT, JINDALPOLY)..." list="fwdSymbolList" onkeydown="if(event.key==='Enter')verifyCustomStock(this.value)" style="width:100%;text-transform:uppercase;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:0.85rem;" />
+          <datalist id="fwdSymbolList"></datalist>
+        </div>
+        <button class="btn btn-primary" onclick="verifyCustomStock(document.getElementById('fwdStockInput').value)" style="font-size:0.8rem;padding:8px 18px;">
+          ⚡ Verify & Replay
+        </button>
+      </div>
 
-    <!-- Summary KPI Stat Boxes -->
-    <div class="fwd-kpi-grid" id="fwdKpiGrid"></div>
+      <!-- Quick Pick Stock Chips -->
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;">Quick Picks:</span>
+        <div id="fwdQuickStockChips" style="display:inline-flex;gap:6px;flex-wrap:wrap;"></div>
+      </div>
 
-    <!-- Strategy Filter Chips for Forward Trades -->
-    <div style="margin-bottom:14px;">
-      <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;">Filter By Strategy Framework:</div>
-      <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;" id="fwdFilterChips"></div>
+      <!-- Cloudflare Edge Live Status Banner -->
+      <div id="fwdCloudLiveStatus" style="display:none;margin-top:12px;padding:8px 12px;border-radius:6px;background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);font-size:0.78rem;color:#38bdf8;font-family:'JetBrains Mono',monospace;"></div>
     </div>
 
-    <!-- Interactive Forward Verification Stock List Table -->
-    <div class="table-scroll" style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;overflow-x:auto;background:rgba(14,19,31,0.6);">
-      <table style="width:100%;border-collapse:collapse;" class="fwd-table">
-        <thead>
-          <tr style="border-bottom:1px solid rgba(255,255,255,0.1);background:rgba(15,23,42,0.85);font-size:0.74rem;text-transform:uppercase;color:var(--text-muted);">
-            <th style="padding:10px 12px;text-align:left;width:30px;">#</th>
-            <th style="padding:10px 12px;text-align:left;">Symbol / Company</th>
-            <th style="padding:10px 12px;text-align:left;">Frameworks</th>
-            <th style="padding:10px 12px;text-align:right;">Entry (Next Open)</th>
-            <th style="padding:10px 12px;text-align:right;">Fwd Max High</th>
-            <th style="padding:10px 12px;text-align:center;">Trade Outcome</th>
-            <th style="padding:10px 12px;text-align:right;">USIC Staged P&L</th>
-            <th style="padding:10px 12px;text-align:right;">Buy & Hold</th>
-            <th style="padding:10px 12px;text-align:right;">Alpha Saved</th>
-            <th style="padding:10px 12px;text-align:center;">Day-by-Day</th>
-          </tr>
-        </thead>
-        <tbody id="fwdTableBody"></tbody>
-      </table>
+    <!-- Mode 1 Container: Session Historical Audit -->
+    <div id="fwdSessionContent">
+      <!-- Dynamic Regime Alert on Selected Date -->
+      <div id="fwdRegimeBanner" class="fwd-regime-alert"></div>
+
+      <!-- Summary KPI Stat Boxes -->
+      <div class="fwd-kpi-grid" id="fwdKpiGrid"></div>
+
+      <!-- Strategy Filter Chips for Forward Trades -->
+      <div style="margin-bottom:14px;">
+        <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;">Filter By Strategy Framework:</div>
+        <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;" id="fwdFilterChips"></div>
+      </div>
+
+      <!-- Interactive Forward Verification Stock List Table -->
+      <div class="table-scroll" style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;overflow-x:auto;background:rgba(14,19,31,0.6);">
+        <table style="width:100%;border-collapse:collapse;" class="fwd-table">
+          <thead>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.1);background:rgba(15,23,42,0.85);font-size:0.74rem;text-transform:uppercase;color:var(--text-muted);">
+              <th style="padding:10px 12px;text-align:left;width:30px;">#</th>
+              <th style="padding:10px 12px;text-align:left;">Symbol / Company</th>
+              <th style="padding:10px 12px;text-align:left;">Frameworks</th>
+              <th style="padding:10px 12px;text-align:right;">Entry (Next Open)</th>
+              <th style="padding:10px 12px;text-align:right;">Fwd Max High</th>
+              <th style="padding:10px 12px;text-align:center;">Trade Outcome</th>
+              <th style="padding:10px 12px;text-align:right;">USIC Staged P&L</th>
+              <th style="padding:10px 12px;text-align:right;">Buy & Hold</th>
+              <th style="padding:10px 12px;text-align:right;">Alpha Saved</th>
+              <th style="padding:10px 12px;text-align:center;">Day-by-Day</th>
+            </tr>
+          </thead>
+          <tbody id="fwdTableBody"></tbody>
+        </table>
+      </div>
     </div>
+
+    <!-- Mode 2 Container: Individual Stock Verification Dossier -->
+    <div id="fwdStockResultContent" style="display:none;"></div>
   </section>
 
 </div>
@@ -1929,6 +1972,7 @@
         <div style="display:flex;align-items:baseline;gap:12px;">
           <h2 id="mSym" class="mono" style="font-size:1.6rem;color:#38bdf8;"></h2>
           <span id="mClose" class="mono" style="font-size:1.3rem;font-weight:700;"></span>
+          <button class="chart-link-pill" onclick="closeModal('stockModal'); openFwdReplayForStock(currentModalSymbol);" style="margin-left:4px;border-color:rgba(56,189,248,0.4);color:#38bdf8;background:rgba(56,189,248,0.12);cursor:pointer;" title="Audit 7-14 day forward trade execution and replay">⚡ Forward Replay</button>
         </div>
         <div id="mComp" style="color:var(--text-secondary);font-size:0.85rem;margin-top:2px;"></div>
         <div id="mBadges" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;"></div>
@@ -3301,7 +3345,10 @@ function openUsicModal() {
   document.getElementById('usicModal').classList.add('open');
 }
 
+let currentModalSymbol = null;
+
 function openModal(sym) {
+  currentModalSymbol = sym;
   const c = D.candidates.find(x => x.symbol === sym);
   if (!c) return;
   document.getElementById('mSym').textContent = c.symbol;
@@ -3720,6 +3767,49 @@ if (window.innerWidth < 768) {
   }
 }
 let currentFwdFilter = "ALL";
+let fwdCurrentMode = "session"; // "session" or "stock"
+let fwdCurrentStock = null;
+let fwdLiveQuoteData = null;
+
+function setFwdMode(mode) {
+  fwdCurrentMode = mode;
+  const btnSess = document.getElementById('btnFwdModeSession');
+  const btnStock = document.getElementById('btnFwdModeStock');
+  const sessCtrls = document.getElementById('fwdSessionControls');
+  const sessContent = document.getElementById('fwdSessionContent');
+  const stockContent = document.getElementById('fwdStockResultContent');
+
+  if (btnSess && btnStock) {
+    btnSess.classList.toggle('active', mode === 'session');
+    btnStock.classList.toggle('active', mode === 'stock');
+    if (mode === 'session') {
+      btnSess.style.background = 'rgba(56, 189, 248, 0.2)';
+      btnSess.style.color = '#38bdf8';
+      btnStock.style.background = 'transparent';
+      btnStock.style.color = 'var(--text-muted)';
+    } else {
+      btnStock.style.background = 'rgba(56, 189, 248, 0.2)';
+      btnStock.style.color = '#38bdf8';
+      btnSess.style.background = 'transparent';
+      btnSess.style.color = 'var(--text-muted)';
+    }
+  }
+
+  if (sessCtrls) sessCtrls.style.display = (mode === 'session') ? 'flex' : 'none';
+  if (sessContent) sessContent.style.display = (mode === 'session') ? 'block' : 'none';
+  if (stockContent) stockContent.style.display = (mode === 'stock') ? 'block' : 'none';
+
+  if (mode === 'session') {
+    renderForwardVerifier();
+  } else {
+    if (!fwdCurrentStock) {
+      const topCand = (D.candidates && D.candidates.length) ? D.candidates[0].symbol : 'CUPID';
+      verifyCustomStock(topCand);
+    } else {
+      verifyCustomStock(fwdCurrentStock);
+    }
+  }
+}
 
 function initForwardVerifier() {
   const fwd = D.forward_verifier;
@@ -3748,12 +3838,305 @@ function initForwardVerifier() {
     select.value = fwd.available_dates[0];
   }
 
-  renderForwardVerifier();
+  // Populate Symbol Autocomplete Datalist
+  const dl = document.getElementById('fwdSymbolList');
+  if (dl) {
+    const allSyms = new Set();
+    (fwd.all_symbols || []).forEach(s => allSyms.add(s));
+    (D.candidates || []).forEach(c => allSyms.add(c.symbol));
+    if (D.universe_lookup) {
+      Object.keys(D.universe_lookup).slice(0, 300).forEach(s => allSyms.add(s));
+    }
+    dl.innerHTML = Array.from(allSyms).map(s => `<option value="${s}"></option>`).join('');
+  }
+
+  // Populate Quick Pick Chips
+  const qp = document.getElementById('fwdQuickStockChips');
+  if (qp) {
+    const quickList = ['CUPID', 'RAMRAT', 'JINDALPOLY', 'AUTOAXLES', 'WSTCSTPAPR', 'TATASTEEL', 'RELIANCE', 'DIXON'];
+    qp.innerHTML = quickList.map(s => `
+      <button class="btn-chip" onclick="verifyCustomStock('${s}')" style="font-size:0.72rem;padding:3px 8px;font-family:'JetBrains Mono',monospace;">${s}</button>
+    `).join('');
+  }
+
+  setFwdMode('session');
 }
 
 function setFwdFilter(strat) {
   currentFwdFilter = strat;
   renderForwardVerifier();
+}
+
+function openFwdReplayForStock(sym) {
+  if (!sym) return;
+  const sec = document.getElementById('forwardVerifierSection');
+  if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  setTimeout(() => {
+    verifyCustomStock(sym);
+  }, 120);
+}
+
+async function fetchFwdCloudflareLiveQuote(symbol) {
+  const sym = (symbol || fwdCurrentStock || (document.getElementById('fwdStockInput') ? document.getElementById('fwdStockInput').value : '')).trim().toUpperCase();
+  if (!sym) return;
+
+  const statusEl = document.getElementById('fwdCloudLiveStatus');
+  if (statusEl) {
+    statusEl.innerHTML = `<span class="pulse-dot"></span> Contacting Cloudflare Edge Worker for <b>${sym}.NS</b> live quote...`;
+    statusEl.style.display = 'block';
+  }
+
+  try {
+    const res = await fetch(`https://nse-quote.audittool-api.workers.dev/?symbol=${encodeURIComponent(sym + '.NS')}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Worker HTTP ' + res.status);
+    const data = await res.json();
+    if (data && (data.price || data.price === 0)) {
+      fwdLiveQuoteData = data;
+      if (statusEl) {
+        statusEl.innerHTML = `🟢 <b>Cloudflare Edge Live Surveillance Verified</b>: ₹${Number(data.price).toFixed(2)} (Prev: ₹${Number(data.previousClose || data.price).toFixed(2)}) • Synced ${new Date().toLocaleTimeString()} (Worker: nse-quote.audittool-api.workers.dev)`;
+      }
+      verifyCustomStock(sym, data);
+    } else {
+      throw new Error('Worker returned empty quote');
+    }
+  } catch (err) {
+    console.warn('Cloudflare quote fetch notice:', err);
+    if (statusEl) {
+      statusEl.innerHTML = `⚠️ Cloudflare Edge: Real-time worker off-market or symbol not trading. Using latest backtest settlement data.`;
+    }
+  }
+}
+
+function verifyCustomStock(symbol, liveQuote) {
+  if (!symbol) return;
+  const sym = symbol.trim().toUpperCase();
+  fwdCurrentStock = sym;
+  setFwdMode('stock');
+
+  const input = document.getElementById('fwdStockInput');
+  if (input) input.value = sym;
+
+  const fwd = D.forward_verifier;
+  const container = document.getElementById('fwdStockResultContent');
+  if (!container) return;
+
+  const quote = liveQuote || fwdLiveQuoteData;
+  const cand = (D.candidates || []).find(c => c.symbol === sym);
+  const histTrades = (fwd && fwd.trades_by_symbol && fwd.trades_by_symbol[sym]) ? fwd.trades_by_symbol[sym] : [];
+
+  let compName = cand ? cand.company : (D.universe_lookup && D.universe_lookup[sym] ? D.universe_lookup[sym].company : sym);
+  let sectorName = cand ? cand.sector : (D.universe_lookup && D.universe_lookup[sym] ? D.universe_lookup[sym].sector : 'NSE Equity');
+  let currentClose = cand ? cand.close : (quote ? quote.price : 0);
+  let strats = cand ? cand.strategies : ['Universal Stock Inspection'];
+
+  // Base Execution Parameters
+  let entryPx = cand ? (cand.close * 1.0025) : (currentClose > 0 ? (currentClose * 1.0025) : 100);
+  let stopPx = entryPx * 0.95;
+  let target1Px = entryPx * (1.0 + 0.05 * 1.5);
+  let target2Px = entryPx * (1.0 + 0.05 * 2.5);
+
+  let liveBannerHtml = '';
+  if (quote && (quote.price || quote.price === 0)) {
+    const livePx = Number(quote.price);
+    const livePnl = ((livePx - entryPx) / entryPx) * 100;
+    const isWin = livePnl > 0;
+    const isLoss = livePnl < -5.0;
+    const col = isWin ? '#34d399' : (isLoss ? '#fb7185' : '#38bdf8');
+    let liveStatus = 'ACTIVE IN RUN';
+    if (livePx >= target2Px) liveStatus = '🚀 TARGET 2 HIT (+12.5% banked)';
+    else if (livePx >= target1Px) liveStatus = '🎯 TARGET 1 HIT (+7.5% banked, Stop moved to Breakeven)';
+    else if (livePx <= stopPx) liveStatus = '🛑 STOP LOSS TRIGGERED (-5.0% protected)';
+
+    liveBannerHtml = `
+      <div style="background:linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(15,23,42,0.9) 100%);border:1px solid rgba(52,211,153,0.3);border-radius:10px;padding:14px 18px;margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="pulse-dot"></span>
+            <span style="font-weight:800;color:#34d399;font-size:0.85rem;text-transform:uppercase;">CLOUDFLARE EDGE REAL-TIME SURVEILLANCE</span>
+          </div>
+          <span class="mono" style="font-size:0.75rem;color:#94a3b8;">Worker As-Of: ${quote.asOf ? new Date(quote.asOf * 1000).toLocaleString() : 'Live Session'}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));gap:10px;margin-top:10px;">
+          <div><span style="font-size:0.72rem;color:var(--text-muted);">Live Edge Price:</span> <b class="mono" style="font-size:1.1rem;color:#ffffff;">₹${livePx.toFixed(2)}</b></div>
+          <div><span style="font-size:0.72rem;color:var(--text-muted);">Simulated Entry:</span> <b class="mono" style="color:#e2e8f0;">₹${entryPx.toFixed(2)}</b></div>
+          <div><span style="font-size:0.72rem;color:var(--text-muted);">Live P&L:</span> <b class="mono" style="font-size:1.1rem;color:${col};">${livePnl > 0 ? '+' : ''}${livePnl.toFixed(2)}%</b></div>
+          <div><span style="font-size:0.72rem;color:var(--text-muted);">Current State:</span> <b style="color:#38bdf8;font-size:0.85rem;">${liveStatus}</b></div>
+        </div>
+      </div>
+    `;
+  }
+
+  let histTradesHtml = '';
+  if (histTrades.length > 0) {
+    histTradesHtml = `
+      <div style="margin-top:16px;">
+        <h4 style="font-size:0.85rem;font-weight:700;color:#cbd5e1;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">
+          Empirical Forward Verification Runs (${histTrades.length} Backtest Sessions):
+        </h4>
+        <div class="table-scroll" style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;" class="fwd-table">
+            <thead>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.1);background:rgba(15,23,42,0.85);font-size:0.74rem;text-transform:uppercase;color:var(--text-muted);">
+                <th style="padding:10px 12px;text-align:left;">Session Date</th>
+                <th style="padding:10px 12px;text-align:right;">Entry (Next Open)</th>
+                <th style="padding:10px 12px;text-align:right;">Fwd Max High</th>
+                <th style="padding:10px 12px;text-align:center;">Outcome</th>
+                <th style="padding:10px 12px;text-align:right;">USIC Staged P&L</th>
+                <th style="padding:10px 12px;text-align:right;">Buy & Hold</th>
+                <th style="padding:10px 12px;text-align:right;">Alpha Saved</th>
+                <th style="padding:10px 12px;text-align:center;">Replay</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${histTrades.map((t, idx) => {
+                const isWin = (t.staged_pnl_pct || 0) > 0;
+                const isLoss = (t.staged_pnl_pct || 0) < -1.0;
+                const badgeCls = isWin ? 'fwd-badge-win' : (isLoss ? 'fwd-badge-loss' : 'fwd-badge-be');
+                const statusText = isWin ? `🎯 +${t.staged_pnl_pct}% WIN` : (isLoss ? `🛑 ${t.staged_pnl_pct}% STOP` : `🛡️ ${t.staged_pnl_pct}% PROT`);
+                const alphaCol = (t.alpha_saved_pct || 0) >= 0 ? '#34d399' : '#fb7185';
+                const stagedCol = isWin ? '#34d399' : (isLoss ? '#fb7185' : '#38bdf8');
+                const staticCol = (t.static_pnl_pct || 0) > 0 ? '#34d399' : '#fb7185';
+                const entryVal = t.entry_price != null ? t.entry_price : 0;
+                const maxH = t.max_high != null ? t.max_high : entryVal;
+                const maxG = t.max_fwd_gain != null ? t.max_fwd_gain : ((entryVal > 0 && maxH > 0) ? ((maxH - entryVal)/entryVal*100) : 0);
+
+                const logsHtml = (t.daily_logs || []).map(l => {
+                  const evCol = l.is_event ? '#38bdf8' : '#94a3b8';
+                  const o = l.open != null ? l.open : 0;
+                  const h = l.high != null ? l.high : 0;
+                  const low = l.low != null ? l.low : 0;
+                  const c = l.close != null ? l.close : 0;
+                  return `
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+                      <td class="mono" style="color:#e2e8f0;padding:6px 10px;font-size:0.72rem;">${l.date || ''}</td>
+                      <td class="mono" style="text-align:right;padding:6px 10px;font-size:0.72rem;">₹${o.toFixed(2)}</td>
+                      <td class="mono" style="text-align:right;color:#34d399;padding:6px 10px;font-size:0.72rem;">₹${h.toFixed(2)}</td>
+                      <td class="mono" style="text-align:right;color:#fb7185;padding:6px 10px;font-size:0.72rem;">₹${low.toFixed(2)}</td>
+                      <td class="mono" style="text-align:right;font-weight:600;padding:6px 10px;font-size:0.72rem;">₹${c.toFixed(2)}</td>
+                      <td style="color:${evCol};font-weight:${l.is_event ? '600' : '400'};padding:6px 10px;font-size:0.72rem;">${l.event || ''}</td>
+                    </tr>
+                  `;
+                }).join('');
+
+                return `
+                  <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+                    <td style="padding:10px 12px;">
+                      <b class="mono" style="color:#38bdf8;">${t.session_date}</b><br/>
+                      <small style="color:var(--text-muted);font-size:0.70rem;">${t.session_label || ''}</small>
+                    </td>
+                    <td class="mono num" style="padding:10px 12px;text-align:right;">
+                      <b>₹${entryVal.toFixed(2)}</b><br/>
+                      <small style="color:var(--text-muted);font-size:0.68rem;">${t.entry_date || ''}</small>
+                    </td>
+                    <td class="mono num" style="padding:10px 12px;text-align:right;color:#34d399;">
+                      ₹${maxH.toFixed(2)}<br/>
+                      <small style="font-size:0.68rem;">(+${maxG.toFixed(1)}%)</small>
+                    </td>
+                    <td style="padding:10px 12px;text-align:center;">
+                      <span class="fwd-badge ${badgeCls}">${statusText}</span>
+                    </td>
+                    <td class="mono num" style="padding:10px 12px;text-align:right;font-weight:700;color:${stagedCol};">
+                      ${(t.staged_pnl_pct || 0) > 0 ? '+' : ''}${t.staged_pnl_pct || 0}%
+                    </td>
+                    <td class="mono num" style="padding:10px 12px;text-align:right;color:${staticCol};">
+                      ${(t.static_pnl_pct || 0) > 0 ? '+' : ''}${t.static_pnl_pct || 0}%
+                    </td>
+                    <td class="mono num" style="padding:10px 12px;text-align:right;font-weight:700;color:${alphaCol};">
+                      ${(t.alpha_saved_pct || 0) >= 0 ? '+' : ''}${t.alpha_saved_pct || 0}%
+                    </td>
+                    <td style="padding:10px 12px;text-align:center;">
+                      <button id="fwdCustomBtn_${idx}" class="fwd-replay-btn" onclick="toggleFwdLog('fwdCustomLog_${idx}', 'fwdCustomBtn_${idx}')">Replay ▾</button>
+                    </td>
+                  </tr>
+                  <tr id="fwdCustomLog_${idx}" style="display:none;background:rgba(9,13,22,0.95);border-bottom:2px solid rgba(56,189,248,0.25);">
+                    <td colspan="8" style="padding:12px 16px;">
+                      <div style="font-size:0.75rem;color:#cbd5e1;margin-bottom:8px;background:rgba(255,255,255,0.03);padding:6px 10px;border-radius:6px;border-left:3px solid #38bdf8;">
+                        <b>Verdict:</b> ${t.verdict || ''}
+                      </div>
+                      <div style="max-height:220px;overflow-y:auto;border:1px solid rgba(255,255,255,0.06);border-radius:6px;">
+                        <table style="width:100%;border-collapse:collapse;">
+                          <thead>
+                            <tr style="background:rgba(255,255,255,0.05);color:var(--text-muted);font-size:0.68rem;text-transform:uppercase;">
+                              <th style="padding:6px 10px;text-align:left;">Date</th>
+                              <th style="padding:6px 10px;text-align:right;">Open</th>
+                              <th style="padding:6px 10px;text-align:right;">High</th>
+                              <th style="padding:6px 10px;text-align:right;">Low</th>
+                              <th style="padding:6px 10px;text-align:right;">Close</th>
+                              <th style="padding:6px 10px;text-align:left;">Order Flow Event & Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>${logsHtml}</tbody>
+                        </table>
+                      </div>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  } else {
+    histTradesHtml = `
+      <div style="margin-top:14px;padding:16px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);text-align:center;color:var(--text-muted);font-size:0.8rem;">
+        No past backtest breakout sessions triggered for <b>${sym}</b> in the sample dates. The stock is evaluated under current live market rules above. Click <b>📡 Live Cloudflare Edge Quote</b> to sync live ticks.
+      </div>
+    `;
+  }
+
+  container.innerHTML = `
+    <div style="background:rgba(11,17,32,0.95);border:1px solid rgba(56,189,248,0.25);border-radius:14px;padding:20px;margin-bottom:20px;">
+      <!-- Stock Header -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+        <div>
+          <div style="display:flex;align-items:baseline;gap:10px;">
+            <h3 class="mono" style="font-size:1.6rem;color:#38bdf8;margin:0;">${sym}</h3>
+            <span class="mono" style="font-size:1.2rem;font-weight:700;color:#ffffff;">₹${currentClose > 0 ? currentClose.toFixed(2) : '--'}</span>
+          </div>
+          <div style="color:var(--text-muted);font-size:0.8rem;margin-top:2px;">${compName} • ${sectorName}</div>
+          <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px;">
+            ${strats.map(s => `<span class="strat-tag protocol" style="font-size:0.7rem;padding:2px 8px;">${s}</span>`).join('')}
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn" onclick="openModal('${sym}')" style="font-size:0.75rem;padding:6px 12px;border:1px solid rgba(56,189,248,0.4);color:#38bdf8;background:rgba(56,189,248,0.1);">
+            📈 View Chart
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Cloudflare Surveillance Banner -->
+      ${liveBannerHtml}
+
+      <!-- Trade Blueprint -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;background:rgba(3,7,18,0.7);border-radius:10px;padding:14px 16px;border:1px solid rgba(255,255,255,0.06);margin-bottom:14px;">
+        <div>
+          <span style="font-size:0.70rem;text-transform:uppercase;color:var(--text-muted);font-weight:700;">Simulated Entry</span>
+          <div class="mono" style="font-size:1.05rem;font-weight:700;color:#ffffff;">₹${entryPx.toFixed(2)}</div>
+          <small style="font-size:0.68rem;color:var(--text-muted);">Next Open + 25 bps</small>
+        </div>
+        <div>
+          <span style="font-size:0.70rem;text-transform:uppercase;color:#fb7185;font-weight:700;">Initial Stop Loss</span>
+          <div class="mono" style="font-size:1.05rem;font-weight:700;color:#fb7185;">₹${stopPx.toFixed(2)}</div>
+          <small style="font-size:0.68rem;color:var(--text-muted);">-5.0% (-1.0R)</small>
+        </div>
+        <div>
+          <span style="font-size:0.70rem;text-transform:uppercase;color:#38bdf8;font-weight:700;">Target 1 (Scale 50%)</span>
+          <div class="mono" style="font-size:1.05rem;font-weight:700;color:#38bdf8;">₹${target1Px.toFixed(2)}</div>
+          <small style="font-size:0.68rem;color:var(--text-muted);">+7.5% (+1.5R) -> Move stop to BE</small>
+        </div>
+        <div>
+          <span style="font-size:0.70rem;text-transform:uppercase;color:#34d399;font-weight:700;">Target 2 (Runner 50%)</span>
+          <div class="mono" style="font-size:1.05rem;font-weight:700;color:#34d399;">₹${target2Px.toFixed(2)}</div>
+          <small style="font-size:0.68rem;color:var(--text-muted);">+12.5% (+2.5R)</small>
+        </div>
+      </div>
+
+      <!-- Historical Verification Runs for this stock -->
+      ${histTradesHtml}
+    </div>
+  `;
 }
 
 function renderForwardVerifier() {
@@ -3794,9 +4177,9 @@ function renderForwardVerifier() {
   const kpis = session.summary || {};
   const kpiGrid = document.getElementById('fwdKpiGrid');
   if (kpiGrid) {
-    const stCol = kpis.avg_staged_pnl > 0 ? '#34d399' : (kpis.avg_staged_pnl < 0 ? '#fb7185' : '#94a3b8');
-    const bhCol = kpis.avg_static_pnl > 0 ? '#34d399' : (kpis.avg_static_pnl < 0 ? '#fb7185' : '#94a3b8');
-    const alCol = kpis.alpha_saved >= 0 ? '#34d399' : '#fb7185';
+    const stCol = (kpis.avg_staged_pnl || 0) > 0 ? '#34d399' : ((kpis.avg_staged_pnl || 0) < 0 ? '#fb7185' : '#94a3b8');
+    const bhCol = (kpis.avg_static_pnl || 0) > 0 ? '#34d399' : ((kpis.avg_static_pnl || 0) < 0 ? '#fb7185' : '#94a3b8');
+    const alCol = (kpis.alpha_saved || 0) >= 0 ? '#34d399' : '#fb7185';
     kpiGrid.innerHTML = `
       <div class="fwd-kpi-box">
         <span class="fwd-kpi-label">Win / Protected Rate</span>
@@ -3804,11 +4187,11 @@ function renderForwardVerifier() {
       </div>
       <div class="fwd-kpi-box">
         <span class="fwd-kpi-label">USIC Staged Return</span>
-        <span class="fwd-kpi-val" style="color:${stCol};">${kpis.avg_staged_pnl > 0 ? '+' : ''}${(kpis.avg_staged_pnl || 0).toFixed(2)}%</span>
+        <span class="fwd-kpi-val" style="color:${stCol};">${(kpis.avg_staged_pnl || 0) > 0 ? '+' : ''}${(kpis.avg_staged_pnl || 0).toFixed(2)}%</span>
       </div>
       <div class="fwd-kpi-box">
         <span class="fwd-kpi-label">Buy & Hold Benchmark</span>
-        <span class="fwd-kpi-val" style="color:${bhCol};">${kpis.avg_static_pnl > 0 ? '+' : ''}${(kpis.avg_static_pnl || 0).toFixed(2)}%</span>
+        <span class="fwd-kpi-val" style="color:${bhCol};">${(kpis.avg_static_pnl || 0) > 0 ? '+' : ''}${(kpis.avg_static_pnl || 0).toFixed(2)}%</span>
       </div>
       <div class="fwd-kpi-box">
         <span class="fwd-kpi-label">Alpha Saved by Risk Rules</span>
@@ -3845,24 +4228,32 @@ function renderForwardVerifier() {
   }
 
   tableBody.innerHTML = trades.map((t, idx) => {
-    const isWin = t.staged_pnl_pct > 0;
-    const isLoss = t.staged_pnl_pct < -1.0;
+    const isWin = (t.staged_pnl_pct || 0) > 0;
+    const isLoss = (t.staged_pnl_pct || 0) < -1.0;
     const badgeCls = isWin ? 'fwd-badge-win' : (isLoss ? 'fwd-badge-loss' : 'fwd-badge-be');
     const statusText = isWin ? `🎯 +${t.staged_pnl_pct}% WIN` : (isLoss ? `🛑 ${t.staged_pnl_pct}% STOP` : `🛡️ ${t.staged_pnl_pct}% PROT`);
-    const alphaCol = t.alpha_saved_pct >= 0 ? '#34d399' : '#fb7185';
+    const alphaCol = (t.alpha_saved_pct || 0) >= 0 ? '#34d399' : '#fb7185';
     const stagedCol = isWin ? '#34d399' : (isLoss ? '#fb7185' : '#38bdf8');
-    const staticCol = t.static_pnl_pct > 0 ? '#34d399' : '#fb7185';
+    const staticCol = (t.static_pnl_pct || 0) > 0 ? '#34d399' : '#fb7185';
+
+    const entryPx = (t.entry_price != null ? t.entry_price : 0);
+    const maxHigh = (t.max_high != null ? t.max_high : entryPx);
+    const maxFwdGain = (t.max_fwd_gain != null ? t.max_fwd_gain : ((entryPx > 0 && maxHigh > 0) ? ((maxHigh - entryPx) / entryPx * 100) : 0));
 
     const logsHtml = (t.daily_logs || []).map(l => {
       const evCol = l.is_event ? '#38bdf8' : '#94a3b8';
+      const o = (l.open != null ? l.open : 0);
+      const h = (l.high != null ? l.high : 0);
+      const low = (l.low != null ? l.low : 0);
+      const c = (l.close != null ? l.close : 0);
       return `
         <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-          <td class="mono" style="color:#e2e8f0;padding:6px 10px;font-size:0.72rem;">${l.date}</td>
-          <td class="mono" style="text-align:right;padding:6px 10px;font-size:0.72rem;">₹${l.open.toFixed(2)}</td>
-          <td class="mono" style="text-align:right;color:#34d399;padding:6px 10px;font-size:0.72rem;">₹${l.high.toFixed(2)}</td>
-          <td class="mono" style="text-align:right;color:#fb7185;padding:6px 10px;font-size:0.72rem;">₹${l.low.toFixed(2)}</td>
-          <td class="mono" style="text-align:right;font-weight:600;padding:6px 10px;font-size:0.72rem;">₹${l.close.toFixed(2)}</td>
-          <td style="color:${evCol};font-weight:${l.is_event ? '600' : '400'};padding:6px 10px;font-size:0.72rem;">${l.event}</td>
+          <td class="mono" style="color:#e2e8f0;padding:6px 10px;font-size:0.72rem;">${l.date || ''}</td>
+          <td class="mono" style="text-align:right;padding:6px 10px;font-size:0.72rem;">₹${o.toFixed(2)}</td>
+          <td class="mono" style="text-align:right;color:#34d399;padding:6px 10px;font-size:0.72rem;">₹${h.toFixed(2)}</td>
+          <td class="mono" style="text-align:right;color:#fb7185;padding:6px 10px;font-size:0.72rem;">₹${low.toFixed(2)}</td>
+          <td class="mono" style="text-align:right;font-weight:600;padding:6px 10px;font-size:0.72rem;">₹${c.toFixed(2)}</td>
+          <td style="color:${evCol};font-weight:${l.is_event ? '600' : '400'};padding:6px 10px;font-size:0.72rem;">${l.event || ''}</td>
         </tr>
       `;
     }).join('');
@@ -3880,24 +4271,24 @@ function renderForwardVerifier() {
           </div>
         </td>
         <td class="mono num" style="padding:10px 12px;text-align:right;">
-          <b>₹${t.entry_price.toFixed(2)}</b><br/>
-          <small style="color:var(--text-muted);font-size:0.68rem;">${t.entry_date}</small>
+          <b>₹${entryPx.toFixed(2)}</b><br/>
+          <small style="color:var(--text-muted);font-size:0.68rem;">${t.entry_date || ''}</small>
         </td>
         <td class="mono num" style="padding:10px 12px;text-align:right;color:#34d399;">
-          ₹${t.max_high.toFixed(2)}<br/>
-          <small style="font-size:0.68rem;">(+${t.max_fwd_gain.toFixed(1)}%)</small>
+          ₹${maxHigh.toFixed(2)}<br/>
+          <small style="font-size:0.68rem;">(+${maxFwdGain.toFixed(1)}%)</small>
         </td>
         <td style="padding:10px 12px;text-align:center;">
           <span class="fwd-badge ${badgeCls}">${statusText}</span>
         </td>
         <td class="mono num" style="padding:10px 12px;text-align:right;font-weight:700;color:${stagedCol};">
-          ${t.staged_pnl_pct > 0 ? '+' : ''}${t.staged_pnl_pct}%
+          ${(t.staged_pnl_pct || 0) > 0 ? '+' : ''}${t.staged_pnl_pct || 0}%
         </td>
         <td class="mono num" style="padding:10px 12px;text-align:right;color:${staticCol};">
-          ${t.static_pnl_pct > 0 ? '+' : ''}${t.static_pnl_pct}%
+          ${(t.static_pnl_pct || 0) > 0 ? '+' : ''}${t.static_pnl_pct || 0}%
         </td>
         <td class="mono num" style="padding:10px 12px;text-align:right;font-weight:700;color:${alphaCol};">
-          ${t.alpha_saved_pct >= 0 ? '+' : ''}${t.alpha_saved_pct}%
+          ${(t.alpha_saved_pct || 0) >= 0 ? '+' : ''}${t.alpha_saved_pct || 0}%
         </td>
         <td style="padding:10px 12px;text-align:center;">
           <button id="fwdBtn_${idx}" class="fwd-replay-btn" onclick="toggleFwdLog('fwdLog_${idx}', 'fwdBtn_${idx}')">Replay ▾</button>
@@ -3906,7 +4297,7 @@ function renderForwardVerifier() {
       <tr id="fwdLog_${idx}" style="display:none;background:rgba(9,13,22,0.95);border-bottom:2px solid rgba(56,189,248,0.25);">
         <td colspan="10" style="padding:12px 16px;">
           <div style="font-size:0.75rem;color:#cbd5e1;margin-bottom:8px;background:rgba(255,255,255,0.03);padding:6px 10px;border-radius:6px;border-left:3px solid #38bdf8;">
-            <b>Verdict:</b> ${t.verdict}
+            <b>Verdict:</b> ${t.verdict || ''}
           </div>
           <div style="max-height:220px;overflow-y:auto;border:1px solid rgba(255,255,255,0.06);border-radius:6px;">
             <table style="width:100%;border-collapse:collapse;">
