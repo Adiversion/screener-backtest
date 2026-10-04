@@ -863,6 +863,20 @@
     transform: translateY(-1px);
   }
 
+  .btn-chip.active,
+  .sector-chip-btn.active {
+    background: rgba(56, 189, 248, 0.22) !important;
+    border-color: #38bdf8 !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 14px rgba(56, 189, 248, 0.4), inset 0 0 0 1px #38bdf8 !important;
+  }
+
+  .sector-chip-btn.active .cand-count {
+    background: #38bdf8 !important;
+    color: #0b0f19 !important;
+    font-weight: 800 !important;
+  }
+
   /* Interactive Command & Filter Bar */
   .toolbar {
     background: var(--surface);
@@ -2365,15 +2379,28 @@ if (D.kpis) {
   document.getElementById('kpiDeliv').textContent = D.kpis.institutional_delivery_count;
 }
 
-// Populate Sector Dropdown
-const secs = [...new Set(D.candidates.map(c => c.sector).filter(Boolean))].sort();
-const secSel = document.getElementById('sectorFilter');
-secs.forEach(s => {
-  const o = document.createElement('option');
-  o.value = s;
-  o.textContent = s;
-  secSel.appendChild(o);
+// Populate Sector Dropdown (Include All Macro Sectors with Candidate Counts)
+const sectorCandCounts = {};
+(D.candidates || []).forEach(c => {
+  const s = c.sector || 'Unknown';
+  sectorCandCounts[s] = (sectorCandCounts[s] || 0) + 1;
 });
+
+const allSectorsSet = new Set();
+(D.industry_rankings || []).forEach(r => { if (r.Industry) allSectorsSet.add(r.Industry); });
+(D.candidates || []).forEach(c => { if (c.sector) allSectorsSet.add(c.sector); });
+
+const secSel = document.getElementById('sectorFilter');
+if (secSel) {
+  secSel.innerHTML = `<option value="">All Industry Sectors (${(D.candidates || []).length} Candidates)</option>`;
+  [...allSectorsSet].sort((a, b) => a.localeCompare(b)).forEach(s => {
+    const count = sectorCandCounts[s] || 0;
+    const o = document.createElement('option');
+    o.value = s;
+    o.textContent = `${s} (${count})`;
+    secSel.appendChild(o);
+  });
+}
 
 function toggleBasketMode() {
   basketMode = !basketMode;
@@ -2602,13 +2629,39 @@ function render() {
   const tableCardEl = document.getElementById('tableCard');
 
   if (filtered.length === 0) {
-    const emptyMsg = `
-      <div style="text-align:center;padding:48px 20px;color:var(--text-muted);font-size:0.95rem;grid-column:1/-1;">
-        <div style="font-size:1.8rem;margin-bottom:8px;">🔍</div>
-        <div style="font-weight:600;color:#f1f5f9;margin-bottom:4px;">No qualified breakout candidates match your current search/filters.</div>
-        <div style="font-size:0.85rem;color:#94a3b8;">${matchedLookup ? 'Universal stock inspection for ' + matchedLookup.symbol + ' is displayed above.' : 'Try adjusting the search query, strategy, or setup filters.'}</div>
-      </div>
-    `;
+    let emptyMsg = '';
+    if (sec) {
+      const secRank = (D.industry_rankings || []).find(r => r.Industry === sec);
+      const tierText = secRank ? secRank.tier : 'Macro RS Matrix';
+      const retText = secRank ? ((secRank.median_ret60 > 0 ? '+' : '') + Number(secRank.median_ret60).toFixed(1) + '% 60d momentum') : '';
+      emptyMsg = `
+        <div style="text-align:center;padding:48px 24px;color:var(--text-muted);grid-column:1/-1;">
+          <div style="font-size:2.2rem;margin-bottom:10px;">🏛️</div>
+          <div style="font-weight:700;color:#f8fafc;font-size:1.15rem;margin-bottom:8px;">
+            No Qualified Breakout Candidates in <span style="color:#38bdf8;">${sec}</span> Today
+          </div>
+          <div style="font-size:0.88rem;color:#94a3b8;max-width:620px;margin:0 auto 20px;line-height:1.6;">
+            While <strong>${sec}</strong> is actively ranked in the macro RS momentum matrix (${tierText}${retText ? ' • ' + retText : ''}), none of its constituent stocks met all 10 institutional confluence criteria (Wyckoff shelf touches, 2.5x volume thrust, 200 SMA alignment) under current ${D.regime ? D.regime.name : 'DEFENSIVE'} regime conditions.
+          </div>
+          <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+            <button onclick="filterBySector('')" class="btn-chip" style="background:rgba(56,189,248,0.18);color:#38bdf8;border:1px solid rgba(56,189,248,0.45);font-weight:700;padding:8px 18px;cursor:pointer;">
+              ← Show All Qualified Candidates (${D.candidates.length})
+            </button>
+            <button onclick="document.getElementById('searchBox').value='${sec.replace(/'/g, "\\'")}';render();" class="btn-chip" style="background:rgba(255,255,255,0.06);color:#e2e8f0;border:1px solid rgba(255,255,255,0.15);font-weight:600;padding:8px 16px;cursor:pointer;">
+              🔍 Universal Search for "${sec}"
+            </button>
+          </div>
+        </div>
+      `;
+    } else {
+      emptyMsg = `
+        <div style="text-align:center;padding:48px 20px;color:var(--text-muted);font-size:0.95rem;grid-column:1/-1;">
+          <div style="font-size:1.8rem;margin-bottom:8px;">🔍</div>
+          <div style="font-weight:600;color:#f1f5f9;margin-bottom:4px;">No qualified breakout candidates match your current search/filters.</div>
+          <div style="font-size:0.85rem;color:#94a3b8;">${matchedLookup ? 'Universal stock inspection for ' + matchedLookup.symbol + ' is displayed above.' : 'Try adjusting the search query, strategy, or setup filters.'}</div>
+        </div>
+      `;
+    }
     tb.innerHTML = `<tr><td colspan="13">${emptyMsg}</td></tr>`;
     if (cardsContainer) cardsContainer.innerHTML = emptyMsg;
     if (viewMode === 'table') {
@@ -2887,6 +2940,14 @@ function setViewMode(mode) {
 function initSectorTrack() {
   const track = document.getElementById('sectorChipsTrack');
   if (!track || !D.industry_rankings || !D.industry_rankings.length) return;
+
+  const candCounts = {};
+  (D.candidates || []).forEach(c => {
+    const s = c.sector || 'Unknown';
+    candCounts[s] = (candCounts[s] || 0) + 1;
+  });
+
+  const activeSec = document.getElementById('sectorFilter') ? document.getElementById('sectorFilter').value : '';
   
   track.innerHTML = D.industry_rankings.map(r => {
     let color = '#94a3b8';
@@ -2906,24 +2967,68 @@ function initSectorTrack() {
       border = 'rgba(239,68,68,0.3)';
     }
     const retStr = (r.median_ret60 > 0 ? '+' : '') + Number(r.median_ret60).toFixed(1) + '%';
+    const cCount = candCounts[r.Industry] || 0;
+    const countBadge = cCount > 0
+      ? `<span class="cand-count mono" style="font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:10px;background:rgba(56,189,248,0.22);color:#38bdf8;border:1px solid rgba(56,189,248,0.45);">${cCount}</span>`
+      : `<span class="cand-count mono" style="font-size:0.68rem;font-weight:500;padding:2px 7px;border-radius:10px;background:rgba(255,255,255,0.05);color:#64748b;border:1px solid rgba(255,255,255,0.08);">0</span>`;
+    const isActive = activeSec && activeSec === r.Industry ? ' active' : '';
+
     return `
-      <button class="btn-chip" onclick="filterBySector('${r.Industry.replace(/'/g, "\\'")}')" 
-        style="color:${color};background:${bg};border-color:${border};white-space:nowrap;cursor:pointer;flex-shrink:0;min-height:36px;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;">
+      <button class="btn-chip sector-chip-btn${isActive}" data-sector="${r.Industry.replace(/"/g, '&quot;')}" onclick="filterBySector('${r.Industry.replace(/'/g, "\\'")}')" 
+        title="${r.Industry}: ${cCount} qualified candidates today | ${r.tier}"
+        style="color:${color};background:${bg};border-color:${border};white-space:nowrap;cursor:pointer;flex-shrink:0;min-height:36px;padding:6px 12px;display:inline-flex;align-items:center;gap:7px;">
         <strong>${r.Industry}</strong>
         <span class="mono" style="font-size:0.72rem;opacity:0.9;">${retStr}</span>
         <span style="font-size:0.65rem;opacity:0.85;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,0.08);">${r.tier.split(':')[0]}</span>
+        ${countBadge}
       </button>
     `;
   }).join('');
 }
 
+function updateActiveSectorChips(activeSec) {
+  document.querySelectorAll('.sector-chip-btn').forEach(btn => {
+    const sec = btn.getAttribute('data-sector');
+    if (activeSec && sec === activeSec) {
+      btn.classList.add('active');
+      btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+}
+
 function filterBySector(secName) {
   const sf = document.getElementById('sectorFilter');
-  if (sf) {
-    sf.value = secName;
+  if (!sf) return;
+
+  // Toggle off if currently active sector is clicked again
+  if (sf.value === secName || (!secName && sf.value === '')) {
+    sf.value = '';
+    updateActiveSectorChips('');
     render();
-    document.getElementById('toolbarSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
   }
+
+  // Ensure option exists in dropdown
+  let found = false;
+  for (let i = 0; i < sf.options.length; i++) {
+    if (sf.options[i].value === secName) {
+      found = true;
+      break;
+    }
+  }
+  if (!found && secName) {
+    const o = document.createElement('option');
+    o.value = secName;
+    o.textContent = `${secName} (0)`;
+    sf.appendChild(o);
+  }
+
+  sf.value = secName;
+  updateActiveSectorChips(secName);
+  render();
+  document.getElementById('toolbarSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function toggleMobileMenu() {
@@ -2965,6 +3070,12 @@ function navigateToPage(pageName, targetElementId) {
 window.addEventListener('DOMContentLoaded', () => {
   const path = window.location.pathname.toLowerCase();
   const hash = window.location.hash.toLowerCase();
+  const params = new URLSearchParams(window.location.search);
+  const secParam = params.get('sector');
+
+  if (secParam) {
+    setTimeout(() => filterBySector(secParam), 80);
+  }
   
   if (path.includes('screener') || hash.includes('screener')) {
     setTimeout(() => scrollToSection('toolbarSection'), 120);
@@ -3080,7 +3191,10 @@ document.addEventListener('keydown', (e) => {
 });
 
 document.getElementById('searchBox').oninput = render;
-document.getElementById('sectorFilter').onchange = render;
+document.getElementById('sectorFilter').onchange = () => {
+  updateActiveSectorChips(document.getElementById('sectorFilter').value);
+  render();
+};
 document.getElementById('strategyFilter').onchange = render;
 document.getElementById('tagFilter').onchange = render;
 document.getElementById('capInput').oninput = render;
