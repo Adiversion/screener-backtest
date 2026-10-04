@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Redirecting • ASTRA QUANT</title>
+  <script>
+    (function() {
+      var path = window.location.pathname.toLowerCase();
+      var query = window.location.search || '';
+      var hash = window.location.hash || '';
+      
+      if (path.includes('paper_trading')) {
+        window.location.replace('paper_trading.html' + query + hash);
+      } else if (path.includes('screener')) {
+        window.location.replace('screener.html' + query + hash);
+      } else if (path.includes('inspector')) {
+        window.location.replace('inspector.html' + query + hash);
+      } else if (path.includes('macro')) {
+        window.location.replace('macro.html' + query + hash);
+      } else if (path.includes('verifier')) {
+        window.location.replace('verifier.html' + query + hash);
+      } else {
+        window.location.replace('index.html' + query + hash);
+      }
+    })();
+  </script>
+</head>
+<body style="background:#0b0f19;color:#94a3b8;font-family:'JetBrains Mono',monospace,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+  <div style="text-align:center;">
+    <div style="font-size:2rem;margin-bottom:12px;color:#38bdf8;">⟁</div>
+    <div style="font-size:0.9rem;letter-spacing:0.05em;color:#e2e8f0;">ROUTING TO ASTRA QUANT MODULE...</div>
+  </div>
+</body>
+</html>

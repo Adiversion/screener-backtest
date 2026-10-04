@@ -25,6 +25,55 @@ from protocol.dashboard_html import get_dashboard_html, get_paper_trading_html  
 from protocol.data import load_history  # noqa: E402
 
 
+def make_redirect_html(target_file: str) -> str:
+    return f"""<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="refresh" content="0; url=../{target_file}">
+  <script>window.location.replace('../{target_file}' + window.location.search + window.location.hash);</script>
+</head>
+<body style="background:#0b0f19;"></body>
+</html>"""
+
+
+def make_404_html() -> str:
+    return """<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Redirecting • ASTRA QUANT</title>
+  <script>
+    (function() {
+      var path = window.location.pathname.toLowerCase();
+      var query = window.location.search || '';
+      var hash = window.location.hash || '';
+      
+      if (path.includes('paper_trading')) {
+        window.location.replace('paper_trading.html' + query + hash);
+      } else if (path.includes('screener')) {
+        window.location.replace('screener.html' + query + hash);
+      } else if (path.includes('inspector')) {
+        window.location.replace('inspector.html' + query + hash);
+      } else if (path.includes('macro')) {
+        window.location.replace('macro.html' + query + hash);
+      } else if (path.includes('verifier')) {
+        window.location.replace('verifier.html' + query + hash);
+      } else {
+        window.location.replace('index.html' + query + hash);
+      }
+    })();
+  </script>
+</head>
+<body style="background:#0b0f19;color:#94a3b8;font-family:'JetBrains Mono',monospace,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+  <div style="text-align:center;">
+    <div style="font-size:2rem;margin-bottom:12px;color:#38bdf8;">⟁</div>
+    <div style="font-size:0.9rem;letter-spacing:0.05em;color:#e2e8f0;">ROUTING TO ASTRA QUANT MODULE...</div>
+  </div>
+</body>
+</html>"""
+
+
 def build_app(data_path: str, asof_date: str = "2026-10-01", outdir: str = "reports") -> Path:
     """Build and write interactive screener and paper trading station to reports/ and docs/."""
     df = load_history(data_path)
@@ -35,11 +84,40 @@ def build_app(data_path: str, asof_date: str = "2026-10-01", outdir: str = "repo
     out = Path(outdir)
     out.mkdir(parents=True, exist_ok=True)
     target_files = [
+        # Main entry points
         (out / "index.html", screener_html),
         (out / "interactive_screener.html", screener_html),
         (ROOT / "docs" / "index.html", screener_html),
+
+        # Dedicated Section Pages (replaces # anchors with real pages)
+        (out / "screener.html", screener_html),
+        (ROOT / "docs" / "screener.html", screener_html),
+        (out / "macro.html", screener_html),
+        (ROOT / "docs" / "macro.html", screener_html),
+        (out / "inspector.html", screener_html),
+        (ROOT / "docs" / "inspector.html", screener_html),
+        (out / "verifier.html", screener_html),
+        (ROOT / "docs" / "verifier.html", screener_html),
+
+        # Paper Trading Station
         (out / "paper_trading.html", paper_html),
         (ROOT / "docs" / "paper_trading.html", paper_html),
+
+        # Directory-style clean URL handlers (/screener/, /macro/, etc.)
+        (out / "screener" / "index.html", make_redirect_html("screener.html")),
+        (ROOT / "docs" / "screener" / "index.html", make_redirect_html("screener.html")),
+        (out / "macro" / "index.html", make_redirect_html("macro.html")),
+        (ROOT / "docs" / "macro" / "index.html", make_redirect_html("macro.html")),
+        (out / "inspector" / "index.html", make_redirect_html("inspector.html")),
+        (ROOT / "docs" / "inspector" / "index.html", make_redirect_html("inspector.html")),
+        (out / "verifier" / "index.html", make_redirect_html("verifier.html")),
+        (ROOT / "docs" / "verifier" / "index.html", make_redirect_html("verifier.html")),
+        (out / "paper_trading" / "index.html", make_redirect_html("paper_trading.html")),
+        (ROOT / "docs" / "paper_trading" / "index.html", make_redirect_html("paper_trading.html")),
+
+        # Universal 404 SPA fallback router
+        (out / "404.html", make_404_html()),
+        (ROOT / "docs" / "404.html", make_404_html()),
     ]
     for p, content in target_files:
         p.parent.mkdir(parents=True, exist_ok=True)

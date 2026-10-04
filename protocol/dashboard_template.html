@@ -1478,10 +1478,10 @@
 
     <div class="nav-right">
       <div class="nav-links-desktop">
-        <a href="#macroSection" class="nav-link-btn" onclick="scrollToSection('directiveTile')">🛡️ Macro HUD</a>
-        <a href="#inspectorSection" class="nav-link-btn" onclick="focusSearch()">🔍 Inspector</a>
-        <a href="#screenerSection" class="nav-link-btn" onclick="scrollToSection('toolbarSection')">🎯 Screener</a>
-        <a href="#forwardVerifierSection" class="nav-link-btn highlight" onclick="scrollToSection('forwardVerifierSection')" style="border-color:rgba(56,189,248,0.4);color:#38bdf8;background:rgba(56,189,248,0.08);">⚡ 7-14D Verifier</a>
+        <a href="macro.html" class="nav-link-btn" onclick="event.preventDefault(); navigateToPage('macro', 'directiveTile');">🛡️ Macro HUD</a>
+        <a href="inspector.html" class="nav-link-btn" onclick="event.preventDefault(); navigateToPage('inspector');">🔍 Inspector</a>
+        <a href="screener.html" class="nav-link-btn" onclick="event.preventDefault(); navigateToPage('screener', 'toolbarSection');">🎯 Screener</a>
+        <a href="verifier.html" class="nav-link-btn highlight" onclick="event.preventDefault(); navigateToPage('verifier', 'forwardVerifierSection');" style="border-color:rgba(56,189,248,0.4);color:#38bdf8;background:rgba(56,189,248,0.08);">⚡ 7-14D Verifier</a>
         <button class="nav-link-btn highlight" onclick="openSniperModal()" style="border-color:rgba(245,158,11,0.4);color:#f59e0b;background:rgba(245,158,11,0.08);">🎯 65%+ Sniper</button>
         <button class="nav-link-btn highlight" onclick="openUsicModal()">🏆 USIC Playbook</button>
         <a href="paper_trading.html" class="nav-link-btn highlight" style="border-color:rgba(56,189,248,0.4);color:#38bdf8;background:rgba(56,189,248,0.08);">💼 Paper Trading</a>
@@ -1510,10 +1510,10 @@
         <div class="drawer-close" onclick="closeMobileMenu()">&times;</div>
       </div>
       <div class="drawer-links">
-        <a href="javascript:void(0)" class="drawer-link" onclick="closeMobileMenu();scrollToSection('directiveTile');">🛡️ Macro Regime & Breadth</a>
-        <a href="javascript:void(0)" class="drawer-link" onclick="closeMobileMenu();focusSearch();">🔍 Universal Stock Inspector</a>
-        <a href="javascript:void(0)" class="drawer-link" onclick="closeMobileMenu();scrollToSection('toolbarSection');">🎯 Qualified Breakouts Screener</a>
-        <a href="javascript:void(0)" class="drawer-link" style="color:#38bdf8;font-weight:700;" onclick="closeMobileMenu();scrollToSection('forwardVerifierSection');">⚡ 7-14 Day Forward Trade Verifier</a>
+        <a href="macro.html" class="drawer-link" onclick="closeMobileMenu(); navigateToPage('macro', 'directiveTile');">🛡️ Macro Regime & Breadth</a>
+        <a href="inspector.html" class="drawer-link" onclick="closeMobileMenu(); navigateToPage('inspector');">🔍 Universal Stock Inspector</a>
+        <a href="screener.html" class="drawer-link" onclick="closeMobileMenu(); navigateToPage('screener', 'toolbarSection');">🎯 Qualified Breakouts Screener</a>
+        <a href="verifier.html" class="drawer-link" style="color:#38bdf8;font-weight:700;" onclick="closeMobileMenu(); navigateToPage('verifier', 'forwardVerifierSection');">⚡ 7-14 Day Forward Trade Verifier</a>
         <a href="paper_trading.html" class="drawer-link" style="color:#38bdf8;font-weight:700;">💼 Live Paper Trading Station</a>
         <a href="javascript:void(0)" class="drawer-link" style="color:#f59e0b;" onclick="closeMobileMenu();openSniperModal();">🎯 65%+ Win Rate Sniper Playbook</a>
         <a href="javascript:void(0)" class="drawer-link" style="color:#fbbf24;" onclick="closeMobileMenu();openUsicModal();">🏆 USIC Champions Playbook (+1,499%)</a>
@@ -2732,7 +2732,7 @@ function render() {
       </td>
       <td style="text-align:center;">
         <div style="display:flex;gap:6px;justify-content:center;">
-          <a href="paper_trading.html?symbol=${c.symbol}" target="_blank" class="btn-inspect" style="background:rgba(56,189,248,0.12);color:#38bdf8;border-color:rgba(56,189,248,0.3);text-decoration:none;display:inline-flex;align-items:center;" title="Live Paper Trade">💼 Trade</a>
+          <a href="paper_trading.html?symbol=${c.symbol}" class="btn-inspect" style="background:rgba(56,189,248,0.12);color:#38bdf8;border-color:rgba(56,189,248,0.3);text-decoration:none;display:inline-flex;align-items:center;" title="Live Paper Trade">💼 Trade</a>
           <button class="btn-inspect" onclick="openModal('${c.symbol}')">Inspect →</button>
         </div>
       </td>
@@ -2857,7 +2857,7 @@ function render() {
           <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);font-size:0.75rem;">
             <div style="color:var(--text-muted);font-family:'JetBrains Mono',monospace;">Risk: <b style="color:var(--text-secondary);">${riskStr}</b></div>
             <div style="display:flex;gap:6px;">
-              <a href="paper_trading.html?symbol=${c.symbol}" target="_blank" class="btn-inspect" style="background:rgba(56,189,248,0.12);color:#38bdf8;border-color:rgba(56,189,248,0.3);text-decoration:none;display:inline-flex;align-items:center;min-height:36px;padding:6px 10px;" title="Live Paper Trade">💼 Trade</a>
+              <a href="paper_trading.html?symbol=${c.symbol}" class="btn-inspect" style="background:rgba(56,189,248,0.12);color:#38bdf8;border-color:rgba(56,189,248,0.3);text-decoration:none;display:inline-flex;align-items:center;min-height:36px;padding:6px 10px;" title="Live Paper Trade">💼 Trade</a>
               <button class="btn-inspect" onclick="openModal('${c.symbol}')" style="min-height:36px;padding:6px 14px;">Inspect Rationale →</button>
             </div>
           </div>
@@ -2948,6 +2948,34 @@ function scrollToSection(id) {
   const el = document.getElementById(id);
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+
+function navigateToPage(pageName, targetElementId) {
+  try {
+    const cleanUrl = pageName + '.html';
+    window.history.pushState({ page: pageName }, '', cleanUrl);
+  } catch (e) {}
+
+  if (pageName === 'inspector') {
+    focusSearch();
+  } else if (targetElementId) {
+    scrollToSection(targetElementId);
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const path = window.location.pathname.toLowerCase();
+  const hash = window.location.hash.toLowerCase();
+  
+  if (path.includes('screener') || hash.includes('screener')) {
+    setTimeout(() => scrollToSection('toolbarSection'), 120);
+  } else if (path.includes('inspector') || hash.includes('inspector')) {
+    setTimeout(focusSearch, 120);
+  } else if (path.includes('macro') || hash.includes('macro')) {
+    setTimeout(() => scrollToSection('directiveTile'), 120);
+  } else if (path.includes('verifier') || hash.includes('verifier')) {
+    setTimeout(() => scrollToSection('forwardVerifierSection'), 120);
+  }
+});
 
 function openUsicModal() {
   document.getElementById('usicModal').classList.add('open');
