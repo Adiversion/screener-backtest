@@ -1,0 +1,19 @@
+{
+  "name": "screener-backtest",
+  "version": "2.0.0",
+  "description": "NSE Quantitative Screener & Forward Trade Verification Engine",
+  "scripts": {
+    "check": "python scripts/pre_push_check.py",
+    "test": "python scripts/pre_push_check.py",
+    "build": "python scripts/build_interactive_dashboard.py --data data/nse_all_history.parquet --asof 2026-10-01"
+  },
+  "keywords": [
+    "screener",
+    "backtest",
+    "nse",
+    "tradingview",
+    "quantitative"
+  ],
+  "author": "",
+  "license": "ISC"
+}

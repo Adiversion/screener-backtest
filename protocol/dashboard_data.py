@@ -73,19 +73,19 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp = "2026
     # NOTE: Sniper Mode (65%+ WR) is NOT a screener here — it is a composite 7-gate
     # badge evaluated per-candidate via evaluate_sniper_gates (is_sniper field).
     groups = [
-        ("Protocol Fortified", screen_protocol_v2(feat, top_n=15, min_turnover_cr=1.0)),
-        ("Relative Strength Leader", screen_relative_strength(feat, top_n=15, min_turnover_cr=1.0)),
-        ("Minervini Template", screen_minervini(feat, top_n=15, min_turnover_cr=1.0)),
-        ("Stan Weinstein Stage 2", screen_stan_weinstein(feat, top_n=15, min_turnover_cr=1.0)),
-        ("Qullamaggie Breakout", screen_qullamaggie(feat, top_n=15, min_turnover_cr=1.0)),
-        ("CANSLIM Pivot", screen_canslim(feat, top_n=15, min_turnover_cr=1.0)),
-        ("PKScreener VCP", screen_pkscreener_vcp(feat, top_n=15, min_turnover_cr=1.0)),
-        ("Turtle Trading", screen_turtle_trading(feat, top_n=15, min_turnover_cr=1.0)),
-        ("Darvas Box", screen_darvas_box(feat, top_n=15, min_turnover_cr=1.0)),
-        ("Wyckoff Closing Range", screen_wyckoff_closing_range(feat, top_n=15, min_turnover_cr=1.0)),
-        ("Sector Momentum Leader", screen_sector_momentum_leader(feat, top_n=15, min_turnover_cr=1.0, ind_df=ind_df)),
-        ("Institutional Delivery Absorption", screen_institutional_delivery(feat, deliv_map=deliv_map, top_n=15, min_turnover_cr=1.0)),
-        ("Connors RSI Pullback", screen_connors_rsi_pullback(feat, top_n=15, min_turnover_cr=1.0)),
+        ("Protocol Fortified", screen_protocol_v2(feat, top_n=60, min_turnover_cr=0.5)),
+        ("Relative Strength Leader", screen_relative_strength(feat, top_n=60, min_turnover_cr=0.5)),
+        ("Minervini Template", screen_minervini(feat, top_n=60, min_turnover_cr=0.5)),
+        ("Stan Weinstein Stage 2", screen_stan_weinstein(feat, top_n=60, min_turnover_cr=0.5)),
+        ("Qullamaggie Breakout", screen_qullamaggie(feat, top_n=60, min_turnover_cr=0.5)),
+        ("CANSLIM Pivot", screen_canslim(feat, top_n=60, min_turnover_cr=0.5)),
+        ("PKScreener VCP", screen_pkscreener_vcp(feat, top_n=60, min_turnover_cr=0.5)),
+        ("Turtle Trading", screen_turtle_trading(feat, top_n=60, min_turnover_cr=0.5)),
+        ("Darvas Box", screen_darvas_box(feat, top_n=60, min_turnover_cr=0.5)),
+        ("Wyckoff Closing Range", screen_wyckoff_closing_range(feat, top_n=60, min_turnover_cr=0.5)),
+        ("Sector Momentum Leader", screen_sector_momentum_leader(feat, top_n=60, min_turnover_cr=0.5, ind_df=ind_df)),
+        ("Institutional Delivery Absorption", screen_institutional_delivery(feat, deliv_map=deliv_map, top_n=60, min_turnover_cr=0.5)),
+        ("Connors RSI Pullback", screen_connors_rsi_pullback(feat, top_n=60, min_turnover_cr=0.5)),
     ]
 
     feat_by_sym = {row["Symbol"]: row for _, row in feat.iterrows()}
@@ -110,7 +110,7 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp = "2026
     sub_df.sort_values(by=["Symbol", "Date"], inplace=True)
     
     for sym, cand in candidates.items():
-        sym_history = sub_df[sub_df["Symbol"] == sym].tail(220).copy()
+        sym_history = sub_df[sub_df["Symbol"] == sym].copy()
         if sym_history.empty:
             cand["candles"] = []
             continue
@@ -121,7 +121,8 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp = "2026
         sym_history["sma200"] = sym_history["Close"].rolling(200).mean()
         sym_history["vol_sma"] = sym_history["Volume"].rolling(20).mean()
 
-        display_bars = sym_history.tail(120)
+        # Provide up to 1500 daily bars (~6 years of daily OHLCV) for full multi-year cycle analysis
+        display_bars = sym_history.tail(1500)
         cand_candles = []
         for r in display_bars.itertuples():
             cand_candles.append({

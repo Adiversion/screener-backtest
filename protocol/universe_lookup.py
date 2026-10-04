@@ -299,30 +299,50 @@ def build_universe_lookup(
                 sec_name = str(srow.get("Security Name", ssym))
                 band = str(srow.get("Band", "20"))
 
-                reason_desc = drop_reasons.get(series, f"Non-continuous equity series '{series}' (excluded from liquid benchmark)")
-                frameworks = [
-                    {"name": "1. CANSLIM Pivot", "passed": False, "reason": f"Disqualified: {series} series excluded from liquid equity panel"},
-                    {"name": "2. Minervini Template", "passed": False, "reason": f"Disqualified: Continuous trading history unavailable in panel"},
-                    {"name": "3. Qullamaggie Breakout", "passed": False, "reason": "Disqualified: Non-EQ series lacks continuous institutional depth"},
-                    {"name": "4. PKScreener VCP", "passed": False, "reason": "Disqualified: SME / Trade-for-Trade series excluded"},
-                    {"name": "5. Stan Weinstein Stage 2", "passed": False, "reason": "Disqualified: Panel eligibility requires continuous EQ series"},
-                    {"name": "6. Wyckoff Absorption", "passed": False, "reason": "Disqualified: Block lot trading distorts volume spread analysis"},
-                    {"name": "7. Evidence Quality Rank", "passed": False, "reason": "Disqualified: Liquidity gate turnover requirement failed"}
-                ]
-                tactical_plan = (
-                    f"DISQUALIFIED FROM ENGINE UNIVERSE (Series: {series}). {reason_desc}. "
-                    f"Official Security Name: {sec_name}. Daily Circuit Band: {band}%. "
-                    f"Automated quant momentum execution is restricted to the liquid NSE Cash Equity (EQ) universe. "
-                    f"If monitoring for turnaround, wait for potential migration to the mainboard EQ series."
-                )
+                is_disq = series != "EQ"
+                if is_disq:
+                    reason_desc = drop_reasons.get(series, f"Non-continuous equity series '{series}' (excluded from liquid benchmark)")
+                    status_text = f"Excluded from Liquid Continuous Panel ({series})"
+                    frameworks = [
+                        {"name": "1. CANSLIM Pivot", "passed": False, "reason": f"Disqualified: {series} series excluded from liquid equity panel"},
+                        {"name": "2. Minervini Template", "passed": False, "reason": f"Disqualified: Continuous trading history unavailable in panel"},
+                        {"name": "3. Qullamaggie Breakout", "passed": False, "reason": "Disqualified: Non-EQ series lacks continuous institutional depth"},
+                        {"name": "4. PKScreener VCP", "passed": False, "reason": "Disqualified: SME / Trade-for-Trade series excluded"},
+                        {"name": "5. Stan Weinstein Stage 2", "passed": False, "reason": "Disqualified: Panel eligibility requires continuous EQ series"},
+                        {"name": "6. Wyckoff Absorption", "passed": False, "reason": "Disqualified: Block lot trading distorts volume spread analysis"},
+                        {"name": "7. Evidence Quality Rank", "passed": False, "reason": "Disqualified: Liquidity gate turnover requirement failed"}
+                    ]
+                    tactical_plan = (
+                        f"DISQUALIFIED FROM ENGINE UNIVERSE (Series: {series}). {reason_desc}. "
+                        f"Official Security Name: {sec_name}. Daily Circuit Band: {band}%. "
+                        f"Automated quant momentum execution is restricted to the liquid NSE Cash Equity (EQ) universe. "
+                        f"If monitoring for turnaround, wait for potential migration to the mainboard EQ series."
+                    )
+                else:
+                    reason_desc = "NSE Mainboard Continuous Equity (Series: EQ)"
+                    status_text = "Mainboard Cash Equity (EQ) • No Active Breakout Setup"
+                    frameworks = [
+                        {"name": "1. CANSLIM Pivot", "passed": False, "reason": "No breakout trigger above 20d resistance on session"},
+                        {"name": "2. Minervini Template", "passed": False, "reason": "Did not meet Minervini Stage 2 trend alignment"},
+                        {"name": "3. Qullamaggie Breakout", "passed": False, "reason": "No high tight flag or episodic pivot detected"},
+                        {"name": "4. PKScreener VCP", "passed": False, "reason": "Contraction volatility hurdle not met"},
+                        {"name": "5. Stan Weinstein Stage 2", "passed": False, "reason": "Awaiting 30-week base breakout with volume"},
+                        {"name": "6. Wyckoff Absorption", "passed": False, "reason": "No institutional absorption signature (CR < 65% or RVOL < 1.4x)"},
+                        {"name": "7. Evidence Quality Rank", "passed": False, "reason": "Below quantitative momentum hurdle"}
+                    ]
+                    tactical_plan = (
+                        f"MAINBOARD CASH EQUITY (Series: EQ). Official Security Name: {sec_name}. Daily Circuit Band: {band}%. "
+                        f"Security trades on the active continuous auction book. It did not trigger any of the 12 quantitative breakout strategies on this specific session. "
+                        f"Monitor for base contraction, volume ignition, or relative strength buildup."
+                    )
 
                 lookup[ssym] = {
                     "symbol": ssym,
                     "company": sec_name,
-                    "sector": "NSE Emerge SME" if series in ("SM", "IV") else f"Series {series} / Other",
+                    "sector": "NSE Emerge SME" if series in ("SM", "IV") else ("NSE Mainboard Equity" if series == "EQ" else f"Series {series} / Other"),
                     "series": series,
                     "circuit_band": band,
-                    "is_disqualified_series": True,
+                    "is_disqualified_series": is_disq,
                     "disqualification_reason": reason_desc,
                     "close": 0.0,
                     "open": 0.0,
