@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
   <title>Astra Quant • Live Paper Trading & Real-time Ticker Station</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -37,8 +37,11 @@
       background: radial-gradient(circle at top right, #0d1527 0%, #030712 100%);
       color: var(--text-main);
       min-height: 100vh;
+      min-height: 100dvh;
       overflow-x: hidden;
       line-height: 1.5;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .mono { font-family: 'JetBrains Mono', monospace; }
@@ -454,9 +457,90 @@
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.85rem;
     }
-    .form-input:focus {
-      outline: none;
-      border-color: var(--cyan);
+    /* Responsive Mobile Architecture & Bottom Navigation Dock */
+    .mobile-bottom-dock {
+      display: none;
+    }
+    @media (max-width: 767px) {
+      body {
+        padding-bottom: calc(76px + env(safe-area-inset-bottom, 16px)) !important;
+      }
+      .app-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 16px;
+      }
+      .header-actions {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+      }
+      .container {
+        padding: 14px 12px 80px 12px;
+      }
+      .hud-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .btn {
+        min-height: 44px;
+        padding: 8px 12px;
+        touch-action: manipulation;
+      }
+      .modal-card {
+        width: 95% !important;
+        max-height: calc(90vh - env(safe-area-inset-bottom, 16px)) !important;
+        padding: 18px 14px !important;
+      }
+      .mobile-bottom-dock {
+        display: flex !important;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: calc(58px + env(safe-area-inset-bottom, 0px));
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        background: rgba(11, 17, 32, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-top: 1px solid var(--border);
+        justify-content: space-around;
+        align-items: center;
+        z-index: 150;
+        box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.6);
+      }
+      .dock-btn {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 0.68rem;
+        font-weight: 600;
+        padding: 6px 0;
+        min-height: 48px;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        transition: color 0.15s ease, transform 0.15s ease;
+        background: none;
+        border: none;
+        cursor: pointer;
+      }
+      .dock-btn:active {
+        transform: scale(0.94);
+        color: var(--cyan);
+      }
+      .dock-btn.active {
+        color: var(--cyan);
+      }
+      .dock-icon {
+        font-size: 1.15rem;
+        line-height: 1;
+      }
     }
   </style>
 </head>
@@ -1892,5 +1976,27 @@
       console.warn('URL param parse error:', e);
     }
   </script>
+<nav class="mobile-bottom-dock" aria-label="Paper Trading Mobile Bottom Navigation">
+  <a href="index.html" class="dock-btn">
+    <span class="dock-icon">🎯</span>
+    <span class="dock-label">Screener</span>
+  </a>
+  <button class="dock-btn active" onclick="document.getElementById('positionsCard').scrollIntoView({behavior:'smooth'});">
+    <span class="dock-icon">💼</span>
+    <span class="dock-label">Positions</span>
+  </button>
+  <button class="dock-btn" onclick="openOrderModal();">
+    <span class="dock-icon">➕</span>
+    <span class="dock-label">New Order</span>
+  </button>
+  <button class="dock-btn" onclick="document.getElementById('closedCard').scrollIntoView({behavior:'smooth'});">
+    <span class="dock-icon">📜</span>
+    <span class="dock-label">Trade Log</span>
+  </button>
+  <button class="dock-btn" onclick="syncPortfolioCloud();">
+    <span class="dock-icon">🔄</span>
+    <span class="dock-label">Cloud Sync</span>
+  </button>
+</nav>
 </body>
 </html>

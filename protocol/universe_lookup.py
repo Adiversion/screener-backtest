@@ -6,6 +6,7 @@ and explicit actionable gameplans explaining why it did or did not qualify.
 """
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 import numpy as np
 import pandas as pd
@@ -254,5 +255,93 @@ def build_universe_lookup(
             "trigger_px": trigger_px,
             "inval_stop": inval_stop,
         }
+
+    # Enrich with all listed securities from official NSE security master (SME, Trade-to-Trade, etc.)
+    sec_path = Path(__file__).resolve().parent.parent / "data" / "sec_list_latest.csv"
+    if sec_path.exists():
+        try:
+            sec_df = pd.read_csv(sec_path)
+            drop_reasons = {
+                "SM": "NSE Emerge SME Platform (Mandatory fixed lot size ~₹1-6L per order; illiquid continuous auction book)",
+                "IV": "SME Trading Platform (Institutional / fixed lot restrictions)",
+                "BE": "Trade-for-Trade / Surveillance Segment (100% gross margin, no intraday netting)",
+                "BZ": "Surveillance / Non-compliant Series",
+                "ETF": "Exchange Traded Fund (Passive basket index; excluded by mandate)",
+                "ETFS": "Exchange Traded Fund",
+                "SETFS": "Exchange Traded Fund",
+                "MF": "Mutual Fund Scheme",
+                "IL": "Income / Loan Debt Security",
+                "BM": "Bond / Debt Market",
+                "BL": "Block / Bond Market",
+                "PC": "Partly Converted Debenture",
+                "PP": "Partly Paid / Rights Entitlement",
+            }
+            for _, srow in sec_df.iterrows():
+                ssym = str(srow.get("Symbol", "")).strip().upper()
+                if not ssym or ssym in lookup:
+                    continue
+                series = str(srow.get("Series", "")).strip().upper()
+                sec_name = str(srow.get("Security Name", ssym))
+                band = str(srow.get("Band", "20"))
+
+                reason_desc = drop_reasons.get(series, f"Non-continuous equity series '{series}' (excluded from liquid benchmark)")
+                frameworks = [
+                    {"name": "1. CANSLIM Pivot", "passed": False, "reason": f"Disqualified: {series} series excluded from liquid equity panel"},
+                    {"name": "2. Minervini Template", "passed": False, "reason": f"Disqualified: Continuous trading history unavailable in panel"},
+                    {"name": "3. Qullamaggie Breakout", "passed": False, "reason": "Disqualified: Non-EQ series lacks continuous institutional depth"},
+                    {"name": "4. PKScreener VCP", "passed": False, "reason": "Disqualified: SME / Trade-for-Trade series excluded"},
+                    {"name": "5. Stan Weinstein Stage 2", "passed": False, "reason": "Disqualified: Panel eligibility requires continuous EQ series"},
+                    {"name": "6. Wyckoff Absorption", "passed": False, "reason": "Disqualified: Block lot trading distorts volume spread analysis"},
+                    {"name": "7. Evidence Quality Rank", "passed": False, "reason": "Disqualified: Liquidity gate turnover requirement failed"}
+                ]
+                tactical_plan = (
+                    f"DISQUALIFIED FROM ENGINE UNIVERSE (Series: {series}). {reason_desc}. "
+                    f"Official Security Name: {sec_name}. Daily Circuit Band: {band}%. "
+                    f"Automated quant momentum execution is restricted to the liquid NSE Cash Equity (EQ) universe. "
+                    f"If monitoring for turnaround, wait for potential migration to the mainboard EQ series."
+                )
+
+                lookup[ssym] = {
+                    "symbol": ssym,
+                    "company": sec_name,
+                    "sector": "NSE Emerge SME" if series in ("SM", "IV") else f"Series {series} / Other",
+                    "series": series,
+                    "circuit_band": band,
+                    "is_disqualified_series": True,
+                    "disqualification_reason": reason_desc,
+                    "close": 0.0,
+                    "open": 0.0,
+                    "high": 0.0,
+                    "low": 0.0,
+                    "r10": 0.0,
+                    "r20": 0.0,
+                    "resistance": 0.0,
+                    "support": 0.0,
+                    "h52": 0.0,
+                    "l52": 0.0,
+                    "ema10": 0.0,
+                    "ema20": 0.0,
+                    "sma50": 0.0,
+                    "sma150": 0.0,
+                    "sma200": 0.0,
+                    "stage2": False,
+                    "rvol": 0.0,
+                    "rvol50": 0.0,
+                    "rs": 0.0,
+                    "deliv": 0.0,
+                    "adr": 0.0,
+                    "closing_range": 0.0,
+                    "retention": 0.0,
+                    "pa_state": f"Disqualified Series ({series})",
+                    "wyckoff_narrative": f"Security is listed under series '{series}'. {reason_desc}.",
+                    "frameworks": frameworks,
+                    "tactical_gameplan": tactical_plan,
+                    "status": "DISQUALIFIED_SERIES",
+                    "is_cand": False,
+                    "trigger_px": 0.0,
+                    "inval_stop": 0.0,
+                }
+        except Exception:
+            pass
 
     return lookup

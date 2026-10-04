@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover"/>
 <title>NSE Quantitative Screener & Allocation Engine</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -48,8 +48,11 @@
     padding: 16px 20px;
     line-height: 1.5;
     min-height: 100vh;
+    min-height: 100dvh;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .mono {
@@ -199,6 +202,93 @@
   @media (max-width: 960px) {
     .nav-links-desktop { display: none; }
     .mobile-menu-btn { display: flex; }
+  }
+
+  /* Fixed Mobile Bottom Navigation Dock (WealthLab / TradingView Mobile App Standard) */
+  .mobile-bottom-dock {
+    display: none;
+  }
+  @media (max-width: 767px) {
+    body {
+      padding: 12px 14px calc(76px + env(safe-area-inset-bottom, 16px)) 14px !important;
+    }
+    header.app-nav {
+      margin: -12px -14px 16px -14px !important;
+      padding: 10px 14px !important;
+    }
+    .mobile-bottom-dock {
+      display: flex !important;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: calc(58px + env(safe-area-inset-bottom, 0px));
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      background: rgba(10, 15, 26, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      justify-content: space-around;
+      align-items: center;
+      z-index: 150;
+      box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.6);
+    }
+    .dock-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 6px 0;
+      min-height: 48px;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      transition: color 0.15s ease, transform 0.15s ease;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+    .dock-btn:active {
+      transform: scale(0.94);
+      color: var(--blue);
+    }
+    .dock-btn.active {
+      color: #38bdf8;
+    }
+    .dock-icon {
+      font-size: 1.15rem;
+      line-height: 1;
+    }
+    /* Touch Target Enforcement on Mobile */
+    .btn-chip, .view-btn, .custom-select, .search-input, .nav-action-btn, .modal-close {
+      min-height: 44px !important;
+    }
+    .bento-hud {
+      grid-template-columns: 1fr !important;
+      gap: 10px !important;
+    }
+    .toolbar {
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 10px !important;
+    }
+    .search-wrapper {
+      min-width: 100% !important;
+      width: 100% !important;
+    }
+    .custom-select {
+      width: 100% !important;
+    }
+    .modal-content {
+      width: 96% !important;
+      max-height: calc(90vh - env(safe-area-inset-bottom, 16px)) !important;
+      padding: 18px 14px !important;
+    }
   }
 
   /* Mobile Drawer Menu */
@@ -1310,6 +1400,20 @@
     <button class="btn-chip" onclick="openNseGuideModal()"><span>⏱️</span> NSE 6-Feed Timing & Surveillance Guide</button>
   </div>
 
+  <!-- Interactive Sector RS Momentum Matrix (WealthLab Standard) -->
+  <div id="sectorSection" style="margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:1.1rem;">📊</span>
+        <span style="font-size:0.85rem;font-weight:700;color:#f8fafc;letter-spacing:0.02em;">SECTOR RS MOMENTUM MATRIX (Institutional Flow)</span>
+      </div>
+      <span style="font-size:0.75rem;color:var(--text-muted);">Click any sector chip to filter candidates</span>
+    </div>
+    <div id="sectorChipsTrack" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;">
+      <!-- Populated dynamically from D.industry_rankings -->
+    </div>
+  </div>
+
   <!-- Interactive Command Toolbar -->
   <div class="toolbar" id="toolbarSection">
     <div class="search-wrapper">
@@ -2092,7 +2196,8 @@ function render() {
     if (D.universe_lookup[directKey]) {
       matchedLookup = D.universe_lookup[directKey];
     } else {
-      const foundKey = Object.keys(D.universe_lookup).find(k => k.startsWith(directKey));
+      const keys = Object.keys(D.universe_lookup);
+      const foundKey = keys.find(k => k.startsWith(directKey) || (D.universe_lookup[k].company && D.universe_lookup[k].company.toUpperCase().includes(directKey)));
       if (foundKey) matchedLookup = D.universe_lookup[foundKey];
     }
   }
@@ -2104,7 +2209,12 @@ function render() {
     let statusBorder = 'rgba(245,158,11,0.35)';
     let statusLabel = 'WATCHLIST / PIVOT UNCONFIRMED';
 
-    if (isCand) {
+    if (matchedLookup.is_disqualified_series) {
+      statusBg = 'rgba(239,68,68,0.18)';
+      statusColor = '#f87171';
+      statusBorder = 'rgba(239,68,68,0.4)';
+      statusLabel = `DISQUALIFIED FROM UNIVERSE (${matchedLookup.series || 'NON-EQ'} SERIES)`;
+    } else if (isCand) {
       statusBg = 'rgba(16,185,129,0.15)';
       statusColor = '#34d399';
       statusBorder = 'rgba(16,185,129,0.35)';
@@ -2119,14 +2229,44 @@ function render() {
     const fwHtml = (matchedLookup.frameworks || []).map(f => {
       const passCls = f.passed ? 'background:rgba(16,185,129,0.12);color:#34d399;border:1px solid rgba(16,185,129,0.3);' : 'background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.25);';
       const icon = f.passed ? '✓' : '✗';
+      const reasonText = f.verdict || f.reason || 'Criteria not met';
       return `<div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:0.78rem;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
           <strong style="color:#f1f5f9;">${f.name}</strong>
           <span style="padding:1px 6px;border-radius:4px;font-weight:700;font-size:0.68rem;${passCls}">${icon} ${f.passed ? 'QUALIFIED' : 'RULE FAILED'}</span>
         </div>
-        <div style="color:${f.passed ? '#94a3b8' : '#cbd5e1'};line-height:1.35;font-size:0.74rem;">${f.verdict}</div>
+        <div style="color:${f.passed ? '#94a3b8' : '#cbd5e1'};line-height:1.35;font-size:0.74rem;">${reasonText}</div>
       </div>`;
     }).join('');
+
+    const metaMetrics = matchedLookup.is_disqualified_series ? `
+      <span>Series: <strong style="color:#fbbf24;">${matchedLookup.series}</strong></span>
+      <span>Circuit Band: <strong style="color:#38bdf8;">${matchedLookup.circuit_band}%</strong></span>
+      <span>Status: <strong style="color:#f87171;">Excluded from Liquid Continuous Panel</strong></span>
+      <span>Reason: <span style="color:#cbd5e1;">${matchedLookup.disqualification_reason}</span></span>
+    ` : `
+      <span>Close: <strong style="color:#f8fafc;">₹${matchedLookup.close}</strong></span>
+      <span>Day Range: ₹${matchedLookup.low} - ₹${matchedLookup.high}</span>
+      <span>Key Resistance: <strong style="color:#38bdf8;">₹${matchedLookup.resistance || matchedLookup.r20}</strong></span>
+      <span>Key Support: <strong style="color:#f87171;">₹${matchedLookup.support || matchedLookup.low}</strong></span>
+      <span>52W High: <strong>₹${matchedLookup.h52}</strong></span>
+      <span>RS: <strong style="color:#c084fc;">${matchedLookup.rs}/99</strong></span>
+      <span>RVOL: <strong style="color:${matchedLookup.rvol >= 1.2 ? '#34d399' : '#f87171'};">${matchedLookup.rvol}x</strong></span>
+      <span>Deliv: <strong style="color:${matchedLookup.deliv >= 40 ? '#34d399' : '#94a3b8'};">${matchedLookup.deliv}%</strong></span>
+      <span>Closing Range: <strong style="color:${matchedLookup.closing_range >= 60 ? '#34d399' : '#f87171'};">${matchedLookup.closing_range}%</strong></span>
+    `;
+
+    const subLevels = matchedLookup.is_disqualified_series ? `
+      <div style="margin-top:8px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:12px;font-size:0.75rem;font-family:'JetBrains Mono',monospace;color:#f59e0b;">
+        <span>⚠️ Continuous auction execution disabled for SME / Trade-for-Trade instruments.</span>
+      </div>
+    ` : `
+      <div style="margin-top:8px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:12px;font-size:0.75rem;font-family:'JetBrains Mono',monospace;">
+        <span>10 EMA: <strong>₹${matchedLookup.ema10}</strong></span>
+        <span>20 EMA: <strong>₹${matchedLookup.ema20}</strong></span>
+        <span>50 SMA: <strong>₹${matchedLookup.sma50}</strong></span>
+      </div>
+    `;
 
     inspectorBox.style.display = 'block';
     inspectorBox.innerHTML = `
@@ -2134,21 +2274,14 @@ function render() {
         <!-- Top Row: Identification & Status -->
         <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
           <div>
-            <div style="display:flex;align-items:center;gap:10px;">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
               <span style="font-size:1.4rem;font-weight:800;color:#f8fafc;font-family:'JetBrains Mono',monospace;">${matchedLookup.symbol}</span>
               <span style="font-size:0.92rem;color:#cbd5e1;font-weight:500;">${matchedLookup.company}</span>
               <span style="font-size:0.75rem;padding:3px 8px;border-radius:6px;background:rgba(56,189,248,0.12);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);">${matchedLookup.sector}</span>
+              ${matchedLookup.series ? `<span style="font-size:0.75rem;padding:3px 8px;border-radius:6px;background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.35);">Series: ${matchedLookup.series}</span>` : ''}
             </div>
             <div style="margin-top:8px;display:flex;gap:14px;flex-wrap:wrap;font-size:0.8rem;color:#94a3b8;font-family:'JetBrains Mono',monospace;">
-              <span>Close: <strong style="color:#f8fafc;">₹${matchedLookup.close}</strong></span>
-              <span>Day Range: ₹${matchedLookup.low} - ₹${matchedLookup.high}</span>
-              <span>Key Resistance: <strong style="color:#38bdf8;">₹${matchedLookup.resistance || matchedLookup.r20}</strong></span>
-              <span>Key Support: <strong style="color:#f87171;">₹${matchedLookup.support || matchedLookup.low}</strong></span>
-              <span>52W High: <strong>₹${matchedLookup.h52}</strong></span>
-              <span>RS: <strong style="color:#c084fc;">${matchedLookup.rs}/99</strong></span>
-              <span>RVOL: <strong style="color:${matchedLookup.rvol >= 1.2 ? '#34d399' : '#f87171'};">${matchedLookup.rvol}x</strong></span>
-              <span>Deliv: <strong style="color:${matchedLookup.deliv >= 40 ? '#34d399' : '#94a3b8'};">${matchedLookup.deliv}%</strong></span>
-              <span>Closing Range: <strong style="color:${matchedLookup.closing_range >= 60 ? '#34d399' : '#f87171'};">${matchedLookup.closing_range}%</strong></span>
+              ${metaMetrics}
             </div>
           </div>
           <div>
@@ -2181,11 +2314,7 @@ function render() {
             <div style="font-size:0.8rem;line-height:1.45;color:#cbd5e1;">
               ${matchedLookup.tactical_gameplan}
             </div>
-            <div style="margin-top:8px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:12px;font-size:0.75rem;font-family:'JetBrains Mono',monospace;">
-              <span>10 EMA: <strong>₹${matchedLookup.ema10}</strong></span>
-              <span>20 EMA: <strong>₹${matchedLookup.ema20}</strong></span>
-              <span>50 SMA: <strong>₹${matchedLookup.sma50}</strong></span>
-            </div>
+            ${subLevels}
           </div>
         </div>
 
@@ -2462,12 +2591,54 @@ function render() {
   }
 }
 
-let viewMode = 'table';
+let viewMode = window.innerWidth < 768 ? 'cards' : 'table';
 function setViewMode(mode) {
   viewMode = mode;
   document.getElementById('viewTableBtn').classList.toggle('active', mode === 'table');
   document.getElementById('viewCardsBtn').classList.toggle('active', mode === 'cards');
   render();
+}
+
+function initSectorTrack() {
+  const track = document.getElementById('sectorChipsTrack');
+  if (!track || !D.industry_rankings || !D.industry_rankings.length) return;
+  
+  track.innerHTML = D.industry_rankings.map(r => {
+    let color = '#94a3b8';
+    let bg = 'rgba(148,163,184,0.08)';
+    let border = 'rgba(148,163,184,0.2)';
+    if (r.rank_pct >= 80) {
+      color = '#34d399';
+      bg = 'rgba(16,185,129,0.12)';
+      border = 'rgba(16,185,129,0.35)';
+    } else if (r.rank_pct >= 60) {
+      color = '#38bdf8';
+      bg = 'rgba(56,189,248,0.12)';
+      border = 'rgba(56,189,248,0.35)';
+    } else if (r.rank_pct < 40) {
+      color = '#f87171';
+      bg = 'rgba(239,68,68,0.1)';
+      border = 'rgba(239,68,68,0.3)';
+    }
+    const retStr = (r.median_ret60 > 0 ? '+' : '') + Number(r.median_ret60).toFixed(1) + '%';
+    return `
+      <button class="btn-chip" onclick="filterBySector('${r.Industry.replace(/'/g, "\\'")}')" 
+        style="color:${color};background:${bg};border-color:${border};white-space:nowrap;cursor:pointer;flex-shrink:0;min-height:36px;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;">
+        <strong>${r.Industry}</strong>
+        <span class="mono" style="font-size:0.72rem;opacity:0.9;">${retStr}</span>
+        <span style="font-size:0.65rem;opacity:0.85;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,0.08);">${r.tier.split(':')[0]}</span>
+      </button>
+    `;
+  }).join('');
+}
+
+function filterBySector(secName) {
+  const sf = document.getElementById('sectorFilter');
+  if (sf) {
+    sf.value = secName;
+    render();
+    document.getElementById('toolbarSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 function toggleMobileMenu() {
@@ -2576,7 +2747,39 @@ document.getElementById('sectorFilter').onchange = render;
 document.getElementById('strategyFilter').onchange = render;
 document.getElementById('tagFilter').onchange = render;
 document.getElementById('capInput').oninput = render;
+
+if (window.innerWidth < 768) {
+  const tb = document.getElementById('viewTableBtn');
+  const cb = document.getElementById('viewCardsBtn');
+  if (tb && cb) {
+    tb.classList.remove('active');
+    cb.classList.add('active');
+  }
+}
+initSectorTrack();
 render();
 </script>
+<nav class="mobile-bottom-dock" aria-label="Mobile Bottom Navigation">
+  <button class="dock-btn active" onclick="scrollToSection('toolbarSection');">
+    <span class="dock-icon">🎯</span>
+    <span class="dock-label">Screener</span>
+  </button>
+  <a href="paper_trading.html" class="dock-btn">
+    <span class="dock-icon">⚡</span>
+    <span class="dock-label">Paper Trade</span>
+  </a>
+  <button class="dock-btn" onclick="focusSearch();">
+    <span class="dock-icon">🔍</span>
+    <span class="dock-label">Search</span>
+  </button>
+  <button class="dock-btn" onclick="scrollToSection('sectorSection');">
+    <span class="dock-icon">📊</span>
+    <span class="dock-label">Sectors</span>
+  </button>
+  <button class="dock-btn" onclick="openWalkForwardModal();">
+    <span class="dock-icon">🛡️</span>
+    <span class="dock-label">Validation</span>
+  </button>
+</nav>
 </body>
 </html>
