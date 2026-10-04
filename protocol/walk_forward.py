@@ -12,7 +12,30 @@ from dataclasses import dataclass
 from typing import Any
 import numpy as np
 import pandas as pd
-from scipy.stats import norm, skew, kurtosis
+try:
+    from scipy.stats import norm, skew, kurtosis
+except ImportError:
+    class _NormFallback:
+        @staticmethod
+        def cdf(x: float) -> float:
+            return 0.5 * (1.0 + math.erf(float(x) / math.sqrt(2.0)))
+
+    norm = _NormFallback()
+
+    def skew(a: Any, axis: int = 0, bias: bool = True) -> float:
+        arr = np.asarray(a, dtype=float)
+        m = float(np.mean(arr))
+        m2 = float(np.mean((arr - m) ** 2))
+        m3 = float(np.mean((arr - m) ** 3))
+        return m3 / (m2 ** 1.5) if m2 > 1e-12 else 0.0
+
+    def kurtosis(a: Any, axis: int = 0, fisher: bool = True, bias: bool = True) -> float:
+        arr = np.asarray(a, dtype=float)
+        m = float(np.mean(arr))
+        m2 = float(np.mean((arr - m) ** 2))
+        m4 = float(np.mean((arr - m) ** 4))
+        k = m4 / (m2 ** 2) if m2 > 1e-12 else 3.0
+        return k - 3.0 if fisher else k
 
 
 @dataclass

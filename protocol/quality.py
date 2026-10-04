@@ -292,8 +292,14 @@ def reason(row: pd.Series, cfg: dict) -> str:
     parts = [(f, v) for f, v in parts if v is not None and pd.notna(v)]
     parts.sort(key=lambda kv: -float(kv[1]))
     top = ", ".join(f"{COMPONENTS[f][0].lower()} {float(v):.0%}" for f, v in parts[:3])
+    c = float(row['close']) if pd.notna(row.get('close')) else 0.0
+    p52 = float(row['prox52']) if pd.notna(row.get('prox52')) else 0.0
+    atr = float(row['atrpct']) if pd.notna(row.get('atrpct')) else 0.0
+    rv = float(row['rvol20']) if pd.notna(row.get('rvol20')) else 0.0
+    t20 = row.get('turnover20')
+    t20_val = 0 if (t20 is None or pd.isna(t20)) else round(float(t20))
     return (
         f"{row['symbol']} scored {row['score']:.2f}/1.00 against {int(row.get('candidates') or 0)} "
-        f"candidates (top: {top}). Close INR {row['close']:.2f}, 52w-high {row['prox52']:.2f}, "
-        f"ATR% {row['atrpct']:.2%}, RVOL20 {row['rvol20']:.2f}, turnover INR {round(float(row['turnover20'] or 0)):,}."
+        f"candidates (top: {top}). Close INR {c:.2f}, 52w-high {p52:.2f}, "
+        f"ATR% {atr:.2%}, RVOL20 {rv:.2f}, turnover INR {t20_val:,}."
     )
