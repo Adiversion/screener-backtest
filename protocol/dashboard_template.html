@@ -1982,32 +1982,51 @@
 
     <!-- Interactive Technical Breakout & Order Flow Chart -->
     <div class="modal-section" style="margin-bottom:14px;background:rgba(9,13,22,0.6);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:12px 14px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+      <!-- Chart Top Action Bar -->
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:6px;">
         <div class="modal-section-title" style="margin:0;font-size:0.88rem;">
-          <span>📈</span> Daily Breakout Chart & Order Flow Structure
+          <span>📈</span> <span id="mChartSectionTitle">Daily Breakout Chart & Order Flow Structure</span>
         </div>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <!-- Legend indicators -->
-          <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">
-            <span><b style="color:#38bdf8;">—</b> EMA10</span>
-            <span><b style="color:#fbbf24;">—</b> EMA20</span>
-            <span><b style="color:#3b82f6;">—</b> SMA50</span>
-            <span><b style="color:#a855f7;">—</b> SMA200</span>
-            <span><b style="color:#ef4444;">--</b> Stop</span>
-            <span><b style="color:#10b981;">--</b> Target</span>
-          </div>
-          <!-- External direct chart links, Light Mode & Fullscreen -->
-          <div style="display:flex;gap:4px;align-items:center;">
-            <button id="mThemeToggleBtn" class="chart-link-pill" onclick="toggleChartTheme()" style="border-color:rgba(251,191,36,0.4);color:#fbbf24;background:rgba(251,191,36,0.1);cursor:pointer;font-weight:700;" title="Toggle Native White / Dark Chart Background">☀️ Light Mode</button>
-            <button id="mFullscreenBtn" class="chart-link-pill" onclick="toggleChartFullscreen()" style="border-color:rgba(56,189,248,0.4);color:#38bdf8;background:rgba(56,189,248,0.12);cursor:pointer;font-weight:700;" title="Toggle Fullscreen Chart Mode">⛶ Fullscreen</button>
-            <a id="mTvLink" href="#" target="_blank" class="chart-link-pill" title="Open chart on TradingView">TV ↗</a>
-            <a id="mChartinkLink" href="#" target="_blank" class="chart-link-pill" title="Open chart on Chartink">Chartink ↗</a>
-            <a id="mScreenerLink" href="#" target="_blank" class="chart-link-pill" title="Open fundamentals on Screener.in">Screener ↗</a>
-          </div>
+        <div style="display:flex;gap:4px;align-items:center;">
+          <button id="mThemeToggleBtn" class="chart-link-pill" onclick="toggleChartTheme()" style="border-color:rgba(251,191,36,0.4);color:#fbbf24;background:rgba(251,191,36,0.1);cursor:pointer;font-weight:700;" title="Toggle Native White / Dark Chart Background">☀️ Light Mode</button>
+          <button id="mFullscreenBtn" class="chart-link-pill" onclick="toggleChartFullscreen()" style="border-color:rgba(56,189,248,0.4);color:#38bdf8;background:rgba(56,189,248,0.12);cursor:pointer;font-weight:700;" title="Toggle Fullscreen Chart Mode">⛶ Fullscreen</button>
+          <a id="mTvLink" href="#" target="_blank" class="chart-link-pill" title="Open chart on TradingView">TV ↗</a>
+          <a id="mChartinkLink" href="#" target="_blank" class="chart-link-pill" title="Open chart on Chartink">Chartink ↗</a>
+          <a id="mScreenerLink" href="#" target="_blank" class="chart-link-pill" title="Open fundamentals on Screener.in">Screener ↗</a>
+          <button id="mChartCloseBtn" class="chart-link-pill" onclick="closeModal('stockModal')" style="border-color:rgba(239,68,68,0.4);color:#f87171;background:rgba(239,68,68,0.12);cursor:pointer;font-weight:700;display:none;" title="Close Fullscreen Chart">✕ Close</button>
         </div>
       </div>
-      <!-- Chart Canvas Container -->
-      <div id="stockChartContainer" style="width:100%;height:320px;background:#060911;border:1px solid rgba(255,255,255,0.06);border-radius:8px;position:relative;overflow:hidden;"></div>
+
+      <!-- Pine Script Framework Confluence HUD Ribbon -->
+      <div id="chartFrameworkHud" style="display:flex;align-items:center;gap:6px;overflow-x:auto;padding:5px 8px;margin-bottom:6px;background:rgba(15,23,42,0.65);border-radius:6px;border:1px solid rgba(255,255,255,0.06);font-size:0.72rem;font-family:'JetBrains Mono',monospace;"></div>
+
+      <!-- Indicator Visibility Toggles & TradingView Manual Drawing Tools Bar -->
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;padding:3px 2px;">
+        <!-- Left: Clickable Indicator Toggles -->
+        <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+          <span style="font-size:0.68rem;color:var(--text-muted);font-weight:700;margin-right:2px;">INDICATORS:</span>
+          <button id="pill_all" class="chart-link-pill" onclick="toggleAllIndicators()" style="font-size:0.68rem;padding:2px 7px;cursor:pointer;font-weight:700;" title="Toggle all indicators on/off">👁️ All</button>
+          <button id="pill_ema10" class="chart-link-pill" onclick="toggleIndicator('ema10')" style="font-size:0.68rem;padding:2px 6px;color:#38bdf8;border-color:rgba(56,189,248,0.3);cursor:pointer;font-weight:600;" title="Toggle EMA 10">EMA 10</button>
+          <button id="pill_ema20" class="chart-link-pill" onclick="toggleIndicator('ema20')" style="font-size:0.68rem;padding:2px 6px;color:#fbbf24;border-color:rgba(251,191,36,0.3);cursor:pointer;font-weight:600;" title="Toggle EMA 20">EMA 20</button>
+          <button id="pill_sma50" class="chart-link-pill" onclick="toggleIndicator('sma50')" style="font-size:0.68rem;padding:2px 6px;color:#3b82f6;border-color:rgba(59,130,246,0.3);cursor:pointer;font-weight:600;" title="Toggle SMA 50">SMA 50</button>
+          <button id="pill_sma200" class="chart-link-pill" onclick="toggleIndicator('sma200')" style="font-size:0.68rem;padding:2px 6px;color:#a855f7;border-color:rgba(168,85,247,0.3);cursor:pointer;font-weight:600;" title="Toggle SMA 200">SMA 200</button>
+          <button id="pill_pivots" class="chart-link-pill" onclick="toggleIndicator('pivots')" style="font-size:0.68rem;padding:2px 6px;color:#10b981;border-color:rgba(16,185,129,0.3);cursor:pointer;font-weight:600;" title="Toggle Breakout / Stop / 2R Target levels">Pivots</button>
+          <button id="pill_volume" class="chart-link-pill" onclick="toggleIndicator('volume')" style="font-size:0.68rem;padding:2px 6px;color:#22d3ee;border-color:rgba(34,211,238,0.3);cursor:pointer;font-weight:600;" title="Toggle Volume">Volume</button>
+          <button id="pill_signals" class="chart-link-pill" onclick="toggleIndicator('signals')" style="font-size:0.68rem;padding:2px 6px;color:#ec4899;border-color:rgba(236,72,153,0.3);cursor:pointer;font-weight:700;" title="Toggle Pine Script Confluence Signals on Candles">🎯 Pine Signals</button>
+        </div>
+        <!-- Right: TradingView Manual Drawing Tools -->
+        <div style="display:flex;align-items:center;gap:4px;">
+          <span style="font-size:0.68rem;color:var(--text-muted);font-weight:700;margin-right:2px;">TOOLS:</span>
+          <button id="btnToolHorz" class="chart-link-pill" onclick="activateDrawTool('horz')" style="font-size:0.68rem;padding:2px 8px;cursor:pointer;border-color:rgba(251,191,36,0.3);color:#fbbf24;" title="Click anywhere on chart to draw a Horizontal S/R line">📏 Horz Line</button>
+          <button id="btnToolTrend" class="chart-link-pill" onclick="activateDrawTool('trend')" style="font-size:0.68rem;padding:2px 8px;cursor:pointer;border-color:rgba(56,189,248,0.3);color:#38bdf8;" title="Click 2 points on chart to draw a manual Trendline">✏️ Trendline</button>
+          <button class="chart-link-pill" onclick="clearUserDrawings()" style="font-size:0.68rem;padding:2px 6px;color:#f87171;border-color:rgba(239,68,68,0.3);cursor:pointer;" title="Clear all user drawn lines">🗑️ Clear</button>
+        </div>
+      </div>
+
+      <!-- Chart Canvas Container with Drawing Overlay -->
+      <div id="stockChartContainer" style="width:100%;height:320px;background:#060911;border:1px solid rgba(255,255,255,0.06);border-radius:8px;position:relative;overflow:hidden;">
+        <canvas id="chartDrawOverlay" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5;"></canvas>
+      </div>
       <!-- Dynamic OHLCV Legend Bar -->
       <div id="chartLegendBar" style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:0.72rem;padding:5px 8px;background:rgba(15,23,42,0.85);border-radius:0 0 8px 8px;color:#94a3b8;font-family:'JetBrains Mono',monospace;min-height:24px;"></div>
     </div>
@@ -3032,9 +3051,10 @@ function render() {
         </div>
       </td>
       <td style="text-align:center;">
-        <div style="display:flex;gap:6px;justify-content:center;">
+        <div style="display:flex;gap:6px;justify-content:center;align-items:center;">
+          <button class="btn-inspect" onclick="openChartFullscreen('${c.symbol}')" style="background:rgba(16,185,129,0.15);color:#34d399;border-color:rgba(16,185,129,0.35);cursor:pointer;display:inline-flex;align-items:center;" title="Open Direct Fullscreen Multi-Year Chart">📈 Chart</button>
           <a href="paper_trading.html?symbol=${c.symbol}" class="btn-inspect" style="background:rgba(56,189,248,0.12);color:#38bdf8;border-color:rgba(56,189,248,0.3);text-decoration:none;display:inline-flex;align-items:center;" title="Live Paper Trade">💼 Trade</a>
-          <button class="btn-inspect" onclick="openModal('${c.symbol}')">Inspect →</button>
+          <button class="btn-inspect" onclick="openModal('${c.symbol}')" title="Inspect Full Quantitative Rationale">Inspect →</button>
         </div>
       </td>
     </tr>`;
@@ -3153,9 +3173,10 @@ function render() {
 
           <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);font-size:0.75rem;">
             <div style="color:var(--text-muted);font-family:'JetBrains Mono',monospace;">Protocol: <b style="color:${c.is_extended ? 'var(--rose)' : '#34d399'};">${c.is_extended ? 'Wait Pullback' : 'Execute Breakout'}</b></div>
-            <div style="display:flex;gap:6px;">
+            <div style="display:flex;gap:6px;align-items:center;">
+              <button class="btn-inspect" onclick="openChartFullscreen('${c.symbol}')" style="background:rgba(16,185,129,0.15);color:#34d399;border-color:rgba(16,185,129,0.35);min-height:36px;padding:6px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;" title="Open Direct Fullscreen Multi-Year Chart">📈 Chart</button>
               <a href="paper_trading.html?symbol=${c.symbol}" class="btn-inspect" style="background:rgba(56,189,248,0.12);color:#38bdf8;border-color:rgba(56,189,248,0.3);text-decoration:none;display:inline-flex;align-items:center;min-height:36px;padding:6px 10px;" title="Live Paper Trade">💼 Trade</a>
-              <button class="btn-inspect" onclick="openModal('${c.symbol}')" style="min-height:36px;padding:6px 14px;">Inspect Rationale →</button>
+              <button class="btn-inspect" onclick="openModal('${c.symbol}')" style="min-height:36px;padding:6px 14px;" title="Inspect Full Quantitative Rationale">Inspect →</button>
             </div>
           </div>
         </div>
@@ -3439,6 +3460,33 @@ function openModal(sym) {
 }
 
 let currentStockChartInstance = null;
+let chartSeriesRefs = {
+  candle: null,
+  volume: null,
+  ema10: null,
+  ema20: null,
+  sma50: null,
+  sma200: null,
+  lines: [],
+};
+
+let chartIndicatorsVisible = {
+  ema10: true,
+  ema20: true,
+  sma50: true,
+  sma200: true,
+  volume: true,
+  pivots: true,
+  signals: true,
+};
+
+let currentChartMarkers = [];
+let currentSeriesMarkersPlugin = null;
+let userDrawnPriceLines = [];
+let userDrawnTrendlines = [];
+let activeDrawTool = null;
+let trendlineStart = null;
+let chartOnlyFullscreenMode = false;
 
 function renderStockChart(c) {
   const tvLink = document.getElementById('mTvLink');
@@ -3457,8 +3505,9 @@ function renderStockChart(c) {
       currentStockChartInstance.remove();
     } catch (e) {}
     currentStockChartInstance = null;
+    currentSeriesMarkersPlugin = null;
   }
-  container.innerHTML = '';
+  container.innerHTML = '<canvas id="chartDrawOverlay" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5;"></canvas>';
 
   if (typeof LightweightCharts === 'undefined') {
     container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#94a3b8;font-size:0.85rem;">TradingView Lightweight Charts engine is loading...</div>';
@@ -3565,26 +3614,44 @@ function renderStockChart(c) {
   });
   volumeSeries.setData(volumeData);
 
+  chartSeriesRefs = {
+    candle: candleSeries,
+    volume: volumeSeries,
+    ema10: null,
+    ema20: null,
+    sma50: null,
+    sma200: null,
+    lines: [],
+  };
+
   if (ema10Data.length) {
     const ema10 = chart.addSeries(LightweightCharts.LineSeries, { color: '#38bdf8', lineWidth: 1.5, lastValueVisible: false, priceLineVisible: false });
     ema10.setData(ema10Data);
+    chartSeriesRefs.ema10 = ema10;
+    if (!chartIndicatorsVisible.ema10) ema10.applyOptions({ visible: false });
   }
   if (ema20Data.length) {
     const ema20 = chart.addSeries(LightweightCharts.LineSeries, { color: '#fbbf24', lineWidth: 1.5, lastValueVisible: false, priceLineVisible: false });
     ema20.setData(ema20Data);
+    chartSeriesRefs.ema20 = ema20;
+    if (!chartIndicatorsVisible.ema20) ema20.applyOptions({ visible: false });
   }
   if (sma50Data.length) {
     const sma50 = chart.addSeries(LightweightCharts.LineSeries, { color: '#3b82f6', lineWidth: 1.5, lastValueVisible: false, priceLineVisible: false });
     sma50.setData(sma50Data);
+    chartSeriesRefs.sma50 = sma50;
+    if (!chartIndicatorsVisible.sma50) sma50.applyOptions({ visible: false });
   }
   if (sma200Data.length) {
     const sma200 = chart.addSeries(LightweightCharts.LineSeries, { color: '#a855f7', lineWidth: 1.5, lastValueVisible: false, priceLineVisible: false });
     sma200.setData(sma200Data);
+    chartSeriesRefs.sma200 = sma200;
+    if (!chartIndicatorsVisible.sma200) sma200.applyOptions({ visible: false });
   }
 
   const boPrice = c.breakout_ref || c.resistance || c.r20;
   if (boPrice) {
-    candleSeries.createPriceLine({
+    const l = candleSeries.createPriceLine({
       price: boPrice,
       color: '#38bdf8',
       lineWidth: 1.5,
@@ -3592,10 +3659,11 @@ function renderStockChart(c) {
       axisLabelVisible: true,
       title: 'BREAKOUT',
     });
+    chartSeriesRefs.lines.push(l);
   }
 
   if (c.stop) {
-    candleSeries.createPriceLine({
+    const l = candleSeries.createPriceLine({
       price: c.stop,
       color: '#ef4444',
       lineWidth: 1.5,
@@ -3603,10 +3671,11 @@ function renderStockChart(c) {
       axisLabelVisible: true,
       title: 'STOP',
     });
+    chartSeriesRefs.lines.push(l);
   }
 
   if (c.target_2r) {
-    candleSeries.createPriceLine({
+    const l = candleSeries.createPriceLine({
       price: c.target_2r,
       color: '#10b981',
       lineWidth: 1.5,
@@ -3614,7 +3683,79 @@ function renderStockChart(c) {
       axisLabelVisible: true,
       title: '2R TARGET',
     });
+    chartSeriesRefs.lines.push(l);
   }
+
+  // Pine Script Confluence Markers on Candlesticks
+  currentChartMarkers = [];
+  if (rawCandles.length > 0) {
+    const lastBar = rawCandles[rawCandles.length - 1];
+    const fwCount = (c.strategies || []).length;
+    currentChartMarkers.push({
+      time: lastBar.time,
+      position: 'aboveBar',
+      color: fwCount >= 8 ? '#10b981' : (fwCount >= 5 ? '#38bdf8' : '#fbbf24'),
+      shape: 'arrowDown',
+      text: `🎯 PINE SIGNAL: ${fwCount}/12 CONFLUENCE BREAKOUT`,
+    });
+    if (c.rvol && c.rvol >= 1.4) {
+      currentChartMarkers.push({
+        time: lastBar.time,
+        position: 'belowBar',
+        color: '#22d3ee',
+        shape: 'arrowUp',
+        text: `⚡ RVOL ${c.rvol.toFixed(1)}x VOL IGNITION`,
+      });
+    }
+    if (boPrice) {
+      currentChartMarkers.push({
+        time: lastBar.time,
+        position: 'belowBar',
+        color: '#fbbf24',
+        shape: 'circle',
+        text: `📦 PIVOT ₹${boPrice.toFixed(2)}`,
+      });
+    }
+  }
+  if (chartIndicatorsVisible.signals && currentChartMarkers.length) {
+    if (typeof LightweightCharts.createSeriesMarkers === 'function') {
+      try {
+        currentSeriesMarkersPlugin = LightweightCharts.createSeriesMarkers(candleSeries, currentChartMarkers);
+      } catch (e) {
+        console.warn('createSeriesMarkers error:', e);
+      }
+    } else if (typeof candleSeries.setMarkers === 'function') {
+      try {
+        candleSeries.setMarkers(currentChartMarkers);
+      } catch (e) {
+        console.warn('candleSeries.setMarkers error:', e);
+      }
+    }
+  }
+
+  populateFrameworkHud(c);
+  initTrendlineCanvas();
+  syncDrawingCanvasSize();
+
+  container.onclick = (e) => {
+    if (activeDrawTool !== 'horz' || !chartSeriesRefs.candle) return;
+    const rect = container.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const price = chartSeriesRefs.candle.coordinateToPrice(y);
+    if (price && !isNaN(price)) {
+      const line = chartSeriesRefs.candle.createPriceLine({
+        price: Math.round(price * 100) / 100,
+        color: isChartLightMode ? '#d97706' : '#fbbf24',
+        lineWidth: 1.5,
+        lineStyle: LightweightCharts.LineStyle.Solid,
+        axisLabelVisible: true,
+        title: `USER S/R (₹${price.toFixed(2)})`,
+      });
+      userDrawnPriceLines.push(line);
+      showToast(`Added horizontal S/R line at ₹${price.toFixed(2)}`);
+      activateDrawTool(null);
+    }
+  };
 
   function setLegend(bar) {
     if (!legendBar) return;
@@ -3812,10 +3953,263 @@ function toggleChartTheme() {
   }
 }
 
+function openChartFullscreen(sym) {
+  chartOnlyFullscreenMode = true;
+  openModal(sym);
+  if (!isChartFullscreen) {
+    toggleChartFullscreen();
+  }
+}
+
+function populateFrameworkHud(c) {
+  const hud = document.getElementById('chartFrameworkHud');
+  if (!hud) return;
+  const strats = c.strategies || [];
+  if (!strats.length) {
+    hud.innerHTML = `<span style="color:var(--text-muted);">Standard Stage 2 inspection (no multi-framework breakout trigger).</span>`;
+    return;
+  }
+
+  const rationaleMap = {
+    "Minervini Template": "Stage 2 Trend Template: Close > 50 > 150 > 200 SMA, 50 SMA > 150 SMA, within 25% of 52W High.",
+    "CANSLIM Pivot": "O'Neil Pivot Breakout: Cleared 20d resistance on volume surge with RS rating >= 70.",
+    "Qullamaggie Breakout": "High Tight Flag: EMA10 > EMA20 > SMA50 with ADR% >= 3.5% & prior momentum thrust.",
+    "Stan Weinstein Stage 2": "30-Week Base Breakout: Rising 150/200 SMA with confirmed volume expansion.",
+    "PKScreener VCP": "Volatility Contraction Pattern: Contraction ratio expansion with preceding volume dry-up.",
+    "Turtle Trading": "Donchian 20-Day Ceiling Breakout with trend alignment.",
+    "Darvas Box": "Consolidation Box Breakout: Upper ceiling expansion in 52W quadrant.",
+    "Wyckoff Closing Range": "Volume Spread Absorption: Closing Range >= 65% on RVOL >= 1.4x.",
+    "Relative Strength Leader": "Mansfield RS: Top quartile market outperformance (RS >= 80).",
+    "Sector Momentum Leader": "Group institutional tailwind: Industry RS Rank >= 60%.",
+    "Institutional Delivery Absorption": "Demat Delivery Absorption >= 50% on session volume.",
+    "Protocol Fortified": "Multi-touch resistance shelf + ATR clearance buffer + safety extension cap.",
+    "Connors RSI Pullback": "Mean reversion pullback ignition in Stage 2 trend."
+  };
+
+  hud.innerHTML = `
+    <span style="font-weight:700;color:#38bdf8;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;">
+      🧠 PINE CONFLUENCE (${strats.length}/12):
+    </span>
+    ${strats.map(s => {
+      const tip = rationaleMap[s] || 'Quantitative setup criterion satisfied.';
+      return `<span class="chart-link-pill active" onclick="showToast('${s}: ${tip}')" title="${s}: ${tip}" style="cursor:pointer;white-space:nowrap;font-size:0.68rem;padding:2px 8px;background:rgba(16,185,129,0.15);border-color:rgba(16,185,129,0.35);color:#34d399;">✓ ${s}</span>`;
+    }).join('')}
+  `;
+}
+
+function toggleIndicator(key) {
+  chartIndicatorsVisible[key] = !chartIndicatorsVisible[key];
+  const vis = chartIndicatorsVisible[key];
+  const pill = document.getElementById('pill_' + key);
+  if (pill) {
+    pill.style.opacity = vis ? '1' : '0.4';
+    pill.style.textDecoration = vis ? 'none' : 'line-through';
+  }
+
+  if (key === 'pivots') {
+    (chartSeriesRefs.lines || []).forEach(l => {
+      if (l) l.applyOptions({ lineVisible: vis, axisLabelVisible: vis });
+    });
+  } else if (key === 'signals') {
+    if (currentSeriesMarkersPlugin && typeof currentSeriesMarkersPlugin.setMarkers === 'function') {
+      try {
+        currentSeriesMarkersPlugin.setMarkers(vis ? currentChartMarkers : []);
+      } catch (e) { console.warn(e); }
+    } else if (chartSeriesRefs.candle) {
+      if (vis && currentChartMarkers.length && typeof LightweightCharts.createSeriesMarkers === 'function') {
+        try {
+          currentSeriesMarkersPlugin = LightweightCharts.createSeriesMarkers(chartSeriesRefs.candle, currentChartMarkers);
+        } catch (e) { console.warn(e); }
+      } else if (typeof chartSeriesRefs.candle.setMarkers === 'function') {
+        try {
+          chartSeriesRefs.candle.setMarkers(vis ? currentChartMarkers : []);
+        } catch (e) { console.warn(e); }
+      }
+    }
+  } else if (chartSeriesRefs[key]) {
+    chartSeriesRefs[key].applyOptions({ visible: vis });
+  }
+}
+
+function toggleAllIndicators() {
+  const anyVisible = Object.values(chartIndicatorsVisible).some(v => v);
+  const targetVis = !anyVisible;
+  Object.keys(chartIndicatorsVisible).forEach(k => {
+    chartIndicatorsVisible[k] = targetVis;
+    const pill = document.getElementById('pill_' + k);
+    if (pill) {
+      pill.style.opacity = targetVis ? '1' : '0.4';
+      pill.style.textDecoration = targetVis ? 'none' : 'line-through';
+    }
+    if (k === 'signals') {
+      if (currentSeriesMarkersPlugin && typeof currentSeriesMarkersPlugin.setMarkers === 'function') {
+        try {
+          currentSeriesMarkersPlugin.setMarkers(targetVis ? currentChartMarkers : []);
+        } catch (e) { console.warn(e); }
+      } else if (chartSeriesRefs.candle) {
+        if (targetVis && currentChartMarkers.length && typeof LightweightCharts.createSeriesMarkers === 'function') {
+          try {
+            currentSeriesMarkersPlugin = LightweightCharts.createSeriesMarkers(chartSeriesRefs.candle, currentChartMarkers);
+          } catch (e) { console.warn(e); }
+        } else if (typeof chartSeriesRefs.candle.setMarkers === 'function') {
+          try {
+            chartSeriesRefs.candle.setMarkers(targetVis ? currentChartMarkers : []);
+          } catch (e) { console.warn(e); }
+        }
+      }
+    } else if (k === 'pivots') {
+      (chartSeriesRefs.lines || []).forEach(l => {
+        if (l) l.applyOptions({ lineVisible: targetVis, axisLabelVisible: targetVis });
+      });
+    } else if (chartSeriesRefs[k]) {
+      chartSeriesRefs[k].applyOptions({ visible: targetVis });
+    }
+  });
+  const allBtn = document.getElementById('pill_all');
+  if (allBtn) {
+    allBtn.style.opacity = targetVis ? '1' : '0.4';
+    allBtn.innerHTML = targetVis ? '👁️ All' : '👁️‍🗨️ Hidden';
+  }
+}
+
+function activateDrawTool(tool) {
+  if (activeDrawTool === tool) {
+    activeDrawTool = null;
+  } else {
+    activeDrawTool = tool;
+  }
+
+  const btnH = document.getElementById('btnToolHorz');
+  const btnT = document.getElementById('btnToolTrend');
+  const overlay = document.getElementById('chartDrawOverlay');
+  const container = document.getElementById('stockChartContainer');
+
+  if (btnH) {
+    btnH.style.background = activeDrawTool === 'horz' ? 'rgba(251,191,36,0.25)' : 'transparent';
+    btnH.style.borderColor = activeDrawTool === 'horz' ? '#fbbf24' : 'rgba(251,191,36,0.3)';
+  }
+  if (btnT) {
+    btnT.style.background = activeDrawTool === 'trend' ? 'rgba(56,189,248,0.25)' : 'transparent';
+    btnT.style.borderColor = activeDrawTool === 'trend' ? '#38bdf8' : 'rgba(56,189,248,0.3)';
+  }
+
+  if (activeDrawTool === 'trend') {
+    if (overlay) overlay.style.pointerEvents = 'auto';
+    if (container) container.style.cursor = 'crosshair';
+    showToast('Click Point A, then click Point B to draw a Trendline');
+  } else if (activeDrawTool === 'horz') {
+    if (overlay) overlay.style.pointerEvents = 'none';
+    if (container) container.style.cursor = 'crosshair';
+    showToast('Click anywhere on chart to place a Horizontal S/R Line');
+  } else {
+    if (overlay) overlay.style.pointerEvents = 'none';
+    if (container) container.style.cursor = 'default';
+    trendlineStart = null;
+  }
+}
+
+function clearUserDrawings() {
+  if (chartSeriesRefs.candle && userDrawnPriceLines.length) {
+    userDrawnPriceLines.forEach(l => {
+      try { chartSeriesRefs.candle.removePriceLine(l); } catch(e){}
+    });
+    userDrawnPriceLines = [];
+  }
+  userDrawnTrendlines = [];
+  const overlay = document.getElementById('chartDrawOverlay');
+  if (overlay) {
+    const ctx = overlay.getContext('2d');
+    ctx.clearRect(0, 0, overlay.width, overlay.height);
+  }
+  activateDrawTool(null);
+  showToast('Cleared all user drawn lines.');
+}
+
+function initTrendlineCanvas() {
+  const overlay = document.getElementById('chartDrawOverlay');
+  if (!overlay || overlay._hasListeners) return;
+  overlay._hasListeners = true;
+
+  function redrawTrendlines() {
+    const ctx = overlay.getContext('2d');
+    ctx.clearRect(0, 0, overlay.width, overlay.height);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#38bdf8';
+    userDrawnTrendlines.forEach(line => {
+      ctx.beginPath();
+      ctx.moveTo(line.x1, line.y1);
+      ctx.lineTo(line.x2, line.y2);
+      ctx.stroke();
+    });
+  }
+
+  overlay.addEventListener('click', (e) => {
+    if (activeDrawTool !== 'trend') return;
+    const rect = overlay.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    if (!trendlineStart) {
+      trendlineStart = { x, y };
+      showToast('Anchor point set. Now click second point to complete trendline.');
+    } else {
+      userDrawnTrendlines.push({
+        x1: trendlineStart.x,
+        y1: trendlineStart.y,
+        x2: x,
+        y2: y,
+      });
+      trendlineStart = null;
+      redrawTrendlines();
+      showToast('Trendline drawn!');
+      activateDrawTool(null);
+    }
+  });
+
+  overlay.addEventListener('mousemove', (e) => {
+    if (activeDrawTool !== 'trend' || !trendlineStart) return;
+    const rect = overlay.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    redrawTrendlines();
+    const ctx = overlay.getContext('2d');
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(trendlineStart.x, trendlineStart.y);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    ctx.restore();
+  });
+}
+
+function syncDrawingCanvasSize() {
+  const overlay = document.getElementById('chartDrawOverlay');
+  const container = document.getElementById('stockChartContainer');
+  if (!overlay || !container) return;
+  overlay.width = container.clientWidth;
+  overlay.height = container.clientHeight;
+  if (userDrawnTrendlines.length) {
+    const ctx = overlay.getContext('2d');
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#38bdf8';
+    userDrawnTrendlines.forEach(line => {
+      ctx.beginPath();
+      ctx.moveTo(line.x1, line.y1);
+      ctx.lineTo(line.x2, line.y2);
+      ctx.stroke();
+    });
+  }
+}
+
 function toggleChartFullscreen() {
   const container = document.getElementById('stockChartContainer');
   const modalSection = container ? container.closest('.modal-section') : null;
   const btn = document.getElementById('mFullscreenBtn');
+  const closeBtn = document.getElementById('mChartCloseBtn');
+  const titleEl = document.getElementById('mChartSectionTitle');
   if (!container || !modalSection) return;
 
   isChartFullscreen = !isChartFullscreen;
@@ -3828,11 +4222,22 @@ function toggleChartFullscreen() {
     modalSection.style.height = '100vh';
     modalSection.style.zIndex = '99999';
     modalSection.style.borderRadius = '0';
-    modalSection.style.padding = '16px 24px';
-    modalSection.style.background = isChartLightMode ? '#f8fafc' : '#060911';
+    modalSection.style.padding = '12px 20px';
+    modalSection.style.background = isChartLightMode ? '#ffffff' : '#060911';
     modalSection.style.boxSizing = 'border-box';
-    container.style.height = 'calc(100vh - 90px)';
+    modalSection.style.display = 'flex';
+    modalSection.style.flexDirection = 'column';
+    container.style.flex = '1';
+    container.style.height = 'calc(100vh - 135px)';
     if (btn) btn.innerHTML = '🗗 Exit Fullscreen';
+    if (closeBtn) closeBtn.style.display = 'inline-block';
+    if (titleEl && currentModalSymbol) {
+      const c = (D.candidates || []).find(x => x.symbol === currentModalSymbol);
+      const px = c ? `₹${c.close.toFixed(2)}` : '';
+      const comp = c && c.company ? ` • ${c.company}` : '';
+      const fw = c ? ` [${(c.strategies || []).length}/12 Frameworks]` : '';
+      titleEl.innerHTML = `<span style="font-weight:800;font-size:1.15rem;color:var(--text);">${currentModalSymbol}</span> <span style="color:#10b981;font-weight:700;font-size:1.05rem;margin-left:4px;">${px}</span><span style="font-size:0.75rem;color:#38bdf8;font-weight:600;margin-left:6px;">${fw}</span><span style="font-size:0.72rem;color:var(--text-muted);font-weight:400;margin-left:6px;">${comp}</span>`;
+    }
   } else {
     modalSection.style.position = 'static';
     modalSection.style.top = 'auto';
@@ -3843,8 +4248,20 @@ function toggleChartFullscreen() {
     modalSection.style.borderRadius = '12px';
     modalSection.style.padding = '12px 14px';
     modalSection.style.background = isChartLightMode ? '#f8fafc' : 'rgba(9,13,22,0.6)';
+    modalSection.style.display = 'block';
+    container.style.flex = 'none';
     container.style.height = '320px';
     if (btn) btn.innerHTML = '⛶ Fullscreen';
+    if (closeBtn) closeBtn.style.display = 'none';
+    if (titleEl) {
+      titleEl.innerHTML = `Daily Breakout Chart & Order Flow Structure`;
+    }
+
+    if (chartOnlyFullscreenMode) {
+      chartOnlyFullscreenMode = false;
+      closeModal('stockModal');
+      return;
+    }
   }
 
   if (currentStockChartInstance) {
@@ -3854,13 +4271,17 @@ function toggleChartFullscreen() {
         height: container.clientHeight,
       });
       currentStockChartInstance.timeScale().fitContent();
+      syncDrawingCanvasSize();
     }, 60);
   }
 }
 
 function closeModal(id) {
-  if (id === 'stockModal' && isChartFullscreen) {
-    toggleChartFullscreen();
+  if (id === 'stockModal') {
+    chartOnlyFullscreenMode = false;
+    if (isChartFullscreen) {
+      toggleChartFullscreen();
+    }
   }
   document.getElementById(id).classList.remove('open');
   if (id === 'stockModal' && currentStockChartInstance) {
@@ -3873,6 +4294,10 @@ function closeModal(id) {
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
+    if (activeDrawTool) {
+      activateDrawTool(null);
+      return;
+    }
     if (isChartFullscreen) {
       toggleChartFullscreen();
       return;
@@ -4234,8 +4659,11 @@ function verifyCustomStock(symbol, liveQuote) {
           </div>
         </div>
         <div style="display:flex;gap:8px;">
-          <button class="btn" onclick="openModal('${sym}')" style="font-size:0.75rem;padding:6px 12px;border:1px solid rgba(56,189,248,0.4);color:#38bdf8;background:rgba(56,189,248,0.1);">
-            📈 View Chart
+          <button class="btn" onclick="openChartFullscreen('${sym}')" style="font-size:0.75rem;padding:6px 14px;border:1px solid rgba(16,185,129,0.4);color:#34d399;background:rgba(16,185,129,0.12);cursor:pointer;display:inline-flex;align-items:center;gap:4px;" title="Open Direct Fullscreen Chart">
+            📈 Fullscreen Chart
+          </button>
+          <button class="btn" onclick="openModal('${sym}')" style="font-size:0.75rem;padding:6px 12px;border:1px solid rgba(56,189,248,0.4);color:#38bdf8;background:rgba(56,189,248,0.1);cursor:pointer;">
+            Inspect →
           </button>
         </div>
       </div>
