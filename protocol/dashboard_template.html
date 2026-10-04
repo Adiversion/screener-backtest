@@ -595,6 +595,158 @@
     50% { opacity: 0.4; transform: scale(0.85); }
   }
 
+  /* Forward Trade Verification & Replay Station */
+  .forward-verifier-card {
+    background: var(--surface);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: 16px;
+    padding: 24px 28px;
+    box-shadow: 0 12px 36px -8px rgba(0, 0, 0, 0.5);
+    margin-top: 36px;
+    margin-bottom: 36px;
+  }
+  .fwd-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+  .fwd-title h2 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #f8fafc;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .fwd-title p {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    max-width: 750px;
+    line-height: 1.5;
+  }
+  .fwd-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .fwd-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .fwd-kpi-box {
+    background: rgba(13, 19, 31, 0.85);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+  }
+  .fwd-kpi-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+  .fwd-kpi-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-top: 4px;
+  }
+  .fwd-regime-alert {
+    background: rgba(15, 23, 42, 0.9);
+    border-left: 4px solid var(--rose);
+    border-radius: 8px;
+    padding: 12px 18px;
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .fwd-trades-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 16px;
+  }
+  .fwd-trade-card {
+    background: rgba(11, 17, 32, 0.95);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    transition: all 0.2s ease;
+  }
+  .fwd-trade-card:hover {
+    border-color: rgba(56, 189, 248, 0.35);
+    transform: translateY(-2px);
+  }
+  .fwd-trade-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+  }
+  .fwd-badge {
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .fwd-badge-win { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+  .fwd-badge-loss { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
+  .fwd-badge-be { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+  .fwd-pnl-comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    background: rgba(3, 7, 18, 0.7);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin: 12px 0;
+    text-align: center;
+  }
+  .fwd-log-toggle {
+    background: transparent;
+    border: none;
+    color: #38bdf8;
+    font-size: 0.78rem;
+    cursor: pointer;
+    padding: 4px 0;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .fwd-log-table {
+    width: 100%;
+    margin-top: 10px;
+    font-size: 0.75rem;
+    border-collapse: collapse;
+    background: rgba(3, 7, 18, 0.5);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .fwd-log-table th, .fwd-log-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    text-align: left;
+  }
+
   /* Bento Grid Layout */
   .bento-hud {
     display: grid;
@@ -1270,6 +1422,7 @@
         <a href="#macroSection" class="nav-link-btn" onclick="scrollToSection('directiveTile')">🛡️ Macro HUD</a>
         <a href="#inspectorSection" class="nav-link-btn" onclick="focusSearch()">🔍 Inspector</a>
         <a href="#screenerSection" class="nav-link-btn" onclick="scrollToSection('toolbarSection')">🎯 Screener</a>
+        <a href="#forwardVerifierSection" class="nav-link-btn highlight" onclick="scrollToSection('forwardVerifierSection')" style="border-color:rgba(56,189,248,0.4);color:#38bdf8;background:rgba(56,189,248,0.08);">⚡ 7-14D Verifier</a>
         <button class="nav-link-btn highlight" onclick="openSniperModal()" style="border-color:rgba(245,158,11,0.4);color:#f59e0b;background:rgba(245,158,11,0.08);">🎯 65%+ Sniper</button>
         <button class="nav-link-btn highlight" onclick="openUsicModal()">🏆 USIC Playbook</button>
         <a href="paper_trading.html" class="nav-link-btn highlight" style="border-color:rgba(56,189,248,0.4);color:#38bdf8;background:rgba(56,189,248,0.08);">💼 Paper Trading</a>
@@ -1301,6 +1454,7 @@
         <a href="javascript:void(0)" class="drawer-link" onclick="closeMobileMenu();scrollToSection('directiveTile');">🛡️ Macro Regime & Breadth</a>
         <a href="javascript:void(0)" class="drawer-link" onclick="closeMobileMenu();focusSearch();">🔍 Universal Stock Inspector</a>
         <a href="javascript:void(0)" class="drawer-link" onclick="closeMobileMenu();scrollToSection('toolbarSection');">🎯 Qualified Breakouts Screener</a>
+        <a href="javascript:void(0)" class="drawer-link" style="color:#38bdf8;font-weight:700;" onclick="closeMobileMenu();scrollToSection('forwardVerifierSection');">⚡ 7-14 Day Forward Trade Verifier</a>
         <a href="paper_trading.html" class="drawer-link" style="color:#38bdf8;font-weight:700;">💼 Live Paper Trading Station</a>
         <a href="javascript:void(0)" class="drawer-link" style="color:#f59e0b;" onclick="closeMobileMenu();openSniperModal();">🎯 65%+ Win Rate Sniper Playbook</a>
         <a href="javascript:void(0)" class="drawer-link" style="color:#fbbf24;" onclick="closeMobileMenu();openUsicModal();">🏆 USIC Champions Playbook (+1,499%)</a>
@@ -1506,6 +1660,35 @@
 
   <!-- Mobile / Visual Stock Cards View -->
   <div id="cardsView" class="stock-cards-grid" style="display:none;margin-bottom:24px;"></div>
+
+  <!-- ⚡ 7-14 Day Forward Trade Verification & Paper Replay Engine -->
+  <section id="forwardVerifierSection" class="forward-verifier-card">
+    <div class="fwd-header">
+      <div class="fwd-title">
+        <h2><span>⚡</span> 7–14 Day Forward Trade Verification & Replay Engine</h2>
+        <p>Audits what actually happened to every screened stock over subsequent sessions under USIC Staged Execution rules (-5% stop loss, +1.5R scale-out to breakeven, +2.5R target). Test any past date to see empirical trade outcomes without hindsight bias.</p>
+      </div>
+      <div class="fwd-controls">
+        <label for="fwdDateSelect" style="font-size:0.75rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Screening Session:</label>
+        <select id="fwdDateSelect" class="custom-select" onchange="renderForwardVerifier()" style="min-width:250px;font-weight:600;"></select>
+      </div>
+    </div>
+
+    <!-- Dynamic Regime Alert on Selected Date -->
+    <div id="fwdRegimeBanner" class="fwd-regime-alert"></div>
+
+    <!-- Summary KPI Stat Boxes -->
+    <div class="fwd-kpi-grid" id="fwdKpiGrid"></div>
+
+    <!-- Strategy Filter Chips for Forward Trades -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;">Filter By Strategy Framework:</div>
+      <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;" id="fwdFilterChips"></div>
+    </div>
+
+    <!-- Interactive Trades List -->
+    <div class="fwd-trades-grid" id="fwdTradesGrid"></div>
+  </section>
 
 </div>
 
@@ -2756,7 +2939,230 @@ if (window.innerWidth < 768) {
     cb.classList.add('active');
   }
 }
+let currentFwdFilter = "ALL";
+
+function initForwardVerifier() {
+  const fwd = D.forward_verifier;
+  const select = document.getElementById('fwdDateSelect');
+  if (!fwd || !fwd.available_dates || !fwd.available_dates.length || !select) {
+    const sec = document.getElementById('forwardVerifierSection');
+    if (sec) sec.style.display = 'none';
+    return;
+  }
+
+  select.innerHTML = fwd.available_dates.map(d => {
+    const sess = fwd.sessions[d];
+    const count = (sess && sess.trades) ? sess.trades.length : 0;
+    const alpha = (sess && sess.summary) ? sess.summary.alpha_saved : 0;
+    let extra = count > 0 ? ` [${count} Trades` : ' [0 Trades';
+    if (alpha !== 0) extra += ` • ${alpha > 0 ? '+' : ''}${alpha}% Alpha Saved]`;
+    else extra += ']';
+    return `<option value="${d}">${sess.label || d}${extra}</option>`;
+  }).join('');
+
+  if (fwd.available_dates.includes('2026-09-18')) {
+    select.value = '2026-09-18';
+  } else if (fwd.available_dates.includes('2026-09-15')) {
+    select.value = '2026-09-15';
+  } else {
+    select.value = fwd.available_dates[0];
+  }
+
+  renderForwardVerifier();
+}
+
+function setFwdFilter(strat) {
+  currentFwdFilter = strat;
+  renderForwardVerifier();
+}
+
+function renderForwardVerifier() {
+  const fwd = D.forward_verifier;
+  const select = document.getElementById('fwdDateSelect');
+  if (!fwd || !select) return;
+
+  const selDate = select.value;
+  const session = fwd.sessions[selDate];
+  if (!session) return;
+
+  // 1. Dynamic Regime Banner
+  const banner = document.getElementById('fwdRegimeBanner');
+  if (banner) {
+    const isDef = session.regime === 'DEFENSIVE';
+    const bg = isDef ? 'rgba(244, 63, 94, 0.12)' : 'rgba(16, 185, 129, 0.12)';
+    const border = isDef ? '#f43f5e' : '#10b981';
+    const color = isDef ? '#fb7185' : '#34d399';
+    banner.style.borderLeftColor = border;
+    banner.style.background = bg;
+    banner.innerHTML = `
+      <div>
+        <span style="font-weight:800;letter-spacing:0.05em;color:${color};text-transform:uppercase;">
+          MARKET REGIME: ${session.regime} (${session.action})
+        </span>
+        <div style="font-size:0.8rem;color:#cbd5e1;margin-top:3px;">
+          ${session.message || 'Macro baseline for this trading date.'}
+        </div>
+      </div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;color:#94a3b8;text-align:right;">
+        <div>Universe Breadth: <b style="color:#f8fafc;">${(session.breadth || 0).toFixed(1)}%</b> > SMA20</div>
+        <div>Equal-Weight Index: <b style="color:#f8fafc;">${(session.ew_index || 0).toFixed(1)}</b> (SMA20: ${(session.sma20 || 0).toFixed(1)})</div>
+      </div>
+    `;
+  }
+
+  // 2. Summary KPIs
+  const kpis = session.summary || {};
+  const kpiGrid = document.getElementById('fwdKpiGrid');
+  if (kpiGrid) {
+    const stCol = kpis.avg_staged_pnl > 0 ? '#34d399' : (kpis.avg_staged_pnl < 0 ? '#fb7185' : '#94a3b8');
+    const bhCol = kpis.avg_static_pnl > 0 ? '#34d399' : (kpis.avg_static_pnl < 0 ? '#fb7185' : '#94a3b8');
+    const alCol = kpis.alpha_saved >= 0 ? '#34d399' : '#fb7185';
+    kpiGrid.innerHTML = `
+      <div class="fwd-kpi-box">
+        <span class="fwd-kpi-label">Candidates Tracked</span>
+        <span class="fwd-kpi-val">${session.trades ? session.trades.length : 0} Stocks</span>
+      </div>
+      <div class="fwd-kpi-box">
+        <span class="fwd-kpi-label">USIC Staged Avg Return</span>
+        <span class="fwd-kpi-val" style="color:${stCol};">${kpis.avg_staged_pnl > 0 ? '+' : ''}${(kpis.avg_staged_pnl || 0).toFixed(2)}%</span>
+      </div>
+      <div class="fwd-kpi-box">
+        <span class="fwd-kpi-label">Buy & Hold Return</span>
+        <span class="fwd-kpi-val" style="color:${bhCol};">${kpis.avg_static_pnl > 0 ? '+' : ''}${(kpis.avg_static_pnl || 0).toFixed(2)}%</span>
+      </div>
+      <div class="fwd-kpi-box">
+        <span class="fwd-kpi-label">Alpha Saved by Rules</span>
+        <span class="fwd-kpi-val" style="color:${alCol};">+${(kpis.alpha_saved || 0).toFixed(2)}% (+${Math.round((kpis.alpha_saved || 0) * 100)} bps)</span>
+      </div>
+      <div class="fwd-kpi-box">
+        <span class="fwd-kpi-label">Win / Protected Rate</span>
+        <span class="fwd-kpi-val">${(kpis.win_rate || 0).toFixed(1)}%</span>
+      </div>
+    `;
+  }
+
+  // 3. Filter Chips
+  const filterDiv = document.getElementById('fwdFilterChips');
+  if (filterDiv && session.trades) {
+    const allStrats = new Set(['ALL']);
+    session.trades.forEach(t => {
+      (t.strategies || []).forEach(s => allStrats.add(s));
+    });
+    filterDiv.innerHTML = Array.from(allStrats).map(s => {
+      const active = currentFwdFilter === s;
+      return `<button class="btn-chip ${active ? 'active' : ''}" onclick="setFwdFilter('${s}')" style="${active ? 'border-color:#38bdf8;color:#38bdf8;background:rgba(56,189,248,0.12);' : ''}">${s}</button>`;
+    }).join('');
+  }
+
+  // 4. Trade Cards
+  const grid = document.getElementById('fwdTradesGrid');
+  if (!grid) return;
+
+  let trades = session.trades || [];
+  if (currentFwdFilter !== 'ALL') {
+    trades = trades.filter(t => t.strategies && t.strategies.includes(currentFwdFilter));
+  }
+
+  if (!trades.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;padding:32px;text-align:center;color:var(--text-muted);background:rgba(15,23,42,0.5);border-radius:12px;">No candidate trades passed the filters for this session.</div>`;
+    return;
+  }
+
+  grid.innerHTML = trades.map((t, idx) => {
+    const isWin = t.staged_pnl_pct > 0;
+    const isLoss = t.staged_pnl_pct < -1.0;
+    const badgeCls = isWin ? 'fwd-badge-win' : (isLoss ? 'fwd-badge-loss' : 'fwd-badge-be');
+    const statusText = isWin ? `+${t.staged_pnl_pct}% WIN` : (isLoss ? `${t.staged_pnl_pct}% STOPPED` : `${t.staged_pnl_pct}% PROTECTED`);
+    const alphaCol = t.alpha_saved_pct >= 0 ? '#34d399' : '#fb7185';
+
+    const logsHtml = (t.daily_logs || []).map(l => {
+      const evCol = l.is_event ? '#38bdf8' : '#94a3b8';
+      return `
+        <tr>
+          <td class="mono" style="color:#e2e8f0;">${l.date}</td>
+          <td class="mono" style="text-align:right;">₹${l.open.toFixed(2)}</td>
+          <td class="mono" style="text-align:right;color:#34d399;">₹${l.high.toFixed(2)}</td>
+          <td class="mono" style="text-align:right;color:#fb7185;">₹${l.low.toFixed(2)}</td>
+          <td class="mono" style="text-align:right;font-weight:600;">₹${l.close.toFixed(2)}</td>
+          <td style="color:${evCol};font-weight:${l.is_event ? '600' : '400'};">${l.event}</td>
+        </tr>
+      `;
+    }).join('');
+
+    return `
+      <div class="fwd-trade-card">
+        <div class="fwd-trade-header">
+          <div>
+            <span class="mono" style="font-size:1.15rem;font-weight:800;color:#38bdf8;">${t.symbol}</span>
+            <span style="font-size:0.75rem;color:var(--text-muted);margin-left:6px;">${t.sector || ''}</span>
+          </div>
+          <span class="fwd-badge ${badgeCls}">${statusText}</span>
+        </div>
+        <div style="font-size:0.75rem;color:#94a3b8;margin-bottom:8px;">${t.company || t.symbol}</div>
+
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px;">
+          ${(t.strategies || []).map(s => `<span class="badge" style="font-size:0.65rem;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#cbd5e1;">${s}</span>`).join('')}
+        </div>
+
+        <div style="font-size:0.75rem;color:#cbd5e1;line-height:1.4;margin-bottom:10px;background:rgba(255,255,255,0.02);padding:8px 10px;border-radius:6px;border-left:2px solid #38bdf8;">
+          ${t.verdict}
+        </div>
+
+        <div class="fwd-pnl-comparison">
+          <div>
+            <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;">USIC Staged</div>
+            <div class="mono" style="font-weight:700;font-size:0.95rem;color:${isWin ? '#34d399' : (isLoss ? '#fb7185' : '#38bdf8')};">${t.staged_pnl_pct > 0 ? '+' : ''}${t.staged_pnl_pct}%</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;">Buy & Hold</div>
+            <div class="mono" style="font-weight:700;font-size:0.95rem;color:${t.static_pnl_pct > 0 ? '#34d399' : '#fb7185'};">${t.static_pnl_pct > 0 ? '+' : ''}${t.static_pnl_pct}%</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;">Alpha Saved</div>
+            <div class="mono" style="font-weight:700;font-size:0.95rem;color:${alphaCol};">+${t.alpha_saved_pct}%</div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;font-size:0.74rem;color:var(--text-muted);margin-bottom:8px;font-family:'JetBrains Mono',monospace;">
+          <span>Entry: ₹${t.entry_price.toFixed(2)}</span>
+          <span>Stop: ₹${t.stop_price.toFixed(2)}</span>
+          <span>T1: ₹${t.target1_price.toFixed(2)}</span>
+        </div>
+
+        <button class="fwd-log-toggle" onclick="toggleFwdLog('fwdLog_${idx}')">
+          <span>📅 View Day-by-Day Price & Event Ledger ▾</span>
+        </button>
+
+        <div id="fwdLog_${idx}" style="display:none;margin-top:8px;">
+          <div style="overflow-x:auto;">
+            <table class="fwd-log-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th style="text-align:right;">Open</th>
+                  <th style="text-align:right;">High</th>
+                  <th style="text-align:right;">Low</th>
+                  <th style="text-align:right;">Close</th>
+                  <th>Execution Event</th>
+                </tr>
+              </thead>
+              <tbody>${logsHtml}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleFwdLog(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
 initSectorTrack();
+initForwardVerifier();
 render();
 </script>
 <nav class="mobile-bottom-dock" aria-label="Mobile Bottom Navigation">
@@ -2764,9 +3170,13 @@ render();
     <span class="dock-icon">🎯</span>
     <span class="dock-label">Screener</span>
   </button>
-  <a href="paper_trading.html" class="dock-btn">
+  <button class="dock-btn" onclick="scrollToSection('forwardVerifierSection');">
     <span class="dock-icon">⚡</span>
-    <span class="dock-label">Paper Trade</span>
+    <span class="dock-label">Verifier</span>
+  </button>
+  <a href="paper_trading.html" class="dock-btn">
+    <span class="dock-icon">💼</span>
+    <span class="dock-label">Paper</span>
   </a>
   <button class="dock-btn" onclick="focusSearch();">
     <span class="dock-icon">🔍</span>
@@ -2775,10 +3185,6 @@ render();
   <button class="dock-btn" onclick="scrollToSection('sectorSection');">
     <span class="dock-icon">📊</span>
     <span class="dock-label">Sectors</span>
-  </button>
-  <button class="dock-btn" onclick="openWalkForwardModal();">
-    <span class="dock-icon">🛡️</span>
-    <span class="dock-label">Validation</span>
   </button>
 </nav>
 </body>

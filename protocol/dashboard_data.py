@@ -28,6 +28,7 @@ from protocol.sector import (
     get_symbol_industry_momentum
 )
 from protocol.sniper_mode import screen_sniper_mode, evaluate_sniper_gates
+from protocol.forward_verifier import build_forward_verification_suite
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -133,6 +134,7 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp = "2026
         "walk_forward": _load_report("walk_forward_report.json"),
         "sniper_report": _load_report("sniper_mode_report.json"),
         "industry_rankings": ind_df.to_dict(orient="records") if not ind_df.empty else [],
+        "forward_verifier": build_forward_verification_suite(df, max_dates=16),
         "default_capital_per_stock": 100000,
     }
 
