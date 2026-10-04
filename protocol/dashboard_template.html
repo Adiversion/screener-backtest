@@ -2969,18 +2969,23 @@ function initSectorTrack() {
     const retStr = (r.median_ret60 > 0 ? '+' : '') + Number(r.median_ret60).toFixed(1) + '%';
     const cCount = candCounts[r.Industry] || 0;
     const countBadge = cCount > 0
-      ? `<span class="cand-count mono" style="font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:10px;background:rgba(56,189,248,0.22);color:#38bdf8;border:1px solid rgba(56,189,248,0.45);">${cCount}</span>`
-      : `<span class="cand-count mono" style="font-size:0.68rem;font-weight:500;padding:2px 7px;border-radius:10px;background:rgba(255,255,255,0.05);color:#64748b;border:1px solid rgba(255,255,255,0.08);">0</span>`;
+      ? `<span class="cand-count mono" style="font-size:0.72rem;font-weight:800;padding:2px 8px;border-radius:10px;background:rgba(56,189,248,0.22);color:#38bdf8;border:1px solid rgba(56,189,248,0.45);">${cCount}</span>`
+      : `<span class="cand-count mono" style="font-size:0.72rem;font-weight:500;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,0.05);color:#475569;border:1px solid rgba(255,255,255,0.08);">–</span>`;
     const isActive = activeSec && activeSec === r.Industry ? ' active' : '';
 
     return `
       <button class="btn-chip sector-chip-btn${isActive}" data-sector="${r.Industry.replace(/"/g, '&quot;')}" onclick="filterBySector('${r.Industry.replace(/'/g, "\\'")}')" 
-        title="${r.Industry}: ${cCount} qualified candidates today | ${r.tier}"
-        style="color:${color};background:${bg};border-color:${border};white-space:nowrap;cursor:pointer;flex-shrink:0;min-height:36px;padding:6px 12px;display:inline-flex;align-items:center;gap:7px;">
-        <strong>${r.Industry}</strong>
-        <span class="mono" style="font-size:0.72rem;opacity:0.9;">${retStr}</span>
+        title="${r.Industry}&#10;&#10;60d Industry RS: ${retStr} (median return of all stocks in this industry group — sector macro momentum, not screener candidates)&#10;&#10;Breakout setups: ${cCount > 0 ? cCount : 'None today — sector has macro tailwind but no stock formed a valid breakout setup'}&#10;&#10;${r.tier}"
+        style="color:${color};background:${bg};border-color:${border};white-space:nowrap;cursor:pointer;flex-shrink:0;min-height:36px;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;">
+        <strong style="font-size:0.8rem;">${r.Industry}</strong>
         <span style="font-size:0.65rem;opacity:0.85;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,0.08);">${r.tier.split(':')[0]}</span>
-        ${countBadge}
+        <span style="display:inline-flex;align-items:center;gap:2px;" title="60-day median return of ALL stocks in this industry — macro sector momentum, not individual candidate performance">
+          <span style="font-size:0.6rem;color:#64748b;font-weight:600;letter-spacing:0.02em;">60d</span>
+          <span class="mono" style="font-size:0.72rem;color:${color};">${retStr}</span>
+        </span>
+        <span style="display:inline-flex;align-items:center;gap:3px;" title="${cCount > 0 ? cCount + ' breakout candidates qualify in this sector today' : 'No stocks in this sector passed all 10 institutional gates — sector has momentum but no valid setups yet'}">
+          <span style="font-size:0.6rem;color:#475569;font-weight:600;letter-spacing:0.02em;">setups</span>${countBadge}
+        </span>
       </button>
     `;
   }).join('');
