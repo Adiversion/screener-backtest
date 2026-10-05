@@ -101,10 +101,8 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           rm -rf /tmp/live && mkdir -p /tmp/live
-          # the site is the front door: it must land at the repository ROOT of
-          # the live branch, not under reports/
+          # the interactive dashboard is the front door: it lands at the repository ROOT
           cp -r reports/. /tmp/live/
-          if [ -d reports/site ]; then cp -r reports/site/. /tmp/live/; fi
           cd /tmp/live
           git init -q -b live
           git add -A

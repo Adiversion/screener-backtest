@@ -17,7 +17,7 @@ async function boot(){
   DATA=await (await fetch('stocks.json?v='+Date.now())).json();
   $('#asof').textContent='session '+DATA.asof+' · '+DATA.universe.symbols+' symbols · '
     +DATA.universe.from+' → '+DATA.universe.to;
-  $('#cleared').textContent=DATA.stats.cleared;
+  const cl=$('#cleared'); if(cl) cl.textContent=DATA.stats.cleared;
   renderList(DATA.clearing);
   renderComponents();
   renderEvidence();
