@@ -5,6 +5,9 @@ name: Deploy reports to GitHub Pages
 #   Repo -> Settings -> Pages -> Build and deployment -> Source: "GitHub Actions"
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - live
   workflow_run:
     workflows: ["Update live reports"]
     types: [completed]
@@ -21,7 +24,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/live') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

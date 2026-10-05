@@ -22,6 +22,7 @@ import json
 import sys
 from pathlib import Path
 
+from collections import defaultdict
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -31,6 +32,13 @@ from protocol import audit, engine, evidence, quality, regime, sector, sizing  #
 from protocol.config import get, load_config  # noqa: E402
 from protocol.data import data_quality_report, load_history  # noqa: E402
 from protocol.features import build_panel  # noqa: E402
+from protocol.github_screeners import (  # noqa: E402
+    compute_screener_features, screen_canslim, screen_darvas_box,
+    screen_minervini, screen_pkscreener_vcp, screen_protocol_v2,
+    screen_qullamaggie, screen_relative_strength, screen_stan_weinstein,
+    screen_turtle_trading, screen_wyckoff_closing_range, screen_sector_momentum_leader,
+    screen_connors_rsi_pullback,
+)
 from protocol.simulator import prepare  # noqa: E402
 
 DEFAULT_SET = ["recovered_after_rej", "pa_state_a", "trap", "random"]
@@ -39,7 +47,10 @@ DEFAULT_SET = ["recovered_after_rej", "pa_state_a", "trap", "random"]
 def main() -> int:
     ap = argparse.ArgumentParser(description="Which stocks, which criteria, what evidence")
     ap.add_argument("--config", default=None)
-    ap.add_argument("--data", default=str(ROOT / "data" / "universe_history.parquet"))
+    wide = ROOT / "data" / "nse_all_history.parquet"
+    core = ROOT / "data" / "universe_history.parquet"
+    default_data = str(wide if wide.exists() else core)
+    ap.add_argument("--data", default=default_data)
     ap.add_argument("--asof", default=None)
     ap.add_argument("--capital", type=float, default=1000.0)
     ap.add_argument("--strategies", default=",".join(DEFAULT_SET))
@@ -112,6 +123,64 @@ def main() -> int:
             t["stop_price"] = al.stop_price
             t["capital_pct"] = al.capital_pct
 
+    # ---- 1b. multi-framework confluence candidates -------------------------
+    confluence_top = []
+    try:
+        feat = compute_screener_features(history, asof)
+        groups = [
+            ("Protocol Fortified", screen_protocol_v2(feat, top_n=60, min_turnover_cr=0.5)),
+            ("Relative Strength Leader", screen_relative_strength(feat, top_n=60, min_turnover_cr=0.5)),
+            ("Minervini Template", screen_minervini(feat, top_n=60, min_turnover_cr=0.5)),
+            ("Stan Weinstein Stage 2", screen_stan_weinstein(feat, top_n=60, min_turnover_cr=0.5)),
+            ("Qullamaggie Breakout", screen_qullamaggie(feat, top_n=60, min_turnover_cr=0.5)),
+            ("CANSLIM Setup", screen_canslim(feat, top_n=60, min_turnover_cr=0.5)),
+            ("Turtle Trading Breakout", screen_turtle_trading(feat, top_n=60, min_turnover_cr=0.5)),
+            ("Darvas Box Breakout", screen_darvas_box(feat, top_n=60, min_turnover_cr=0.5)),
+            ("PKScreener VCP", screen_pkscreener_vcp(feat, top_n=60, min_turnover_cr=0.5)),
+            ("Wyckoff Closing Range", screen_wyckoff_closing_range(feat, top_n=60, min_turnover_cr=0.5)),
+            ("Industry Momentum Leader", screen_sector_momentum_leader(feat, top_n=60, min_turnover_cr=0.5)),
+            ("Connors RSI Pullback", screen_connors_rsi_pullback(feat, top_n=60, min_turnover_cr=0.5)),
+        ]
+        fw_counts = defaultdict(list)
+        fw_sym_data = {}
+        for gname, sub in groups:
+            for item in sub:
+                s = item.symbol
+                fw_counts[s].append(gname)
+                if s not in fw_sym_data:
+                    fw_sym_data[s] = item
+
+        deliv_file = ROOT / "data" / "delivery_history.parquet"
+        deliv_map = {}
+        if deliv_file.exists():
+            try:
+                ddf = pd.read_parquet(deliv_file)
+                ddf["Date"] = pd.to_datetime(ddf["Date"]).dt.normalize()
+                dsub = ddf[ddf["Date"] == asof]
+                deliv_map = dict(zip(dsub["Symbol"].astype(str), dsub["DelivPct"].astype(float)))
+            except Exception:
+                pass
+
+        sorted_fw = sorted(fw_counts.items(), key=lambda x: (len(x[1]), fw_sym_data[x[0]].ret20), reverse=True)
+        for s, fws in sorted_fw[:max(10, args.top)]:
+            item = fw_sym_data[s]
+            sec = sector.get_sector(s)
+            deliv = deliv_map.get(s)
+            p52 = float(feat.loc[feat["Symbol"] == s, "prox52"].iloc[0]) if "prox52" in feat.columns and not feat.loc[feat["Symbol"] == s].empty else 1.0
+            confluence_top.append({
+                "symbol": s,
+                "industry": sec,
+                "close": round(float(item.close), 2),
+                "rvol": round(float(item.rvol20), 2),
+                "ret20": round(float(item.ret20), 4),
+                "deliv_pct": round(float(deliv), 1) if deliv is not None else None,
+                "prox52": round(p52, 4),
+                "frameworks_passed": fws,
+                "framework_count": len(fws),
+            })
+    except Exception as e:
+        print(f"Warning: could not compute multi-framework confluence: {e}")
+
     # ---- 2. historical evidence per strategy -------------------------------
     bars = {s: b.sort_values("Date").reset_index(drop=True)
             for s, b in history.groupby("Symbol")}
@@ -175,6 +244,7 @@ def main() -> int:
         "strategies": evidence.STRATEGIES, "evidence": ev_rows,
         "caveats": evidence.CAVEATS,
         "regime": mkt_regime,
+        "confluence_top": confluence_top,
     }
 
     out = Path(args.outdir)
@@ -208,6 +278,19 @@ def main() -> int:
             print(f"  Total Portfolio Infusion: INR {total_infusion:,.2f} across {len(today)} stocks (INR {args.capital_per_stock:,.0f} per stock)")
         else:
             print(f"  Portfolio Capital: INR {args.capital:,.2f} | Total Allocated: INR {total_infusion:,.2f} | Cash: INR {rem_cash:,.2f}")
+
+    if confluence_top:
+        print(f"\n==============================================================================")
+        print(f"MULTI-FRAMEWORK CONFLUENCE LEADERS (Top {len(confluence_top)} Setups across 12 Frameworks)")
+        print(f"==============================================================================")
+        print(f"  {'Rank':>4} {'Symbol':<12} {'Sector':<26} {'Confluence':>10} {'Close (INR)':>12} {'Top Frameworks'}")
+        print("  " + "-" * 84)
+        for idx, c in enumerate(confluence_top, 1):
+            fws = ", ".join(c["frameworks_passed"][:3])
+            if len(c["frameworks_passed"]) > 3:
+                fws += f" (+{len(c['frameworks_passed']) - 3} more)"
+            print(f"  {idx:>4}. {c['symbol']:<12} {c['industry'][:24]:<26} {c['framework_count']:>2}/12     {c['close']:>12.2f}  {fws}")
+
     print()
     print(f"{'strategy':<24}{'N':>8}{'expectancy':>12}{' 95% CI':>24}{'  vs null':>10}")
     for e in ev_rows:

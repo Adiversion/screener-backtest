@@ -12,6 +12,7 @@ The per-stock "which criteria passed" report lives in `protocol.quality`.
 from __future__ import annotations
 
 from typing import Any
+import pandas as pd
 
 from protocol import metrics
 
@@ -125,6 +126,32 @@ def to_markdown(payload: dict[str, Any]) -> str:
                      f"{round(float(t.get('turnover20') or 0)):,} | {t['reason']} |")
     else:
         L.append("_No stock cleared every hard gate today._")
+
+    confluence = payload.get("confluence_top") or []
+    if confluence:
+        L += [
+            "",
+            "## 2.1 Multi-Framework Confluence Leaders (Top 10+ Setups)",
+            "",
+            "> [!TIP]",
+            "> Evaluated across **12 Institutional Frameworks** (Minervini SEPA, Kristjan Qullamaggie HTF/EP, CANSLIM, PKScreener VCP, Turtle, Darvas Box, Oliver Kell, Weinstein Stage 2, RS Leaders, etc.).",
+            "",
+            "| Rank | Stock | Sector | Confluence | Frameworks Passed | Close (INR) | 52w Proximity | RVOL20 | Delivery % |",
+            "|---|---|---|---|---|---|---|---|---|",
+        ]
+        for idx, c in enumerate(confluence, 1):
+            fws_list = c.get("strategies") or c.get("frameworks_passed") or []
+            fws = ", ".join(fws_list[:3])
+            if len(fws_list) > 3:
+                fws += f" (+{len(fws_list) - 3} more)"
+            sec = str(c.get("industry") or "Unknown")
+            deliv = f"{float(c['deliv_pct']):.1f}%" if c.get("deliv_pct") is not None and not pd.isna(c.get("deliv_pct")) else "N/A"
+            rvol = f"{float(c.get('rvol') or c.get('rvol20') or 1.0):.2f}x"
+            prox = f"{float(c.get('prox52') or 1.0)*100:.1f}%"
+            close_val = float(c.get("close") or 0.0)
+            cnt = len(fws_list)
+            L.append(f"| {idx} | **{c['symbol']}** | {sec} | **{cnt}/12** | {fws} | {close_val:.2f} | {prox} | {rvol} | {deliv} |")
+
     L += ["", "## 3. What each name is made of", "",
           "| Component | Weight | Measures | Why it matters |", "|---|---|---|---|"]
     for c in payload["components"]:
