@@ -4,11 +4,10 @@ through the same simulator and compared against AAE and the baselines.
 from __future__ import annotations
 
 import numpy as np
-import pandas as pd
 
 from protocol import pra
 from protocol.signals import TradeSignal
-from protocol.strategies import REGISTRY, register
+from protocol.strategies import register
 
 
 def _emit_from_classes(panel, cfg, name, classes, extra=None) -> list[TradeSignal]:

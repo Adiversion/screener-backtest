@@ -8,5 +8,5 @@ from protocol import strategies_evidence as _ev  # noqa: F401  (registers IC-bac
 __all__ = ["config", "features", "states", "filters", "simulator",
            "metrics", "strategies", "strategies_pra", "strategies_pa",
            "strategies_evidence", "pra",
-           "pa", "screen", "quality", "evidence", "engine", "report",
-           "report_html", "audit", "data"]
+           "pa", "screen", "quality", "evidence", "engine", "frameworks",
+           "stats", "reporting", "audit", "data"]

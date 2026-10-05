@@ -12,7 +12,6 @@ Examples
 from __future__ import annotations
 
 import argparse
-import os
 import sys
 from pathlib import Path
 
@@ -22,7 +21,8 @@ import yaml
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from protocol import audit, engine, report  # noqa: E402
+from protocol import audit, engine  # noqa: E402
+from protocol.reporting import report  # noqa: E402
 from protocol.config import (  # noqa: E402
     assert_validation_gate, get, load_config, record_discovery_hash,
 )

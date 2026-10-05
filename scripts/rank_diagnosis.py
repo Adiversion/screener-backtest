@@ -32,7 +32,6 @@ sys.path.insert(0, str(ROOT))
 from protocol import quality  # noqa: E402
 from protocol.config import load_config  # noqa: E402
 from protocol.data import load_history  # noqa: E402
-from protocol.features import build_panel  # noqa: E402
 
 CACHE = ROOT / "reports" / "scored_panel.parquet"
 HORIZON = 20

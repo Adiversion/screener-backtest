@@ -27,7 +27,7 @@ network.
 from __future__ import annotations
 
 import io
-from datetime import date, timedelta
+from datetime import date
 from typing import Iterable
 
 import pandas as pd
@@ -115,28 +115,6 @@ def fetch_bhavdata(day: date | str, session: requests.Session | None = None) -> 
     if "Date" in out.columns:
         out["Date"] = pd.Timestamp(day).normalize()
     return out
-
-
-def bhavdata_range(start: str | date, end: str | date | None = None,
-                   progress: bool = False) -> pd.DataFrame:
-    """Every session between two dates. One request per trading day."""
-    end = pd.Timestamp(end or date.today()).normalize()
-    start = pd.Timestamp(start).normalize()
-    frames: list[pd.DataFrame] = []
-    day, misses = start, 0
-    with _session() as sess:
-        while day <= end:
-            if day.dayofweek < 5:
-                try:
-                    df = fetch_bhavdata(day, sess)
-                    if not df.empty:
-                        frames.append(df)
-                except Exception:  # a holiday returns 404; skip it
-                    misses += 1
-            day += timedelta(days=1)
-    if progress:
-        print(f"  bhavdata: {len(frames)} sessions fetched, {misses} non-trading days skipped")
-    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
 
 def fetch_nifty500_symbols(session: requests.Session | None = None) -> list[str]:

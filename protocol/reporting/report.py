@@ -122,7 +122,7 @@ def write_outputs(data: dict[str, Any], cfg: dict, out_dir: str | Path) -> dict[
     payload = summary_payload(data)
     (out / "report.json").write_text(json.dumps(payload, default=str, indent=2), encoding="utf-8")
     (out / "REPORT.md").write_text(to_markdown(data, cfg), encoding="utf-8")
-    from protocol import report_html
+    from protocol.reporting import report_html
     (out / "REPORT.html").write_text(report_html.render(data), encoding="utf-8")
     rows = comparison_table(data)
     with open(out / "comparison.csv", "w", newline="", encoding="utf-8") as fh:

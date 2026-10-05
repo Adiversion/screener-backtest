@@ -11,7 +11,6 @@ from math import floor
 from typing import Any
 
 import numpy as np
-import pandas as pd
 
 from protocol.costs import CostModel
 

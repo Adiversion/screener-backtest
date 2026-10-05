@@ -330,7 +330,6 @@
       border-radius: 4px;
       display: inline-block;
     }
-    .pos-sniper { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
     .pos-standard { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); }
 
     .btn-action-sm {
@@ -568,8 +567,6 @@
         <button class="btn btn-primary" onclick="importTopScreenerPicks()" title="1-Click allocate ₹1L into top 5 qualified screener breakout leaders">
           <span>⚡</span> 1-Click Allocate Top Setups (₹1L)
         </button>
-        <button class="btn btn-amber" onclick="importSniperPicks()" title="Allocate only into high win-rate Sniper setups (65%+ WR)">
-          <span>🎯</span> Sniper Setups Only
         </button>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
@@ -1064,6 +1061,13 @@
 
     // Pure JavaScript Protobuf Decoder for Yahoo Streamer (wss://streamer.finance.yahoo.com/)
     // Reconstructed from Yahoo's __finStreamer-proto.js (Zero external dependencies)
+    /**
+     * Decode Yahoo Finance's protobuf-encoded live quote into a plain object.
+     * Yahoo streams quotes as a base64 protobuf; this walks the wire format
+     * (varint / length-delimited fields) and extracts the price fields.
+     * @param {string} base64Str - base64 protobuf payload from the Yahoo stream.
+     * @returns {object} decoded quote fields, or {} when unparseable.
+     */
     function decodeYahooProtobuf(base64Str) {
       try {
         const binaryString = atob(base64Str);
@@ -1209,6 +1213,15 @@
     let pendingTicks = {};
     let rafScheduled = false;
 
+    /**
+     * Queue one live price tick for an open position.
+     * Ticks are coalesced into `pendingTicks` and flushed once per animation
+     * frame, so a burst of stream messages triggers a single re-render.
+     * @param {string} sym - symbol the tick belongs to.
+     * @param {number} newPrice - latest traded price.
+     * @param {number} chgPct - percent change for the session.
+     * @param {object} rawTick - original stream payload, if any.
+     */
     function queueLiveTick(sym, newPrice, chgPct, rawTick) {
       if (!sym || newPrice == null || isNaN(newPrice) || newPrice <= 0) return;
       // Strictly track active open positions only
@@ -1224,6 +1237,10 @@
       }
     }
 
+    /**
+     * Drain the coalesced tick queue and repaint the affected rows once.
+     * Scheduled via requestAnimationFrame by `queueLiveTick`.
+     */
     function flushPendingTicks() {
       rafScheduled = false;
       const ticks = pendingTicks;
@@ -1488,6 +1505,13 @@
       event.target.value = '';
     }
 
+    /**
+     * Apply the autonomous risk engine to one open position: raise the stop to
+     * breakeven after a profit threshold, trail it, then exit when breached.
+     * @param {object} pos - the position record (mutated in place).
+     * @param {number} idx - index of the position in `portfolio.positions`.
+     * @returns {boolean} true when the position was closed by this call.
+     */
     function checkAutomaticExecution(pos, idx) {
       if (!autoTradeEnabled) return false;
       const cur = pos.currentPrice;
@@ -1765,7 +1789,7 @@
             <td>
               <div style="font-weight:700;color:#38bdf8;font-size:0.92rem;">${p.symbol}</div>
               <div style="display:flex;gap:4px;margin-top:2px;">
-                <span class="pos-tag ${p.isSniper ? 'pos-sniper' : 'pos-standard'}">${p.setupType || 'Breakout'}</span>
+                <span class="pos-tag pos-standard">${p.setupType || 'Breakout'}</span>
                 ${p.scaledOut ? '<span class="pos-tag" style="background:rgba(56,189,248,0.12);color:#38bdf8;">RUNNER 50%</span>' : ''}
               </div>
             </td>
@@ -1879,7 +1903,6 @@
           <tr>
             <td>
               <b style="color:#38bdf8;">${c.symbol}</b>
-              ${c.is_sniper ? '<span class="pos-tag pos-sniper" style="margin-left:4px;">🎯 SNIPER</span>' : ''}
             </td>
             <td>
               <div style="font-size:0.78rem;color:#f1f5f9;">${c.company || c.symbol}</div>
@@ -2022,7 +2045,6 @@
         'Qullamaggie Breakout',
         'CANSLIM Pivot',
         'Protocol Fortified',
-        'Sniper Mode (65%+ WR)',
         'Institutional Delivery Absorption',
         'PKScreener VCP',
         'Turtle Trading',
@@ -2172,7 +2194,6 @@
         strategies: cand.strategies || [cand.strategies[0]],
         company: cand.company || cand.symbol,
         sector: cand.sector || 'General',
-        isSniper: Boolean(cand.is_sniper),
         shares: shares,
         buyPrice: cand.close,
         currentPrice: cand.close,
@@ -2195,21 +2216,6 @@
       if (!D || !D.candidates) return;
       const topPicks = D.candidates.slice(0, 5);
       topPicks.forEach(c => {
-        if (!portfolio.positions.some(p => p.symbol === c.symbol)) {
-          buyCandidate(c.symbol);
-        }
-      });
-    }
-
-    function importSniperPicks() {
-      if (!D || !D.candidates) return;
-      const snipers = D.candidates.filter(c => c.is_sniper || c.strategies.includes('Sniper Mode (65%+ WR)'));
-      if (snipers.length === 0) {
-        alert('No qualified Sniper Mode setups on current market date. Defaulting to top 3 RS leaders.');
-        importTopScreenerPicks();
-        return;
-      }
-      snipers.forEach(c => {
         if (!portfolio.positions.some(p => p.symbol === c.symbol)) {
           buyCandidate(c.symbol);
         }
@@ -2314,7 +2320,6 @@
       portfolio.positions.push({
         symbol: sym,
         setupType: 'Manual Discretionary',
-        isSniper: false,
         shares: shares,
         buyPrice: price,
         currentPrice: price,

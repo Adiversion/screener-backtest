@@ -12,10 +12,9 @@ Generates reports/index.html, reports/interactive_screener.html, and docs/index.
 from __future__ import annotations
 
 import argparse
+import shutil
 import sys
 from pathlib import Path
-
-import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -82,53 +81,33 @@ def build_app(data_path: str, asof_date: str = "2026-10-01", outdir: str = "repo
     paper_html = get_paper_trading_html(app_data)
 
     out = Path(outdir)
-    out.mkdir(parents=True, exist_ok=True)
-    target_files = [
-        # Main entry points
-        (out / "index.html", screener_html),
-        (out / "interactive_screener.html", screener_html),
-        (ROOT / "docs" / "index.html", screener_html),
-
-        # Dedicated Section Pages (replaces # anchors with real pages)
-        (out / "screener.html", screener_html),
-        (ROOT / "docs" / "screener.html", screener_html),
-        (out / "macro.html", screener_html),
-        (ROOT / "docs" / "macro.html", screener_html),
-        (out / "inspector.html", screener_html),
-        (ROOT / "docs" / "inspector.html", screener_html),
-        (out / "verifier.html", screener_html),
-        (ROOT / "docs" / "verifier.html", screener_html),
-
-        # Paper Trading Station
-        (out / "paper_trading.html", paper_html),
-        (ROOT / "docs" / "paper_trading.html", paper_html),
-
-        # Directory-style clean URL handlers (/screener/, /macro/, etc.)
-        (out / "screener" / "index.html", make_redirect_html("screener.html")),
-        (ROOT / "docs" / "screener" / "index.html", make_redirect_html("screener.html")),
-        (out / "macro" / "index.html", make_redirect_html("macro.html")),
-        (ROOT / "docs" / "macro" / "index.html", make_redirect_html("macro.html")),
-        (out / "inspector" / "index.html", make_redirect_html("inspector.html")),
-        (ROOT / "docs" / "inspector" / "index.html", make_redirect_html("inspector.html")),
-        (out / "verifier" / "index.html", make_redirect_html("verifier.html")),
-        (ROOT / "docs" / "verifier" / "index.html", make_redirect_html("verifier.html")),
-        (out / "paper_trading" / "index.html", make_redirect_html("paper_trading.html")),
-        (ROOT / "docs" / "paper_trading" / "index.html", make_redirect_html("paper_trading.html")),
-
-        # Universal 404 SPA fallback router
-        (out / "404.html", make_404_html()),
-        (ROOT / "docs" / "404.html", make_404_html()),
+    # relative path -> content. The same set is written to reports/ (the build
+    # output) and docs/ (the GitHub Pages root), so the two never drift apart.
+    files: list[tuple[Path, str]] = [
+        (Path("index.html"), screener_html),
+        (Path("interactive_screener.html"), screener_html),
+        (Path("screener.html"), screener_html),
+        (Path("macro.html"), screener_html),
+        (Path("inspector.html"), screener_html),
+        (Path("verifier.html"), screener_html),
+        (Path("paper_trading.html"), paper_html),
+        (Path("404.html"), make_404_html()),
     ]
-    for p, content in target_files:
-        p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(content, encoding="utf-8")
+    # Directory-style clean URL handlers (/screener/, /macro/, ...).
+    for section in ("screener", "macro", "inspector", "verifier", "paper_trading"):
+        files.append((Path(section) / "index.html", make_redirect_html(f"{section}.html")))
+
+    for root in (out, ROOT / "docs"):
+        for rel, content in files:
+            target = root / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(content, encoding="utf-8")
 
     chart_lib = ROOT / "protocol" / "lightweight-charts.standalone.production.js"
     if chart_lib.exists():
-        import shutil
-        shutil.copyfile(chart_lib, out / "lightweight-charts.standalone.production.js")
-        (ROOT / "docs").mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(chart_lib, ROOT / "docs" / "lightweight-charts.standalone.production.js")
+        for root in (out, ROOT / "docs"):
+            root.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(chart_lib, root / chart_lib.name)
 
     print(f"Interactive website successfully built -> {out / 'index.html'} and {out / 'paper_trading.html'}")
     return out / "index.html"

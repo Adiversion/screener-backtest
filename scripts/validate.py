@@ -38,7 +38,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from protocol import crosssec, dataqc, inference, pra, redundancy  # noqa: E402
-from protocol import validation_md  # noqa: E402
+from protocol.reporting import validation_md  # noqa: E402
 from protocol.config import canonical_hash, load_config  # noqa: E402
 from protocol.data import load_history  # noqa: E402
 from protocol.features import build_panel  # noqa: E402

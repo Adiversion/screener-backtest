@@ -16,7 +16,6 @@ date <= T, and percentiles are taken within the date only.
 """
 from __future__ import annotations
 
-from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -180,12 +179,3 @@ def rank_all(long: pd.DataFrame, cfg: dict, components: dict) -> pd.DataFrame:
                                   "INSUFFICIENT"))
     out["clears"] = _gate_mask(out, cfg, out["coverage"])
     return out
-
-
-def best_on(ranked: pd.DataFrame, date: pd.Timestamp, exclude=()) -> pd.Series | None:
-    """Highest-scoring gate-clearing candidate on `date`, or None."""
-    day = ranked[ranked["date"] == np.datetime64(pd.Timestamp(date))]
-    day = day[day["clears"] & ~day["symbol"].isin(list(exclude))]
-    if day.empty:
-        return None
-    return day.sort_values(["score", "symbol"], ascending=[False, True]).iloc[0]

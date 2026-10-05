@@ -21,28 +21,21 @@ screen that abstains is a position and must be scored as one.
 """
 from __future__ import annotations
 
-import math
 import sys
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from protocol.data import load_history  # noqa: E402
+from protocol.stats import t_stat  # noqa: E402
 
 CACHE = ROOT / "reports" / "scored_panel.parquet"
 HORIZON = 20
 TOPKS = (1, 3, 5, 10)
 
-
-def t_stat(diffs: np.ndarray) -> float:
-    d = pd.Series(diffs).dropna()
-    if len(d) < 3 or d.std() == 0:
-        return float("nan")
-    return float(d.mean() / (d.std() / np.sqrt(len(d))))
 
 
 def main() -> int:

@@ -17,7 +17,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from protocol import report  # noqa: E402
+from protocol.reporting import report  # noqa: E402
 from protocol.config import load_config  # noqa: E402
 
 

@@ -32,13 +32,8 @@ from protocol import audit, engine, evidence, quality, regime, sector, sizing  #
 from protocol.config import get, load_config  # noqa: E402
 from protocol.data import data_quality_report, load_history  # noqa: E402
 from protocol.features import build_panel  # noqa: E402
-from protocol.github_screeners import (  # noqa: E402
-    compute_screener_features, screen_canslim, screen_darvas_box,
-    screen_minervini, screen_pkscreener_vcp, screen_protocol_v2,
-    screen_qullamaggie, screen_relative_strength, screen_stan_weinstein,
-    screen_turtle_trading, screen_wyckoff_closing_range, screen_sector_momentum_leader,
-    screen_connors_rsi_pullback,
-)
+from protocol.frameworks import load_delivery_map, run_frameworks  # noqa: E402
+from protocol.github_screeners import compute_screener_features  # noqa: E402
 from protocol.simulator import prepare  # noqa: E402
 
 DEFAULT_SET = ["recovered_after_rej", "pa_state_a", "trap", "random"]
@@ -127,20 +122,10 @@ def main() -> int:
     confluence_top = []
     try:
         feat = compute_screener_features(history, asof)
-        groups = [
-            ("Protocol Fortified", screen_protocol_v2(feat, top_n=60, min_turnover_cr=0.5)),
-            ("Relative Strength Leader", screen_relative_strength(feat, top_n=60, min_turnover_cr=0.5)),
-            ("Minervini Template", screen_minervini(feat, top_n=60, min_turnover_cr=0.5)),
-            ("Stan Weinstein Stage 2", screen_stan_weinstein(feat, top_n=60, min_turnover_cr=0.5)),
-            ("Qullamaggie Breakout", screen_qullamaggie(feat, top_n=60, min_turnover_cr=0.5)),
-            ("CANSLIM Setup", screen_canslim(feat, top_n=60, min_turnover_cr=0.5)),
-            ("Turtle Trading Breakout", screen_turtle_trading(feat, top_n=60, min_turnover_cr=0.5)),
-            ("Darvas Box Breakout", screen_darvas_box(feat, top_n=60, min_turnover_cr=0.5)),
-            ("PKScreener VCP", screen_pkscreener_vcp(feat, top_n=60, min_turnover_cr=0.5)),
-            ("Wyckoff Closing Range", screen_wyckoff_closing_range(feat, top_n=60, min_turnover_cr=0.5)),
-            ("Industry Momentum Leader", screen_sector_momentum_leader(feat, top_n=60, min_turnover_cr=0.5)),
-            ("Connors RSI Pullback", screen_connors_rsi_pullback(feat, top_n=60, min_turnover_cr=0.5)),
-        ]
+        # Delivery is reported as an attribute here but its screener is not part
+        # of this caller's confluence set, so it is excluded from the run.
+        groups = run_frameworks(feat, top_n=60, min_turnover_cr=0.5,
+                                include_delivery=False)
         fw_counts = defaultdict(list)
         fw_sym_data = {}
         for gname, sub in groups:
@@ -150,16 +135,7 @@ def main() -> int:
                 if s not in fw_sym_data:
                     fw_sym_data[s] = item
 
-        deliv_file = ROOT / "data" / "delivery_history.parquet"
-        deliv_map = {}
-        if deliv_file.exists():
-            try:
-                ddf = pd.read_parquet(deliv_file)
-                ddf["Date"] = pd.to_datetime(ddf["Date"]).dt.normalize()
-                dsub = ddf[ddf["Date"] == asof]
-                deliv_map = dict(zip(dsub["Symbol"].astype(str), dsub["DelivPct"].astype(float)))
-            except Exception:
-                pass
+        deliv_map = load_delivery_map(asof)
 
         sorted_fw = sorted(fw_counts.items(), key=lambda x: (len(x[1]), fw_sym_data[x[0]].ret20), reverse=True)
         for s, fws in sorted_fw[:max(10, args.top)]:
