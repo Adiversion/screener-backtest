@@ -2904,7 +2904,7 @@ function render() {
       const stratTags = (c.strategies || []).map(s => {
         let cls = 'protocol';
         let shortName = s;
-        else if (s.includes('Minervini')) { cls = 'minervini'; shortName = 'Minervini'; }
+        if (s.includes('Minervini')) { cls = 'minervini'; shortName = 'Minervini'; }
         else if (s.includes('Weinstein')) { cls = 'weinstein'; shortName = 'Weinstein Stage 2'; }
         else if (s.includes('Relative Strength')) { cls = 'rs'; shortName = 'RS Leader'; }
         else if (s.includes('Qullamaggie')) { cls = 'qullamaggie'; shortName = 'Qullamaggie'; }
@@ -3232,7 +3232,7 @@ function openModal(sym) {
     mStratGrid.innerHTML = (c.strategies || []).map(s => {
       let cls = 'protocol';
       let shortName = s;
-      else if (s.includes('Minervini')) { cls = 'minervini'; shortName = 'Minervini'; }
+      if (s.includes('Minervini')) { cls = 'minervini'; shortName = 'Minervini'; }
       else if (s.includes('Weinstein')) { cls = 'weinstein'; shortName = 'Weinstein Stage 2'; }
       else if (s.includes('Relative Strength')) { cls = 'rs'; shortName = 'RS Leader'; }
       else if (s.includes('Qullamaggie')) { cls = 'qullamaggie'; shortName = 'Qullamaggie'; }

@@ -1,11 +1,11 @@
 name: Update live reports
 
 # Runs the whole engine on GitHub's servers - no PC needed.
-#  - every day at 19:00 IST (13:30 UTC)
+#  - every day at 17:30 IST (12:00 UTC)
 #  - or on demand from the Actions tab / the API ("Run workflow")
 on:
   schedule:
-    - cron: "30 13 * * *"
+    - cron: "0 12 * * *"
   workflow_dispatch:
     inputs:
       full_backtest:

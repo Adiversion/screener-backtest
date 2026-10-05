@@ -94,8 +94,9 @@ def _normalise_nse(df: pd.DataFrame) -> pd.DataFrame:
             # bhavcopy also dates files by name; fall back to the filename date
             pass
         out["Date"] = d.dt.normalize()
-    if "DelivPct" in out.columns:
-        out["DelivPct"] = pd.to_numeric(out["DelivPct"], errors="coerce")
+    for num_col in ("Open", "High", "Low", "Close", "PrevClose", "Last", "Volume", "DelivQty", "DelivPct", "Trades"):
+        if num_col in out.columns:
+            out[num_col] = pd.to_numeric(out[num_col].astype(str).str.strip().str.replace(",", ""), errors="coerce")
     keep = [c for c in ("Date", "Symbol", "Series", "Open", "High", "Low",
                         "Close", "PrevClose", "Last", "Volume", "DelivQty",
                         "DelivPct", "Trades") if c in out.columns]

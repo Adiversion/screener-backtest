@@ -20,3 +20,4 @@ reports/trades_*.csv
 *.bak
 data/sec_list_[0-9]*.csv
 audit_*.png
+data/cookies.txt

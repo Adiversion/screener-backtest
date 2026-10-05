@@ -103,11 +103,12 @@ def build_app(data_path: str, asof_date: str = "2026-10-01", outdir: str = "repo
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(content, encoding="utf-8")
 
-    chart_lib = ROOT / "protocol" / "lightweight-charts.standalone.production.js"
-    if chart_lib.exists():
-        for root in (out, ROOT / "docs"):
-            root.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(chart_lib, root / chart_lib.name)
+    for lib_name in ("lightweight-charts.standalone.production.js", "lightweight-charts-drawing.umd.cjs"):
+        src_lib = ROOT / "protocol" / lib_name
+        if src_lib.exists():
+            for root in (out, ROOT / "docs"):
+                root.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(src_lib, root / lib_name)
 
     print(f"Interactive website successfully built -> {out / 'index.html'} and {out / 'paper_trading.html'}")
     return out / "index.html"
