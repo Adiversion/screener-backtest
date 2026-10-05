@@ -72,7 +72,7 @@ jobs:
 
       - name: Rank good stocks (blended quality score + evidence)
         continue-on-error: true
-        run: python scripts/decisions.py --top 10
+        run: python scripts/decisions.py --top 10 --data data/nse_all_history.parquet
 
       - name: Candidate screen and dashboard
         run: python scripts/screen_candidates.py
