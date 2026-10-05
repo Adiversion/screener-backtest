@@ -45,38 +45,6 @@
     }
 
     .mono { font-family: 'JetBrains Mono', monospace; }
-
-    /* Top Ticker Tape */
-    .ticker-tape-container {
-      background: rgba(3, 7, 18, 0.95);
-      border-bottom: 1px solid var(--border);
-      overflow: hidden;
-      white-space: nowrap;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      backdrop-filter: blur(12px);
-    }
-    .ticker-tape-track {
-      display: inline-flex;
-      gap: 28px;
-      padding: 8px 16px;
-      animation: tickerScroll 45s linear infinite;
-    }
-    .ticker-tape-track:hover { animation-play-state: paused; }
-    @keyframes tickerScroll {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
-    }
-    .ticker-item {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.78rem;
-    }
-    .ticker-item .sym { font-weight: 700; color: #f1f5f9; }
-    .ticker-item .price { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
-    .ticker-item .chg { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; }
     .tick-up { color: var(--emerald); }
     .tick-down { color: var(--rose); }
 
@@ -546,13 +514,6 @@
 </head>
 <body>
 
-  <!-- Top Real-Time Ticker Tape -->
-  <div class="ticker-tape-container">
-    <div class="ticker-tape-track" id="tickerTrack">
-      <!-- Injected dynamically -->
-    </div>
-  </div>
-
   <!-- Header -->
   <header class="app-header">
     <div class="brand-wrap">
@@ -902,6 +863,10 @@
               renderClosed();
               updateCloudSyncStatus('synced', 'Cloud: Up to Date');
               showToastNotification(`☁️ Loaded ${portfolio.positions.length} active positions from Cloudflare KV Edge`, 'info');
+              if (liveWs && liveWs.readyState === WebSocket.OPEN) {
+                subscribeSymbolsToStream(getAllSubscribedSymbols());
+              }
+              refreshAllLiveQuotes();
               return;
             }
           }
@@ -982,16 +947,14 @@
       }
     }
 
-    // Live Prices Map (Initialized from Screener Audited Closes)
+    // Live Prices Map (Dedicated Strictly to Active Open Positions)
     const livePrices = {};
-    if (D && D.candidates) {
-      D.candidates.forEach(c => {
-        livePrices[c.symbol] = {
-          price: c.close,
-          open: c.close,
-          high: c.high || (c.close * 1.01),
-          low: c.low || (c.close * 0.99),
-          prevClose: c.close,
+    if (portfolio && Array.isArray(portfolio.positions)) {
+      portfolio.positions.forEach(p => {
+        livePrices[p.symbol] = {
+          price: p.currentPrice || p.buyPrice,
+          open: p.buyPrice,
+          prevClose: p.buyPrice,
           tickDirection: 0
         };
       });
@@ -1100,9 +1063,8 @@
       if (streamState === 'LIVE_TICK') {
         textEl.textContent = `⚡ LIVE STREAM ACTIVE • ${ms.istTimeString}`;
         if (dot) dot.style.background = '#10b981';
-      } else if (streamState === 'FQ_CONNECTED' || streamState === 'WS_CONNECTED') {
-        const modeLabel = currentStreamerMode === 'finance-query' ? 'FINANCE-QUERY WS' : 'YAHOO STREAMER';
-        textEl.textContent = ms.isOpen ? `🟢 ${modeLabel} CONNECTED • STREAMING REAL TICKS` : `${ms.statusLabel} • ${modeLabel} READY`;
+      } else if (streamState === 'WS_CONNECTED') {
+        textEl.textContent = ms.isOpen ? `🟢 YAHOO STREAMER CONNECTED • STREAMING REAL TICKS` : `${ms.statusLabel} • YAHOO STREAMER READY`;
         if (dot) dot.style.background = ms.isOpen ? '#10b981' : '#f59e0b';
       } else if (!ms.isOpen) {
         textEl.textContent = `🔴 ${ms.statusLabel} • REAL LTP / AUDITED CLOSE (ZERO SIMULATION)`;
@@ -1113,33 +1075,36 @@
       }
     }
 
-    // Multi-Source Live WebSocket Streamer (Finance-Query + Yahoo Fallback)
+    // Direct High-Frequency Live WebSocket Streamer (Yahoo Streamer Engine)
     let liveWs = null;
     let wsReconnectTimer = null;
-    let currentStreamerMode = 'finance-query'; // 'finance-query' or 'yahoo'
+    let lastTickReceivedTime = 0;
 
     function getAllSubscribedSymbols() {
-      const set = new Set(['^NSEI']);
-      if (D && D.candidates) {
-        D.candidates.forEach(c => set.add(toYahooSymbol(c.symbol)));
+      const set = new Set();
+      if (portfolio && Array.isArray(portfolio.positions)) {
+        portfolio.positions.forEach(p => {
+          const s = toYahooSymbol(p.symbol);
+          if (s) set.add(s);
+        });
       }
-      portfolio.positions.forEach(p => set.add(toYahooSymbol(p.symbol)));
       return Array.from(set);
     }
 
     function subscribeSymbolsToStream(symbols) {
       if (!liveWs || liveWs.readyState !== WebSocket.OPEN) return;
       try {
-        if (currentStreamerMode === 'finance-query') {
-          liveWs.send(JSON.stringify({ action: 'subscribe', symbols: symbols }));
-        } else {
-          liveWs.send(JSON.stringify({ subscribe: symbols }));
-        }
+        liveWs.send(JSON.stringify({ subscribe: symbols }));
       } catch (_) {}
     }
 
-    function handleLiveTick(sym, newPrice) {
+    function handleLiveTick(sym, newPrice, chgPct) {
       if (!sym || newPrice == null || isNaN(newPrice) || newPrice <= 0) return;
+      // Strictly track active open positions only
+      const isOpen = portfolio && Array.isArray(portfolio.positions) && portfolio.positions.some(p => p.symbol.toUpperCase() === sym.toUpperCase());
+      if (!isOpen) return;
+
+      lastTickReceivedTime = Date.now();
       const oldPrice = livePrices[sym] ? livePrices[sym].price : newPrice;
       const tickDir = newPrice > oldPrice ? 1 : (newPrice < oldPrice ? -1 : 0);
 
@@ -1149,22 +1114,24 @@
         livePrices[sym].price = newPrice;
         livePrices[sym].tickDirection = tickDir;
       }
+      if (chgPct != null) {
+        livePrices[sym].chgPct = chgPct;
+      }
 
-      // Real-time flash on DOM
+      // Real-time flash on DOM for open position cell if exists
       const el = document.getElementById('livePrice_' + sym);
       if (el) {
         el.textContent = '₹' + newPrice.toFixed(2);
         if (tickDir !== 0) {
-          el.className = 'mono ' + (tickDir === 1 ? 'flash-up tick-up' : 'flash-down tick-down');
+          el.className = 'num mono ' + (tickDir === 1 ? 'flash-up tick-up' : 'flash-down tick-down');
         }
       }
 
       updateOpenPositionsPnl();
-      renderTickerTape();
       updateStatusPill('LIVE_TICK');
     }
 
-    function connectLiveStream(mode = 'finance-query') {
+    function connectLiveStream() {
       clearTimeout(wsReconnectTimer);
       const symbols = getAllSubscribedSymbols();
 
@@ -1173,49 +1140,27 @@
         liveWs = null;
       }
 
-      currentStreamerMode = mode;
       updateStatusPill('CONNECTING');
 
-      const wsUrl = mode === 'finance-query' 
-        ? 'wss://finance-query.com/v2/stream' 
-        : 'wss://streamer.finance.yahoo.com/';
-
       try {
-        const ws = new WebSocket(wsUrl);
+        const ws = new WebSocket('wss://streamer.finance.yahoo.com/');
         liveWs = ws;
 
         ws.onopen = () => {
           if (ws.readyState === WebSocket.OPEN) {
             subscribeSymbolsToStream(symbols);
-            updateStatusPill(mode === 'finance-query' ? 'FQ_CONNECTED' : 'WS_CONNECTED');
+            updateStatusPill('WS_CONNECTED');
           }
         };
 
         ws.onmessage = (event) => {
           try {
             if (typeof event.data === 'string') {
-              // Try JSON (Finance-Query protocol)
-              try {
-                const parsed = JSON.parse(event.data);
-                if (parsed) {
-                  const s = (parsed.symbol || parsed.id || '').replace(/\.NS$/i, '').toUpperCase();
-                  const p = parsed.price != null ? parseFloat(parsed.price) : (parsed.regularMarketPrice != null ? parseFloat(parsed.regularMarketPrice) : null);
-                  if (s && p != null && !isNaN(p)) {
-                    handleLiveTick(s, p);
-                    return;
-                  }
-                }
-              } catch (_) {}
-
-              // Try Protobuf Base64 (Yahoo Finance protocol)
-              try {
-                const tick = decodeYahooProtobuf(event.data);
-                if (tick && tick.price != null && !isNaN(tick.price)) {
-                  const s = String(tick.id || '').replace(/\.NS$/i, '').toUpperCase();
-                  handleLiveTick(s, parseFloat(tick.price.toFixed(2)));
-                  return;
-                }
-              } catch (_) {}
+              const tick = decodeYahooProtobuf(event.data);
+              if (tick && tick.price != null && !isNaN(tick.price)) {
+                const s = String(tick.id || '').replace(/\.NS$/i, '').toUpperCase();
+                handleLiveTick(s, parseFloat(tick.price.toFixed(2)), tick.changePercent);
+              }
             }
           } catch (err) {
             console.warn('Live tick parse error:', err);
@@ -1230,16 +1175,13 @@
           if (liveWs === ws) liveWs = null;
           updateStatusPill('IDLE');
           if (document.visibilityState === 'visible') {
-            const nextMode = mode === 'finance-query' ? 'yahoo' : 'finance-query';
-            wsReconnectTimer = setTimeout(() => connectLiveStream(nextMode), 6000);
+            wsReconnectTimer = setTimeout(() => connectLiveStream(), 3000);
           }
         };
       } catch (e) {
         console.warn('WebSocket init error:', e);
         updateStatusPill('IDLE');
-        if (mode === 'finance-query') {
-          wsReconnectTimer = setTimeout(() => connectLiveStream('yahoo'), 3000);
-        }
+        wsReconnectTimer = setTimeout(() => connectLiveStream(), 3000);
       }
     }
 
@@ -1250,7 +1192,7 @@
     async function fetchRealQuote(symbol) {
       const symNs = toYahooSymbol(symbol);
 
-      // 1. Primary: Finance-Query REST API (CORS enabled: Access-Control-Allow-Origin: *)
+      // 1. Primary: Finance-Query REST API (CORS enabled)
       try {
         const res = await fetch(`${FQ_REST_BASE}/${encodeURIComponent(symNs)}`, { cache: 'no-store' });
         if (res.ok) {
@@ -1287,41 +1229,53 @@
       return null;
     }
 
+    let isRefreshingQuotes = false;
     async function refreshAllLiveQuotes() {
-      const refreshBtn = document.getElementById('refreshQuotesBtn');
-      if (refreshBtn) refreshBtn.innerHTML = '<span>⏳</span> Fetching Real Quotes (Finance-Query)...';
+      if (isRefreshingQuotes) return;
+      const symbols = Array.from(new Set(
+        (portfolio && Array.isArray(portfolio.positions) ? portfolio.positions : []).map(p => p.symbol)
+      ));
+      if (symbols.length === 0) return;
 
-      const symbols = Array.from(new Set([
-        ...portfolio.positions.map(p => p.symbol),
-        ...(D && D.candidates ? D.candidates.slice(0, 10).map(c => c.symbol) : [])
-      ]));
+      isRefreshingQuotes = true;
+      const refreshBtn = document.getElementById('refreshQuotesBtn');
+      if (refreshBtn) refreshBtn.innerHTML = '<span>⏳</span> Refreshing Active Positions...';
 
       let updatedCount = 0;
-      for (const sym of symbols) {
-        const quote = await fetchRealQuote(sym);
-        if (quote && quote.price > 0) {
-          const oldPrice = livePrices[sym] ? livePrices[sym].price : quote.price;
-          const tickDir = quote.price > oldPrice ? 1 : (quote.price < oldPrice ? -1 : 0);
-          if (!livePrices[sym]) {
-            livePrices[sym] = { price: quote.price, prevClose: quote.prevClose || quote.price, tickDirection: tickDir };
-          } else {
-            livePrices[sym].price = quote.price;
-            if (quote.prevClose) livePrices[sym].prevClose = quote.prevClose;
-            livePrices[sym].tickDirection = tickDir;
+      try {
+        const results = await Promise.all(symbols.map(async sym => {
+          try {
+            const quote = await fetchRealQuote(sym);
+            return { sym, quote };
+          } catch (_) {
+            return { sym, quote: null };
           }
-          updatedCount++;
+        }));
+
+        for (const { sym, quote } of results) {
+          if (quote && quote.price > 0) {
+            const oldPrice = livePrices[sym] ? livePrices[sym].price : quote.price;
+            const tickDir = quote.price > oldPrice ? 1 : (quote.price < oldPrice ? -1 : 0);
+            if (!livePrices[sym]) {
+              livePrices[sym] = { price: quote.price, prevClose: quote.prevClose || quote.price, tickDirection: tickDir };
+            } else {
+              livePrices[sym].price = quote.price;
+              if (quote.prevClose) livePrices[sym].prevClose = quote.prevClose;
+              livePrices[sym].tickDirection = tickDir;
+            }
+            updatedCount++;
+          }
         }
+
+        updateOpenPositionsPnl();
+      } finally {
+        isRefreshingQuotes = false;
       }
 
-      updateOpenPositionsPnl();
-      renderPositions();
-      renderWatchlist();
-      renderTickerTape();
-
       if (refreshBtn) {
-        refreshBtn.innerHTML = `<span>✓</span> Updated ${updatedCount} Real Quotes`;
+        refreshBtn.innerHTML = `<span>✓</span> Updated ${updatedCount} Active Positions`;
         setTimeout(() => {
-          refreshBtn.innerHTML = '<span>⚡</span> Refresh Real Quotes (Finance-Query)';
+          refreshBtn.innerHTML = '<span>⚡</span> Refresh Active Quotes (Live)';
         }, 3000);
       }
     }
@@ -1725,34 +1679,6 @@
       }).reverse().join('');
     }
 
-    function renderTickerTape() {
-      const track = document.getElementById('tickerTrack');
-      if (!track) return;
-      const symbols = Object.keys(livePrices);
-      if (symbols.length === 0) {
-        track.innerHTML = '<span style="color:var(--text-muted);font-size:0.75rem;">Connecting to real-time ticker stream...</span>';
-        return;
-      }
-      const items = [...symbols, ...symbols].map(sym => {
-        const data = livePrices[sym];
-        const p = data.price || 0;
-        const prev = data.prevClose || p;
-        const chg = prev > 0 ? ((p - prev) / prev) * 100 : 0;
-        const isUp = chg >= 0;
-        const sign = isUp ? '+' : '';
-        const cls = isUp ? 'tick-up' : 'tick-down';
-        const arrow = isUp ? '▲' : '▼';
-        return `
-          <div class="ticker-item">
-            <span class="sym">${sym}</span>
-            <span class="price">₹${p.toFixed(2)}</span>
-            <span class="chg ${cls}">${arrow} ${sign}${chg.toFixed(2)}%</span>
-          </div>
-        `;
-      }).join('');
-      track.innerHTML = items;
-    }
-
     // Trade Operations
     function buyCandidate(sym) {
       const cand = D.candidates.find(c => c.symbol === sym);
@@ -1872,8 +1798,13 @@
         exitDate: new Date().toISOString().split('T')[0],
         exitReason: 'Manual Market Close'
       });
+      const closedSym = p.symbol;
+      delete livePrices[closedSym];
       portfolio.positions.splice(idx, 1);
       savePortfolio();
+      if (liveWs && liveWs.readyState === WebSocket.OPEN) {
+        subscribeSymbolsToStream(getAllSubscribedSymbols());
+      }
       renderWatchlist();
     }
 
@@ -1926,6 +1857,7 @@
 
       closeOrderModal();
       savePortfolio();
+      refreshAllLiveQuotes();
     }
 
     // Initial Render
@@ -1933,34 +1865,35 @@
     renderPositions();
     renderWatchlist();
     renderClosed();
-    renderTickerTape();
 
     // Fetch and Sync Portfolio from Cloudflare KV Edge
     fetchCloudPortfolio();
 
-    // Connect Real-Time Live WebSocket Streamer (Finance-Query + Yahoo Fallback, Zero Simulation)
+    // Connect Real-Time Live WebSocket Streamer (Yahoo Streamer Direct, Zero Simulation)
     updateStatusPill('INITIAL');
-    connectLiveStream('finance-query');
+    connectLiveStream();
+
+    // Immediate initial real quote fetch
+    refreshAllLiveQuotes();
+
+    // 4-Second Live Watchdog & Auto-refresh
     setInterval(() => {
       const ms = getNseMarketStatus();
       updateStatusPill(liveWs && liveWs.readyState === WebSocket.OPEN ? 'WS_CONNECTED' : 'IDLE');
-      // On live trading days, if WebSocket is disconnected or idle, run automated REST safety poll
-      if (ms.isOpen && (!liveWs || liveWs.readyState !== WebSocket.OPEN)) {
+      const isSilent = (Date.now() - lastTickReceivedTime) > 12000;
+      if (ms.isOpen && (!liveWs || liveWs.readyState !== WebSocket.OPEN || isSilent)) {
         refreshAllLiveQuotes();
       }
-    }, 12000);
+    }, 4000);
 
     // Mobile / Tab Resume Handler: Instant Re-sync when phone is unlocked or tab opened
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
         fetchCloudPortfolio();
         if (!liveWs || liveWs.readyState !== WebSocket.OPEN) {
-          connectLiveStream(currentStreamerMode);
+          connectLiveStream();
         }
-        const ms = getNseMarketStatus();
-        if (ms.isOpen) {
-          refreshAllLiveQuotes();
-        }
+        refreshAllLiveQuotes();
       }
     });
 
