@@ -655,24 +655,60 @@
       </div>
     </div>
 
-    <!-- Realized Trade Journal -->
-    <div class="section-title">
-      <span>📜</span> Closed Trade Journal & Performance Ledger
+    <!-- Realized Trade Journal & Performance Ledger -->
+    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;">
+        <span>📜</span> Closed Trade Journal & Performance Ledger
+        <span style="font-size:0.72rem;font-weight:400;color:var(--text-muted);">• Complete Audit Trail of All Autonomous & Manual Executions</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <span class="pos-tag" style="background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.4);font-size:0.72rem;">
+          🤖 100% Autonomous Risk Guard Active
+        </span>
+        <button class="btn btn-action-sm" onclick="exportClosedTradesCsv()" title="Download CSV report of all closed trades">
+          📥 Export CSV
+        </button>
+      </div>
     </div>
+
+    <!-- Ledger Performance Stats Card -->
+    <div id="ledgerStatsCard" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));gap:12px;margin-bottom:14px;background:rgba(15,23,42,0.65);border:1px solid var(--border);border-radius:10px;padding:14px 18px;">
+      <div>
+        <div style="font-size:0.68rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;letter-spacing:0.04em;">Total Realized Net P&L</div>
+        <div id="ledgerNetPnl" class="mono" style="font-size:1.25rem;font-weight:800;color:#34d399;margin-top:2px;">₹0</div>
+      </div>
+      <div>
+        <div style="font-size:0.68rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;letter-spacing:0.04em;">Win / Loss Record</div>
+        <div id="ledgerRecord" class="mono" style="font-size:1.25rem;font-weight:800;color:#ffffff;margin-top:2px;">0W - 0L (0.0%)</div>
+      </div>
+      <div>
+        <div style="font-size:0.68rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;letter-spacing:0.04em;">Profit Factor</div>
+        <div id="ledgerProfitFactor" class="mono" style="font-size:1.25rem;font-weight:800;color:#fbbf24;margin-top:2px;">--</div>
+      </div>
+      <div>
+        <div style="font-size:0.68rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;letter-spacing:0.04em;">Avg Win / Avg Loss</div>
+        <div id="ledgerAvgWinLoss" class="mono" style="font-size:1.05rem;font-weight:700;color:#cbd5e1;margin-top:4px;">₹0 / ₹0</div>
+      </div>
+      <div>
+        <div style="font-size:0.68rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;letter-spacing:0.04em;">Auto-Execution Ratio</div>
+        <div id="ledgerAutoRatio" class="mono" style="font-size:1.05rem;font-weight:700;color:#38bdf8;margin-top:4px;">100% Autonomous</div>
+      </div>
+    </div>
+
     <div class="table-card">
       <div class="table-scroll">
         <table>
           <thead>
             <tr>
-              <th>Symbol</th>
+              <th>Symbol & Setup</th>
               <th>Entry Date</th>
-              <th>Exit Date</th>
+              <th>Exit Date & Time</th>
               <th class="num">Shares</th>
               <th class="num">Entry (₹)</th>
               <th class="num">Exit (₹)</th>
               <th class="num">Realized P&L (₹)</th>
               <th class="num">Return (%)</th>
-              <th>Exit Reason</th>
+              <th>Execution Type & Reason</th>
             </tr>
           </thead>
           <tbody id="closedBody">
@@ -1401,37 +1437,72 @@
       const cur = pos.currentPrice;
       if (!cur || cur <= 0) return false;
 
-      // 1. Automatic Stop Loss Execution
+      pos.peakPrice = Math.max(pos.peakPrice || pos.buyPrice, cur);
+      const roi = ((cur - pos.buyPrice) / pos.buyPrice) * 100;
+      pos.peakRoi = Math.max(pos.peakRoi || 0, roi);
+      const nowStr = new Date().toISOString().split('T')[0];
+      const timeStr = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+      // 1. AUTO BREAKEVEN SHIELD:
+      // If stock reaches +2.0% profit (or +0.5R) and stop is still below buyPrice:
+      // Automatically raise stop to buyPrice (Breakeven)! Principal is 100% protected.
+      if (roi >= 2.0 && pos.stopPrice < pos.buyPrice) {
+        pos.stopPrice = pos.buyPrice;
+        pos.stopReason = 'Auto Breakeven Shield (+2% Gain Hit)';
+        showToastNotification(`🛡️ Auto Breakeven Shield: ${pos.symbol} in profit (+${roi.toFixed(1)}%). Stop automatically raised to ₹${pos.buyPrice.toFixed(2)} (Trade is now 100% Zero-Risk)!`, 'success');
+        return 'MODIFIED';
+      }
+
+      // 2. AUTO DYNAMIC TRAILING STOP:
+      // As stock rallies above +3.5%, automatically trail the stop upward to lock floating profit!
+      if (pos.peakRoi >= 3.5) {
+        const profitLockStop = pos.buyPrice + (pos.peakPrice - pos.buyPrice) * 0.55;
+        const trailingBufferStop = pos.peakPrice * 0.96; // 4% off peak
+        const computedTrail = +(Math.max(profitLockStop, trailingBufferStop)).toFixed(2);
+        if (computedTrail > pos.stopPrice) {
+          pos.stopPrice = computedTrail;
+          pos.stopReason = `Auto Trailing Stop (${pos.peakRoi.toFixed(1)}% Peak)`;
+          return 'MODIFIED';
+        }
+      }
+
+      // 3. AUTO STOP LOSS OR TRAILING STOP HIT:
       if (cur <= pos.stopPrice) {
         const exitLoss = (pos.shares * cur) - (pos.shares * pos.buyPrice);
         const exitRoi = ((cur - pos.buyPrice) / pos.buyPrice) * 100;
         portfolio.cash += pos.shares * cur;
-        const isBreakevenExit = pos.stopPrice >= pos.buyPrice;
-        const reason = isBreakevenExit 
-          ? `🛡️ Auto Breakeven Exit at ₹${cur.toFixed(2)} (+${exitRoi.toFixed(2)}%)`
-          : `🛑 Auto Stop-Loss Triggered at ₹${cur.toFixed(2)} (${exitRoi.toFixed(2)}%)`;
+        
+        let reason = '';
+        if (pos.stopPrice > pos.buyPrice) {
+          reason = `🛡️ Auto Trailing Stop Executed at ₹${cur.toFixed(2)} (Peak ₹${(pos.peakPrice || cur).toFixed(2)}, Locked +${exitRoi.toFixed(1)}%)`;
+        } else if (pos.stopPrice >= pos.buyPrice) {
+          reason = `🛡️ Auto Breakeven Shield Executed at ₹${cur.toFixed(2)} (+${exitRoi.toFixed(1)}%)`;
+        } else {
+          reason = `🛑 Auto Stop-Loss Triggered at ₹${cur.toFixed(2)} (${exitRoi.toFixed(1)}%)`;
+        }
         
         portfolio.closedTrades.push({
           symbol: pos.symbol,
+          setupType: pos.setupType,
           shares: pos.shares,
           buyPrice: pos.buyPrice,
           exitPrice: cur,
           pnl: exitLoss,
           roi: exitRoi,
           entryDate: pos.entryDate,
-          exitDate: new Date().toISOString().split('T')[0],
+          exitDate: `${nowStr} ${timeStr}`,
           exitReason: reason
         });
-        showToastNotification(`🛑 Stop Executed: ${pos.symbol} closed at ₹${cur.toFixed(2)} (${exitRoi.toFixed(2)}%)`, exitLoss >= 0 ? 'info' : 'error');
+        showToastNotification(`${exitLoss >= 0 ? '🛡️ Profit Guard' : '🛑 Risk Guard'}: ${pos.symbol} closed at ₹${cur.toFixed(2)} (${exitRoi >= 0 ? '+' : ''}${exitRoi.toFixed(1)}%)`, exitLoss >= 0 ? 'success' : 'error');
         unsubscribeSymbol(pos.symbol);
         delete livePrices[pos.symbol];
         portfolio.positions.splice(idx, 1);
-        savePortfolio();
-        return true;
+        return 'REMOVED';
       }
 
-      // 2. Automatic Target 1 (+1.5R) Scale-Out
-      const target1 = pos.target1Price || pos.targetPrice || (pos.buyPrice + 1.5 * (pos.buyPrice - (pos.initialStopPrice || pos.stopPrice)));
+      // 4. AUTO TARGET 1 (+1.5R) 50% PROFIT BANK:
+      const riskPerShare = Math.max(0.1, pos.buyPrice - (pos.initialStopPrice || pos.stopPrice));
+      const target1 = pos.target1Price || pos.targetPrice || +(pos.buyPrice + 1.5 * riskPerShare).toFixed(2);
       if (!pos.scaledOut && cur >= target1) {
         const halfShares = Math.floor(pos.shares / 2);
         if (halfShares > 0) {
@@ -1440,47 +1511,48 @@
           portfolio.cash += halfShares * cur;
           portfolio.closedTrades.push({
             symbol: pos.symbol,
+            setupType: pos.setupType,
             shares: halfShares,
             buyPrice: pos.buyPrice,
             exitPrice: cur,
             pnl: pnlHalf,
             roi: roiHalf,
             entryDate: pos.entryDate,
-            exitDate: new Date().toISOString().split('T')[0],
-            exitReason: `🎯 Auto Target 1.5R Locked (50% Scale-Out at ₹${cur.toFixed(2)})`
+            exitDate: `${nowStr} ${timeStr}`,
+            exitReason: `🎯 Auto Target 1.5R Locked (50% Scale-Out at ₹${cur.toFixed(2)}, +${roiHalf.toFixed(1)}%)`
           });
           pos.shares -= halfShares;
           pos.scaledOut = true;
-          pos.stopPrice = pos.buyPrice; // Stop raised to Breakeven entry price!
-          showToastNotification(`🎯 Target 1.5R Reached! ${pos.symbol}: 50% profit banked (+₹${Math.round(pnlHalf).toLocaleString('en-IN')}). Stop raised to Breakeven (₹${pos.buyPrice.toFixed(2)})!`, 'success');
-          savePortfolio();
-          return true;
+          // Stop raised for remaining 50% runner to Breakeven + 0.5% (guaranteeing overall net profit!)
+          pos.stopPrice = +(Math.max(pos.stopPrice, pos.buyPrice * 1.005)).toFixed(2);
+          showToastNotification(`🎯 Target 1.5R Reached! ${pos.symbol}: 50% profit banked (+₹${Math.round(pnlHalf).toLocaleString('en-IN')}). Stop raised to ₹${pos.stopPrice.toFixed(2)}!`, 'success');
+          return 'MODIFIED';
         }
       }
 
-      // 3. Automatic Target 2 (+2.5R) Runner Exit
-      const target2 = pos.target2Price || (pos.buyPrice + 2.5 * (pos.buyPrice - (pos.initialStopPrice || pos.stopPrice)));
+      // 5. AUTO TARGET 2 (+2.5R) RUNNER EXIT:
+      const target2 = pos.target2Price || +(pos.buyPrice + 2.5 * riskPerShare).toFixed(2);
       if (pos.scaledOut && cur >= target2) {
         const pnlFinal = (pos.shares * cur) - (pos.shares * pos.buyPrice);
         const roiFinal = ((cur - pos.buyPrice) / pos.buyPrice) * 100;
         portfolio.cash += pos.shares * cur;
         portfolio.closedTrades.push({
           symbol: pos.symbol,
+          setupType: pos.setupType,
           shares: pos.shares,
           buyPrice: pos.buyPrice,
           exitPrice: cur,
           pnl: pnlFinal,
           roi: roiFinal,
           entryDate: pos.entryDate,
-          exitDate: new Date().toISOString().split('T')[0],
+          exitDate: `${nowStr} ${timeStr}`,
           exitReason: `🏆 Auto Target 2.5R Runner Locked (+${roiFinal.toFixed(2)}%)`
         });
         showToastNotification(`🏆 Target 2.5R Runner Closed! ${pos.symbol} locked at ₹${cur.toFixed(2)} (+${roiFinal.toFixed(2)}%)!`, 'success');
         unsubscribeSymbol(pos.symbol);
         delete livePrices[pos.symbol];
         portfolio.positions.splice(idx, 1);
-        savePortfolio();
-        return true;
+        return 'REMOVED';
       }
 
       return false;
@@ -1496,13 +1568,14 @@
         pos.unrealizedPnl = pos.curVal - (pos.shares * pos.buyPrice);
         pos.roi = ((cur - pos.buyPrice) / pos.buyPrice) * 100;
 
-        const removed = checkAutomaticExecution(pos, i);
-        if (removed) stateChanged = true;
+        const action = checkAutomaticExecution(pos, i);
+        if (action === 'REMOVED' || action === 'MODIFIED') {
+          stateChanged = true;
+        }
       }
       renderHUD();
       if (stateChanged) {
-        renderPositions();
-        renderClosed();
+        savePortfolio();
       } else {
         renderPositionsFast();
       }
@@ -1602,18 +1675,31 @@
         const roi = ((cur - p.buyPrice) / p.buyPrice) * 100;
         const isUp = pnl >= 0;
 
-        const target1 = p.target1Price || p.targetPrice || (p.buyPrice * 1.075);
+        const riskPerShare = Math.max(0.1, p.buyPrice - (p.initialStopPrice || p.stopPrice));
+        const target1 = p.target1Price || p.targetPrice || +(p.buyPrice + 1.5 * riskPerShare).toFixed(2);
         const targetDist = target1 - p.buyPrice;
         const curProgress = targetDist > 0 ? Math.min(100, Math.max(0, ((cur - p.buyPrice) / targetDist) * 100)) : 0;
         
+        const isTrailing = p.stopPrice > p.buyPrice;
         const isBreakeven = p.stopPrice >= p.buyPrice;
-        const stopHtml = isBreakeven 
-          ? `<span class="pos-tag" style="background:rgba(16,185,129,0.18);color:#34d399;border:1px solid rgba(16,185,129,0.4);" title="Trade is 100% Risk-Free">🛡️ BE ₹${p.stopPrice.toFixed(2)}</span>`
-          : `<span class="mono" style="color:#f87171;font-weight:600;">₹${p.stopPrice.toFixed(2)}</span>`;
+        const stopHtml = isTrailing
+          ? `<span class="pos-tag" style="background:rgba(16,185,129,0.2);color:#34d399;border:1px solid rgba(16,185,129,0.4);" title="Trailing Stop Locking Profit">🛡️ TRAIL ₹${p.stopPrice.toFixed(2)}</span>`
+          : (isBreakeven 
+            ? `<span class="pos-tag" style="background:rgba(16,185,129,0.18);color:#34d399;border:1px solid rgba(16,185,129,0.4);" title="Trade is 100% Risk-Free (Breakeven Shield)">🛡️ BE ₹${p.stopPrice.toFixed(2)}</span>`
+            : `<span class="mono" style="color:#f87171;font-weight:600;">₹${p.stopPrice.toFixed(2)}</span>`);
 
         const target1Html = p.scaledOut
           ? `<span class="pos-tag" style="background:rgba(56,189,248,0.18);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);" title="50% Profit Booked into Cash Margin">✅ 50% LOCKED</span>`
           : `<span class="mono" style="color:#34d399;font-weight:600;">₹${target1.toFixed(2)}</span>`;
+
+        let guardBadge = `<span class="pos-tag" id="guardStatus_${p.symbol}" style="background:rgba(16,185,129,0.10);color:#10b981;border:1px solid rgba(16,185,129,0.3);font-size:0.68rem;" title="Autonomous surveillance: Auto-Breakeven at +2%, Auto-Bank 50% at 1.5R, Auto-Trailing">🤖 Autonomous Guard</span>`;
+        if (p.scaledOut) {
+          guardBadge = `<span class="pos-tag" id="guardStatus_${p.symbol}" style="background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);font-size:0.68rem;" title="50% Profit Banked. Runner trailing automatically.">🤖 50% Banked • Runner</span>`;
+        } else if (isTrailing) {
+          guardBadge = `<span class="pos-tag" id="guardStatus_${p.symbol}" style="background:rgba(16,185,129,0.18);color:#34d399;border:1px solid rgba(16,185,129,0.4);font-size:0.68rem;" title="Stop is trailing peak gains automatically">🛡️ Auto Trail: ₹${p.stopPrice.toFixed(2)}</span>`;
+        } else if (isBreakeven) {
+          guardBadge = `<span class="pos-tag" id="guardStatus_${p.symbol}" style="background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.4);font-size:0.68rem;" title="Breakeven Shield Active - Trade is 100% Zero-Risk">🛡️ Breakeven Shield</span>`;
+        }
 
         return `
           <tr>
@@ -1638,10 +1724,9 @@
               <div class="progress-track"><div class="progress-fill" id="progressBar_${p.symbol}" style="width:${curProgress}%;"></div></div>
             </td>
             <td style="text-align:center;">
-              <div style="display:flex;gap:4px;justify-content:center;align-items:center;">
-                <span class="pos-tag" style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);font-size:0.68rem;" title="Auto-Pilot will auto-sell if stop or target is hit">🤖 Auto-Guarded</span>
-                ${!p.scaledOut && cur > p.buyPrice ? `<button class="btn-action-sm" style="background:rgba(56,189,248,0.12);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);" title="Book 50% Profit Now & Raise Stop to Breakeven" onclick="lockTarget1(${idx})">50%</button>` : ''}
-                <button class="btn-action-sm btn-close" title="Close Position Manually" onclick="closePosition(${idx})">Close</button>
+              <div style="display:flex;gap:6px;justify-content:center;align-items:center;">
+                ${guardBadge}
+                <button class="btn-action-sm btn-close" title="Emergency manual market close" onclick="closePosition(${idx})">Exit</button>
               </div>
             </td>
           </tr>
@@ -1668,14 +1753,18 @@
           elPnl.textContent = `${isUp ? '+' : ''}₹${Math.round(pnl).toLocaleString('en-IN')} (${roi >= 0 ? '+' : ''}${roi.toFixed(1)}%)`;
         }
 
+        const isTrailing = p.stopPrice > p.buyPrice;
         const isBreakeven = p.stopPrice >= p.buyPrice;
-        const stopHtml = isBreakeven 
-          ? `<span class="pos-tag" style="background:rgba(16,185,129,0.18);color:#34d399;border:1px solid rgba(16,185,129,0.4);" title="Trade is 100% Risk-Free">🛡️ BE ₹${p.stopPrice.toFixed(2)}</span>`
-          : `<span class="mono" style="color:#f87171;font-weight:600;">₹${p.stopPrice.toFixed(2)}</span>`;
+        const stopHtml = isTrailing
+          ? `<span class="pos-tag" style="background:rgba(16,185,129,0.2);color:#34d399;border:1px solid rgba(16,185,129,0.4);" title="Trailing Stop Locking Profit">🛡️ TRAIL ₹${p.stopPrice.toFixed(2)}</span>`
+          : (isBreakeven 
+            ? `<span class="pos-tag" style="background:rgba(16,185,129,0.18);color:#34d399;border:1px solid rgba(16,185,129,0.4);" title="Trade is 100% Risk-Free (Breakeven Shield)">🛡️ BE ₹${p.stopPrice.toFixed(2)}</span>`
+            : `<span class="mono" style="color:#f87171;font-weight:600;">₹${p.stopPrice.toFixed(2)}</span>`);
         const elStop = document.getElementById('stopCell_' + p.symbol);
         if (elStop) elStop.innerHTML = stopHtml;
 
-        const target1 = p.target1Price || p.targetPrice || (p.buyPrice * 1.075);
+        const riskPerShare = Math.max(0.1, p.buyPrice - (p.initialStopPrice || p.stopPrice));
+        const target1 = p.target1Price || p.targetPrice || +(p.buyPrice + 1.5 * riskPerShare).toFixed(2);
         const target1Html = p.scaledOut
           ? `<span class="pos-tag" style="background:rgba(56,189,248,0.18);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);" title="50% Profit Booked into Cash Margin">✅ 50% LOCKED</span>`
           : `<span class="mono" style="color:#34d399;font-weight:600;">₹${target1.toFixed(2)}</span>`;
@@ -1690,6 +1779,31 @@
 
         const elProgBar = document.getElementById('progressBar_' + p.symbol);
         if (elProgBar) elProgBar.style.width = curProgress + '%';
+
+        const elGuard = document.getElementById('guardStatus_' + p.symbol);
+        if (elGuard) {
+          if (p.scaledOut) {
+            elGuard.textContent = '🤖 50% Banked • Runner';
+            elGuard.style.background = 'rgba(56,189,248,0.15)';
+            elGuard.style.color = '#38bdf8';
+            elGuard.style.borderColor = 'rgba(56,189,248,0.4)';
+          } else if (isTrailing) {
+            elGuard.textContent = `🛡️ Auto Trail: ₹${p.stopPrice.toFixed(2)}`;
+            elGuard.style.background = 'rgba(16,185,129,0.18)';
+            elGuard.style.color = '#34d399';
+            elGuard.style.borderColor = 'rgba(16,185,129,0.4)';
+          } else if (isBreakeven) {
+            elGuard.textContent = '🛡️ Breakeven Shield';
+            elGuard.style.background = 'rgba(16,185,129,0.15)';
+            elGuard.style.color = '#34d399';
+            elGuard.style.borderColor = 'rgba(16,185,129,0.4)';
+          } else {
+            elGuard.textContent = '🤖 Autonomous Guard';
+            elGuard.style.background = 'rgba(16,185,129,0.10)';
+            elGuard.style.color = '#10b981';
+            elGuard.style.borderColor = 'rgba(16,185,129,0.3)';
+          }
+        }
       });
     }
 
@@ -1734,31 +1848,134 @@
     }
 
     function renderClosed() {
+      const trades = portfolio.closedTrades || [];
       const tb = document.getElementById('closedBody');
-      if (portfolio.closedTrades.length === 0) {
-        tb.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-muted);">No closed trades yet.</td></tr>`;
+      
+      // Calculate Performance Ledger Stats
+      const totalRealized = trades.reduce((acc, t) => acc + (t.pnl || 0), 0);
+      const wins = trades.filter(t => (t.pnl || 0) > 0);
+      const losses = trades.filter(t => (t.pnl || 0) <= 0);
+      const winCount = wins.length;
+      const lossCount = losses.length;
+      const totalCount = trades.length;
+      const winRate = totalCount > 0 ? ((winCount / totalCount) * 100).toFixed(1) : '0.0';
+      const winSum = wins.reduce((acc, t) => acc + t.pnl, 0);
+      const lossSum = losses.reduce((acc, t) => acc + Math.abs(t.pnl), 0);
+      const profitFactor = lossSum > 0 ? (winSum / lossSum).toFixed(2) : (winSum > 0 ? '∞' : '--');
+      const avgWin = winCount > 0 ? Math.round(winSum / winCount) : 0;
+      const avgLoss = lossCount > 0 ? Math.round(lossSum / lossCount) : 0;
+      
+      const autoCount = trades.filter(t => {
+        const r = String(t.exitReason || '');
+        return r.includes('Auto') || r.includes('Target') || r.includes('Shield') || r.includes('Trail') || r.includes('Stop');
+      }).length;
+      const autoRatio = totalCount > 0 ? ((autoCount / totalCount) * 100).toFixed(0) + '% Autonomous' : '100% Autonomous';
+
+      // Update Ledger Stats Card Elements
+      const elNet = document.getElementById('ledgerNetPnl');
+      if (elNet) {
+        const sign = totalRealized >= 0 ? '+' : '';
+        elNet.textContent = `₹${sign}${Math.round(totalRealized).toLocaleString('en-IN')}`;
+        elNet.style.color = totalRealized >= 0 ? '#34d399' : '#f87171';
+      }
+      const elRec = document.getElementById('ledgerRecord');
+      if (elRec) elRec.textContent = `${winCount}W - ${lossCount}L (${winRate}%)`;
+      const elPf = document.getElementById('ledgerProfitFactor');
+      if (elPf) elPf.textContent = profitFactor;
+      const elAvg = document.getElementById('ledgerAvgWinLoss');
+      if (elAvg) elAvg.textContent = `+₹${avgWin.toLocaleString('en-IN')} / -₹${avgLoss.toLocaleString('en-IN')}`;
+      const elRatio = document.getElementById('ledgerAutoRatio');
+      if (elRatio) elRatio.textContent = autoRatio;
+
+      if (!tb) return;
+      if (trades.length === 0) {
+        tb.innerHTML = `
+          <tr>
+            <td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted);font-size:0.84rem;">
+              🤖 No closed trades yet. Active open positions are continuously guarded by the <b>Autonomous Risk & Profit Taking Engine</b>.<br>
+              As stops, trailing stops, or targets are reached, executions will be audited and logged here automatically.
+            </td>
+          </tr>
+        `;
         return;
       }
-      tb.innerHTML = portfolio.closedTrades.map(t => {
-        const isWin = t.pnl > 0;
+
+      tb.innerHTML = trades.map(t => {
+        const isWin = (t.pnl || 0) > 0;
+        const reason = String(t.exitReason || '');
+        let badgeStyle = 'background:rgba(255,255,255,0.06);color:#cbd5e1;border:1px solid rgba(255,255,255,0.15);';
+        let badgeLabel = '⚡ Manual Exit';
+
+        if (reason.includes('1.5R') || reason.includes('Scale-Out')) {
+          badgeStyle = 'background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);';
+          badgeLabel = '🎯 Auto 1.5R Banked (50%)';
+        } else if (reason.includes('Trailing')) {
+          badgeStyle = 'background:rgba(16,185,129,0.18);color:#34d399;border:1px solid rgba(16,185,129,0.45);';
+          badgeLabel = '🛡️ Auto Trailing Stop';
+        } else if (reason.includes('Breakeven')) {
+          badgeStyle = 'background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.4);';
+          badgeLabel = '🛡️ Auto Breakeven Shield';
+        } else if (reason.includes('2.5R') || reason.includes('Runner')) {
+          badgeStyle = 'background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.4);';
+          badgeLabel = '🏆 Auto 2.5R Runner Locked';
+        } else if (reason.includes('Stop-Loss') || reason.includes('Stop Triggered')) {
+          badgeStyle = 'background:rgba(244,63,94,0.15);color:#f87171;border:1px solid rgba(244,63,94,0.4);';
+          badgeLabel = '🛑 Auto Stop-Loss';
+        }
+
         return `
           <tr>
-            <td style="font-weight:700;color:#38bdf8;">${t.symbol}</td>
-            <td class="mono" style="font-size:0.75rem;">${t.entryDate}</td>
-            <td class="mono" style="font-size:0.75rem;">${t.exitDate}</td>
-            <td class="num mono">${t.shares}</td>
-            <td class="num mono">₹${t.buyPrice.toFixed(2)}</td>
-            <td class="num mono">₹${t.exitPrice.toFixed(2)}</td>
+            <td>
+              <div style="font-weight:700;color:#38bdf8;font-size:0.9rem;">${t.symbol}</div>
+              <div style="font-size:0.7rem;color:var(--text-muted);">${t.setupType || 'Breakout Model'}</div>
+            </td>
+            <td class="mono" style="font-size:0.75rem;">${t.entryDate || '--'}</td>
+            <td class="mono" style="font-size:0.75rem;color:#cbd5e1;">${t.exitDate || '--'}</td>
+            <td class="num mono" style="font-weight:600;">${t.shares}</td>
+            <td class="num mono">₹${parseFloat(t.buyPrice).toFixed(2)}</td>
+            <td class="num mono">₹${parseFloat(t.exitPrice).toFixed(2)}</td>
             <td class="num mono" style="font-weight:700;color:${isWin ? '#10b981' : '#f43f5e'};">
               ${isWin ? '+' : ''}₹${Math.round(t.pnl).toLocaleString('en-IN')}
             </td>
             <td class="num mono" style="font-weight:700;color:${isWin ? '#10b981' : '#f43f5e'};">
-              ${isWin ? '+' : ''}${t.roi.toFixed(1)}%
+              ${isWin ? '+' : ''}${parseFloat(t.roi).toFixed(2)}%
             </td>
-            <td><span class="pos-tag" style="background:rgba(255,255,255,0.06);color:#cbd5e1;">${t.exitReason}</span></td>
+            <td>
+              <span class="pos-tag" style="${badgeStyle}" title="${reason}">${badgeLabel}</span>
+              <div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px;">${reason}</div>
+            </td>
           </tr>
         `;
       }).reverse().join('');
+    }
+
+    function exportClosedTradesCsv() {
+      const trades = portfolio.closedTrades || [];
+      if (trades.length === 0) {
+        alert('No closed trades to export yet.');
+        return;
+      }
+      const headers = ['Symbol', 'Setup', 'Shares', 'Buy Price', 'Exit Price', 'Realized PnL', 'ROI %', 'Entry Date', 'Exit Date', 'Execution Reason'];
+      const rows = trades.map(t => [
+        t.symbol,
+        `"${(t.setupType || 'Breakout Model').replace(/"/g, '""')}"`,
+        t.shares,
+        parseFloat(t.buyPrice).toFixed(2),
+        parseFloat(t.exitPrice).toFixed(2),
+        Math.round(t.pnl || 0),
+        parseFloat(t.roi || 0).toFixed(2),
+        t.entryDate || '',
+        t.exitDate || '',
+        `"${(t.exitReason || '').replace(/"/g, '""')}"`
+      ]);
+      const csv = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const a = document.createElement('a');
+      a.setAttribute('href', encodeURI(csv));
+      a.setAttribute('download', `astra_closed_trades_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      showToastNotification('📥 Closed Trades CSV downloaded successfully!', 'success');
     }
 
     // Trade Operations

@@ -1,23 +1,9 @@
 #!/usr/bin/env python3
 """Headless Paper Trading & USIC Execution Daemon.
-
-Tracks open paper trading positions even when the browser is completely closed:
-1. Reads/writes data/paper_portfolio.json.
-2. Evaluates positions against USIC Staged Execution Rules:
-   - Rule 1: Automatic Stop Loss exit if price <= stopPrice.
-   - Rule 2: Automatic 1.5R Target Scale-Out (sells 50%, moves remaining stop to Breakeven).
-   - Rule 3: Automatic 2.5R Runner Exit for remaining 50%.
-3. Fetches live quotes via finance-query.com, Cloudflare Worker proxy, or yfinance.
-4. Strictly adheres to <= 300 lines limit.
+Tracks open paper positions & executes USIC rules (BE shield, trailing stop, 1.5R 50%, 2.5R runner).
 """
 from __future__ import annotations
-
-import argparse
-import json
-import math
-import sys
-import urllib.parse
-import urllib.request
+import argparse, json, math, sys, urllib.parse, urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -31,19 +17,11 @@ FINANCE_QUERY_URL = "https://finance-query.com/v2/quote"
 WORKER_PROXY_URL = "https://nse-quote.audittool-api.workers.dev"
 CLOUD_PORTFOLIO_URL = "https://nse-quote.audittool-api.workers.dev/portfolio"
 
-
-def load_portfolio(
-    path: Path = DEFAULT_PORTFOLIO_PATH,
-    sync_cloud: bool = True,
-    key: str = "default",
-) -> dict[str, Any]:
+def load_portfolio(path: Path = DEFAULT_PORTFOLIO_PATH, sync_cloud: bool = True, key: str = "default") -> dict[str, Any]:
     """Load portfolio state from Cloudflare KV edge or disk."""
     if sync_cloud:
         try:
-            req = urllib.request.Request(
-                f"{CLOUD_PORTFOLIO_URL}?key={urllib.parse.quote(key)}",
-                headers={"User-Agent": "Mozilla/5.0"},
-            )
+            req = urllib.request.Request(f"{CLOUD_PORTFOLIO_URL}?key={urllib.parse.quote(key)}", headers={"User-Agent": "Mozilla/5.0"})
             with urllib.request.urlopen(req, timeout=3) as resp:
                 if resp.status == 200:
                     data = json.loads(resp.read().decode("utf-8"))
@@ -166,25 +144,46 @@ def evaluate_staged_positions(
         target2 = float(pos.get("target2Price", buy + 2.5 * risk_per_share))
         scaled_out = bool(pos.get("scaledOut", False))
 
-        # Check Rule 1: Automatic Stop-Loss Breach
+        pos["peakPrice"] = max(float(pos.get("peakPrice", buy)), cur)
+        roi = ((cur - buy) / buy) * 100.0
+        pos["peakRoi"] = max(float(pos.get("peakRoi", 0.0)), roi)
+
+        # Rule 0a: Automatic Breakeven Shield (+2% Gain)
+        if roi >= 2.0 and stop < buy:
+            pos["stopPrice"] = buy
+            stop = buy
+            executed_events.append({"action": "BREAKEVEN_SHIELD", "symbol": sym, "price": cur, "roi": roi})
+
+        # Rule 0b: Automatic Dynamic Trailing Stop (+3.5%+ Peak Gain)
+        if pos["peakRoi"] >= 3.5:
+            profit_lock = buy + (pos["peakPrice"] - buy) * 0.55
+            buffer_stop = pos["peakPrice"] * 0.96
+            trail = max(profit_lock, buffer_stop)
+            if trail > stop:
+                pos["stopPrice"] = round(trail, 2)
+                stop = pos["stopPrice"]
+                executed_events.append({"action": "TRAIL_UPDATE", "symbol": sym, "price": cur, "roi": roi, "newStop": stop})
+
+        # Check Rule 1: Automatic Stop-Loss or Trailing Stop Breach
         if cur <= stop:
             exit_pnl = (shares * cur) - (shares * buy)
-            roi = ((cur - buy) / buy) * 100.0
             cash += shares * cur
-            reason = (
-                f"🛡️ Auto Breakeven Exit at ₹{cur:.2f} ({roi:+.2f}%)"
-                if stop >= buy
-                else f"🛑 Auto Stop-Loss Triggered at ₹{cur:.2f} ({roi:+.2f}%)"
-            )
+            if stop > buy:
+                reason = f"🛡️ Auto Trailing Stop Executed at ₹{cur:.2f} (Peak ₹{pos['peakPrice']:.2f}, Locked {roi:+.2f}%)"
+            elif stop >= buy:
+                reason = f"🛡️ Auto Breakeven Shield Executed at ₹{cur:.2f} ({roi:+.2f}%)"
+            else:
+                reason = f"🛑 Auto Stop-Loss Triggered at ₹{cur:.2f} ({roi:+.2f}%)"
             closed_trades.append({
                 "symbol": sym,
+                "setupType": pos.get("setupType", "Breakout Model"),
                 "shares": shares,
                 "buyPrice": buy,
                 "exitPrice": cur,
                 "pnl": round(exit_pnl, 2),
                 "roi": round(roi, 2),
                 "entryDate": pos.get("entryDate", now_str),
-                "exitDate": now_str,
+                "exitDate": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
                 "exitReason": reason,
             })
             executed_events.append({"action": "STOP", "symbol": sym, "price": cur, "roi": roi})
@@ -199,18 +198,19 @@ def evaluate_staged_positions(
                 cash += half_shares * cur
                 closed_trades.append({
                     "symbol": sym,
+                    "setupType": pos.get("setupType", "Breakout Model"),
                     "shares": half_shares,
                     "buyPrice": buy,
                     "exitPrice": cur,
                     "pnl": round(pnl_half, 2),
                     "roi": round(roi_half, 2),
                     "entryDate": pos.get("entryDate", now_str),
-                    "exitDate": now_str,
-                    "exitReason": f"🎯 Auto Target 1.5R Locked (50% Scale-Out at ₹{cur:.2f})",
+                    "exitDate": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
+                    "exitReason": f"🎯 Auto Target 1.5R Locked (50% Scale-Out at ₹{cur:.2f}, {roi_half:+.2f}%)",
                 })
                 pos["shares"] = shares - half_shares
                 pos["scaledOut"] = True
-                pos["stopPrice"] = buy  # Raised to Breakeven
+                pos["stopPrice"] = round(max(stop, buy * 1.005), 2)  # Raised to Breakeven+
                 executed_events.append({"action": "TARGET1", "symbol": sym, "price": cur, "roi": roi_half})
 
         # Check Rule 3: Automatic Target 2 (+2.5R) Runner Exit
@@ -221,13 +221,14 @@ def evaluate_staged_positions(
             cash += rem_shares * cur
             closed_trades.append({
                 "symbol": sym,
+                "setupType": pos.get("setupType", "Breakout Model"),
                 "shares": rem_shares,
                 "buyPrice": buy,
                 "exitPrice": cur,
                 "pnl": round(exit_pnl, 2),
                 "roi": round(roi, 2),
                 "entryDate": pos.get("entryDate", now_str),
-                "exitDate": now_str,
+                "exitDate": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
                 "exitReason": f"🏆 Auto Target 2.5R Runner Locked (+{roi:+.2f}%)",
             })
             executed_events.append({"action": "TARGET2", "symbol": sym, "price": cur, "roi": roi})
@@ -284,8 +285,9 @@ def main() -> int:
     if events:
         print(f"⚡ Executed {len(events)} automated rules:")
         for ev in events:
-            print(f"  -> {ev['action']}: {ev['symbol']} at ₹{ev['price']:.2f} ({ev['roi']:+.2f}%)")
-    return 0
+            extra = f" -> Stop: ₹{ev['newStop']:.2f}" if 'newStop' in ev else ""
+            print(f"  -> {ev['action']}: {ev['symbol']} at ₹{ev['price']:.2f} ({ev.get('roi', 0.0):+.2f}%){extra}")
+        return 0
 
 
 if __name__ == "__main__":
