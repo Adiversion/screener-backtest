@@ -98,8 +98,8 @@ jobs:
       - name: Publish reports to the live branch
         run: |
           set -e
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           rm -rf /tmp/live && mkdir -p /tmp/live
           # the site is the front door: it must land at the repository ROOT of
           # the live branch, not under reports/
@@ -109,7 +109,7 @@ jobs:
           git init -q -b live
           git add -A
           git commit -q -m "live reports + site $(date -u +%FT%TZ)"
-          git remote add origin "${{ github.server_url }}/${{ github.repository }}.git"
+          git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
           git push --force origin live
 
       - name: Upload reports as an artifact
