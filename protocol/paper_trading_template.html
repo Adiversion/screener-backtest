@@ -140,11 +140,12 @@
       background: rgba(245, 158, 11, 0.25);
     }
 
-    /* Main Container */
+    /* Main Container - Full Screen Edge-to-Edge Workstation Layout */
     .container {
-      max-width: 1440px;
-      margin: 0 auto;
-      padding: 20px 24px 60px;
+      max-width: 100% !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 16px 20px 60px !important;
     }
 
     /* Account HUD Grid */
@@ -524,7 +525,6 @@
       </div>
     </div>
     <div class="header-actions">
-      <button class="btn btn-amber" onclick="openDataSourceModal()">📡 Zero-Cost Ticker Guide</button>
       <a href="verifier.html" class="btn btn-amber" style="border-color:rgba(56,189,248,0.4);color:#38bdf8;background:rgba(56,189,248,0.1);">⚡ 7-14D Forward Verifier</a>
       <a href="screener.html" class="btn">🎯 Back to Screener</a>
       <button class="btn btn-primary" onclick="openOrderModal()">➕ New Paper Order</button>
@@ -565,31 +565,24 @@
     <!-- Action Bar -->
     <div class="action-bar">
       <div class="action-left">
-        <button id="refreshQuotesBtn" class="btn" onclick="refreshAllLiveQuotes()" style="color:#38bdf8;border-color:rgba(56,189,248,0.3);background:rgba(56,189,248,0.08);">
-          <span>⚡</span> Refresh Live Quotes
+        <button class="btn btn-primary" onclick="importTopScreenerPicks()" title="1-Click allocate ₹1L into top 5 qualified screener breakout leaders">
+          <span>⚡</span> 1-Click Allocate Top Setups (₹1L)
         </button>
-        <button class="btn" onclick="importTopScreenerPicks()" style="color:#34d399;border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.08);">
-          <span>⚡</span> 1-Click Import Top Screener Picks (₹1L Each)
-        </button>
-        <button class="btn" onclick="importSniperPicks()" style="color:#fbbf24;border-color:rgba(245,158,11,0.3);background:rgba(245,158,11,0.08);">
-          <span>🎯</span> Import Sniper Setups (65%+ WR)
+        <button class="btn btn-amber" onclick="importSniperPicks()" title="Allocate only into high win-rate Sniper setups (65%+ WR)">
+          <span>🎯</span> Sniper Setups Only
         </button>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <button id="cloudSyncBtn" class="btn" onclick="triggerManualCloudSync()" style="color:#38bdf8;border-color:rgba(56,189,248,0.4);background:rgba(56,189,248,0.12);font-weight:700;" title="Cloudflare KV Edge Memory (Instant access on Phone & Home PC)">
-          <span id="cloudSyncIcon">☁️</span> <span id="cloudSyncText">Cloud: Checking...</span>
-        </button>
         <button id="autoTradeBtn" class="btn" onclick="toggleAutoTrade()" style="color:#10b981;border-color:rgba(16,185,129,0.4);background:rgba(16,185,129,0.12);font-weight:700;" title="Automatic Stop-Loss & 1.5R Profit Taking Engine">
           <span>🤖</span> Auto-Pilot: ON
         </button>
-        <button class="btn" onclick="exportPortfolioJson()" style="color:#e2e8f0;font-size:0.75rem;" title="Download portfolio backup file">
-          <span>💾</span> Export JSON
+        <button id="cloudSyncBtn" class="btn" onclick="triggerManualCloudSync()" style="color:#38bdf8;border-color:rgba(56,189,248,0.3);background:rgba(56,189,248,0.08);font-size:0.78rem;" title="Cloudflare KV Edge Memory (Instant access on Phone & Home PC)">
+          <span id="cloudSyncIcon">☁️</span> <span id="cloudSyncText">Edge Synced</span>
         </button>
-        <button class="btn" onclick="document.getElementById('importFileInput').click()" style="color:#e2e8f0;font-size:0.75rem;" title="Import portfolio backup file">
-          <span>📥</span> Import JSON
+        <button class="btn" onclick="openOptionsModal()" style="color:var(--text-secondary);font-size:0.78rem;" title="Backup, quotes, and account settings">
+          <span>⚙️</span> Options
         </button>
         <input type="file" id="importFileInput" style="display:none;" accept=".json" onchange="importPortfolioFile(event)">
-        <button class="btn" onclick="resetAccount()" style="color:#f87171;font-size:0.75rem;">🔄 Reset</button>
       </div>
     </div>
 
@@ -779,6 +772,40 @@
       <div style="margin-top:18px;display:flex;justify-content:flex-end;gap:10px;">
         <button class="btn" onclick="closeOrderModal()">Cancel</button>
         <button class="btn btn-primary" onclick="submitManualOrder()">Submit Paper Buy Order</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Portfolio Options & Maintenance Modal -->
+  <div id="optionsModal" class="modal-overlay" onclick="if(event.target===this)closeOptionsModal()">
+    <div class="modal-card" style="max-width:480px;">
+      <div class="modal-header">
+        <h3 style="color:#ffffff;font-size:1.05rem;font-weight:700;">⚙️ Account & Portfolio Options</h3>
+        <div class="close-icon" onclick="closeOptionsModal()">&times;</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-top:6px;">
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:12px;">
+          <div style="font-weight:700;color:#38bdf8;font-size:0.85rem;margin-bottom:2px;">Force Real-Time Quote Refresh</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px;">Poll REST APIs to forcefully refresh LTP for all open positions.</div>
+          <button id="refreshQuotesBtn" class="btn btn-action-sm" onclick="refreshAllLiveQuotes(); closeOptionsModal();" style="color:#38bdf8;border-color:rgba(56,189,248,0.3);background:rgba(56,189,248,0.08);">
+            ⚡ Refresh Quotes Now
+          </button>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:12px;">
+          <div style="font-weight:700;color:#34d399;font-size:0.85rem;margin-bottom:2px;">Offline JSON Backup</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px;">Save an offline JSON file to your disk or restore a previous backup.</div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-action-sm" onclick="exportPortfolioJson()" style="font-size:0.75rem;">💾 Download JSON</button>
+            <button class="btn btn-action-sm" onclick="document.getElementById('importFileInput').click()" style="font-size:0.75rem;">📥 Restore JSON</button>
+          </div>
+        </div>
+        <div style="background:rgba(244,63,94,0.06);border:1px solid rgba(244,63,94,0.25);border-radius:8px;padding:12px;">
+          <div style="font-weight:700;color:#f87171;font-size:0.85rem;margin-bottom:2px;">Reset Account Balance</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px;">Wipe all open positions and reset starting cash to ₹10,00,000.</div>
+          <button class="btn btn-action-sm" onclick="resetAccount(); closeOptionsModal();" style="color:#f87171;border-color:rgba(244,63,94,0.4);background:rgba(244,63,94,0.12);font-size:0.75rem;">
+            ⚠️ Reset Account to ₹10L Cash
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -2253,6 +2280,8 @@
 
     function openOrderModal() { document.getElementById('orderModal').classList.add('open'); }
     function closeOrderModal() { document.getElementById('orderModal').classList.remove('open'); }
+    function openOptionsModal() { document.getElementById('optionsModal').classList.add('open'); }
+    function closeOptionsModal() { document.getElementById('optionsModal').classList.remove('open'); }
     function openDataSourceModal() { document.getElementById('dataSourceModal').classList.add('open'); }
     function closeDataSourceModal() { document.getElementById('dataSourceModal').classList.remove('open'); }
 
