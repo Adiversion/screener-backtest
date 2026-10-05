@@ -9,4 +9,4 @@ __all__ = ["config", "features", "states", "filters", "simulator",
            "metrics", "strategies", "strategies_pra", "strategies_pa",
            "strategies_evidence", "pra",
            "pa", "screen", "quality", "evidence", "engine", "frameworks",
-           "stats", "reporting", "audit", "data"]
+           "stats", "reporting", "audit", "data", "weekly", "timeframe"]
