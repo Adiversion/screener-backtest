@@ -715,6 +715,35 @@
             <!-- Injected dynamically -->
           </tbody>
         </table>
+    <!-- Strategy Framework Validation & Alpha Scorecard -->
+    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;align-items:center;flex-wrap:gap:8px;">
+        <span>🔬</span> Strategy Framework Performance & Edge Scorecard
+        <span style="font-size:0.72rem;font-weight:400;color:var(--text-muted);">• Auditing Realized Alpha Across Screener Trading Models (Backed by Cloudflare KV Edge)</span>
+      </div>
+      <span class="pos-tag" style="background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);font-size:0.72rem;">
+        ☁️ Edge Memory Audit Active
+      </span>
+    </div>
+
+    <div class="table-card">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Framework / Strategy Model</th>
+              <th class="num">Total Executions</th>
+              <th class="num">Win Rate (%)</th>
+              <th class="num">Realized P&L (₹)</th>
+              <th class="num">Avg ROI (%)</th>
+              <th class="num">Profit Factor</th>
+              <th>Statistical Edge Status</th>
+            </tr>
+          </thead>
+          <tbody id="frameworkStatsBody">
+            <!-- Injected dynamically -->
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -1484,6 +1513,7 @@
         portfolio.closedTrades.push({
           symbol: pos.symbol,
           setupType: pos.setupType,
+          strategies: pos.strategies || [pos.setupType || 'Breakout Model'],
           shares: pos.shares,
           buyPrice: pos.buyPrice,
           exitPrice: cur,
@@ -1512,6 +1542,7 @@
           portfolio.closedTrades.push({
             symbol: pos.symbol,
             setupType: pos.setupType,
+            strategies: pos.strategies || [pos.setupType || 'Breakout Model'],
             shares: halfShares,
             buyPrice: pos.buyPrice,
             exitPrice: cur,
@@ -1539,6 +1570,7 @@
         portfolio.closedTrades.push({
           symbol: pos.symbol,
           setupType: pos.setupType,
+          strategies: pos.strategies || [pos.setupType || 'Breakout Model'],
           shares: pos.shares,
           buyPrice: pos.buyPrice,
           exitPrice: cur,
@@ -1947,6 +1979,115 @@
           </tr>
         `;
       }).reverse().join('');
+      renderFrameworkStats();
+    }
+
+    function renderFrameworkStats() {
+      const tb = document.getElementById('frameworkStatsBody');
+      if (!tb) return;
+      const trades = portfolio.closedTrades || [];
+      const openPos = portfolio.positions || [];
+
+      const allFrameworks = [
+        'Relative Strength Leader',
+        'Stan Weinstein Stage 2',
+        'Minervini Template',
+        'Qullamaggie Breakout',
+        'CANSLIM Pivot',
+        'Protocol Fortified',
+        'Sniper Mode (65%+ WR)',
+        'Institutional Delivery Absorption',
+        'PKScreener VCP',
+        'Turtle Trading',
+        'Darvas Box',
+        'Wyckoff Closing Range',
+        'Connors RSI Pullback',
+        'Manual Discretionary'
+      ];
+
+      const stats = {};
+      allFrameworks.forEach(fw => {
+        stats[fw] = { count: 0, wins: 0, pnl: 0, roiSum: 0, winSum: 0, lossSum: 0, openCount: 0 };
+      });
+
+      // Count open positions
+      openPos.forEach(p => {
+        const fwList = Array.isArray(p.strategies) && p.strategies.length > 0 
+          ? p.strategies 
+          : [p.setupType || 'Breakout Model'];
+        fwList.forEach(fw => {
+          if (!stats[fw]) stats[fw] = { count: 0, wins: 0, pnl: 0, roiSum: 0, winSum: 0, lossSum: 0, openCount: 0 };
+          stats[fw].openCount++;
+        });
+      });
+
+      // Count closed trades
+      trades.forEach(t => {
+        const fwList = Array.isArray(t.strategies) && t.strategies.length > 0 
+          ? t.strategies 
+          : [t.setupType || 'Breakout Model'];
+        fwList.forEach(fw => {
+          if (!stats[fw]) stats[fw] = { count: 0, wins: 0, pnl: 0, roiSum: 0, winSum: 0, lossSum: 0, openCount: 0 };
+          stats[fw].count++;
+          stats[fw].pnl += (t.pnl || 0);
+          stats[fw].roiSum += (t.roi || 0);
+          if ((t.pnl || 0) > 0) {
+            stats[fw].wins++;
+            stats[fw].winSum += t.pnl;
+          } else {
+            stats[fw].lossSum += Math.abs(t.pnl || 0);
+          }
+        });
+      });
+
+      const activeFws = Object.entries(stats).filter(([_, s]) => s.count > 0 || s.openCount > 0);
+      activeFws.sort((a, b) => b[1].pnl - a[1].pnl);
+
+      if (activeFws.length === 0) {
+        tb.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);font-size:0.82rem;">
+              🔬 Framework performance will dynamically calculate as soon as trades execute and close. Currently monitoring ${openPos.length} open positions.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tb.innerHTML = activeFws.map(([fw, s]) => {
+        const winRate = s.count > 0 ? ((s.wins / s.count) * 100).toFixed(1) + '%' : '--';
+        const avgRoi = s.count > 0 ? (s.roiSum / s.count).toFixed(2) + '%' : '--';
+        const pf = s.lossSum > 0 ? (s.winSum / s.lossSum).toFixed(2) : (s.winSum > 0 ? '∞' : '--');
+        const isUp = s.pnl >= 0;
+
+        let verdict = `<span class="pos-tag" style="background:rgba(56,189,248,0.12);color:#38bdf8;">🟡 ${s.openCount} Open Active</span>`;
+        if (s.count >= 2) {
+          if (s.pnl > 0 && parseFloat(winRate) >= 55) {
+            verdict = `<span class="pos-tag" style="background:rgba(16,185,129,0.18);color:#34d399;border:1px solid rgba(16,185,129,0.4);">🟢 High Edge (${winRate} WR)</span>`;
+          } else if (s.pnl > 0) {
+            verdict = `<span class="pos-tag" style="background:rgba(16,185,129,0.12);color:#10b981;">🟢 Net Profitable</span>`;
+          } else {
+            verdict = `<span class="pos-tag" style="background:rgba(244,63,94,0.15);color:#f87171;">🔴 Under Review</span>`;
+          }
+        }
+
+        return `
+          <tr>
+            <td>
+              <b style="color:#f8fafc;">${fw}</b>
+              ${s.openCount > 0 ? `<span class="pos-tag" style="background:rgba(56,189,248,0.15);color:#38bdf8;margin-left:6px;font-size:0.68rem;">${s.openCount} Active</span>` : ''}
+            </td>
+            <td class="num mono">${s.count} closed</td>
+            <td class="num mono" style="font-weight:700;color:${parseFloat(winRate) >= 50 ? '#10b981' : (s.count > 0 ? '#f43f5e' : 'inherit')};">${winRate}</td>
+            <td class="num mono" style="font-weight:700;color:${isUp ? '#10b981' : '#f43f5e'};">
+              ${isUp ? '+' : ''}₹${Math.round(s.pnl).toLocaleString('en-IN')}
+            </td>
+            <td class="num mono">${avgRoi}</td>
+            <td class="num mono">${pf}</td>
+            <td>${verdict}</td>
+          </tr>
+        `;
+      }).join('');
     }
 
     function exportClosedTradesCsv() {
@@ -2001,6 +2142,9 @@
       portfolio.positions.push({
         symbol: cand.symbol,
         setupType: cand.strategies[0],
+        strategies: cand.strategies || [cand.strategies[0]],
+        company: cand.company || cand.symbol,
+        sector: cand.sector || 'General',
         isSniper: Boolean(cand.is_sniper),
         shares: shares,
         buyPrice: cand.close,

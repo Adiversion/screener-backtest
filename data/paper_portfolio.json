@@ -1,6 +1,6 @@
 {
   "initialCapital": 1000000,
-  "cash": 505728.0,
+  "cash": 505728,
   "positions": [
     {
       "symbol": "RAMRAT",
@@ -8,7 +8,7 @@
       "isSniper": false,
       "shares": 162,
       "buyPrice": 616.55,
-      "currentPrice": 638.65,
+      "currentPrice": 636.2,
       "initialStopPrice": 567.23,
       "stopPrice": 628.7,
       "target1Price": 690.53,
@@ -16,11 +16,14 @@
       "targetPrice": 690.53,
       "scaledOut": false,
       "entryDate": "2026-10-01",
-      "curVal": 107033.40000000001,
-      "unrealizedPnl": 7152.3000000000175,
-      "roi": 7.160814208093439,
+      "curVal": 103064.40000000001,
+      "unrealizedPnl": 3183.3000000000175,
+      "roi": 3.1870894493552986,
       "peakPrice": 638.65,
-      "peakRoi": 3.5844619252291015
+      "peakRoi": 3.5844619252291015,
+      "strategies": [
+        "Relative Strength Leader"
+      ]
     },
     {
       "symbol": "LOKESHMACH",
@@ -28,19 +31,23 @@
       "isSniper": false,
       "shares": 249,
       "buyPrice": 400.8,
-      "currentPrice": 427.1,
+      "currentPrice": 427.5,
       "initialStopPrice": 368.74,
-      "stopPrice": 415.27,
+      "stopPrice": 415.49,
       "target1Price": 448.89,
       "target2Price": 480.95,
       "targetPrice": 448.89,
       "scaledOut": false,
       "entryDate": "2026-10-01",
-      "curVal": 105252.3,
-      "unrealizedPnl": 5453.100000000006,
-      "roi": 5.464071856287419,
-      "peakPrice": 427.1,
-      "peakRoi": 6.561876247504992
+      "curVal": 106447.5,
+      "unrealizedPnl": 6648.300000000003,
+      "roi": 6.661676646706584,
+      "peakPrice": 427.5,
+      "peakRoi": 6.661676646706584,
+      "stopReason": "Auto Trailing Stop (6.7% Peak)",
+      "strategies": [
+        "Protocol Fortified"
+      ]
     },
     {
       "symbol": "DYNAMATECH",
@@ -48,7 +55,7 @@
       "isSniper": false,
       "shares": 7,
       "buyPrice": 13756,
-      "currentPrice": 14119.0,
+      "currentPrice": 14081,
       "initialStopPrice": 12655.52,
       "stopPrice": 13756,
       "target1Price": 15406.72,
@@ -56,11 +63,14 @@
       "targetPrice": 15406.72,
       "scaledOut": false,
       "entryDate": "2026-10-01",
-      "curVal": 98665,
-      "unrealizedPnl": 2373,
-      "roi": 2.4643791799941845,
-      "peakPrice": 14119.0,
-      "peakRoi": 2.638848502471649
+      "curVal": 98567,
+      "unrealizedPnl": 2275,
+      "roi": 2.3626054085489967,
+      "peakPrice": 14119,
+      "peakRoi": 2.638848502471649,
+      "strategies": [
+        "Protocol Fortified"
+      ]
     },
     {
       "symbol": "VENUSREM",
@@ -68,7 +78,7 @@
       "isSniper": false,
       "shares": 55,
       "buyPrice": 1796.7,
-      "currentPrice": 1728.0,
+      "currentPrice": 1731,
       "initialStopPrice": 1652.96,
       "stopPrice": 1652.96,
       "target1Price": 2012.31,
@@ -76,11 +86,14 @@
       "targetPrice": 2012.31,
       "scaledOut": false,
       "entryDate": "2026-10-01",
-      "curVal": 98725,
-      "unrealizedPnl": -93.5,
-      "roi": -0.0946179106139058,
+      "curVal": 95205,
+      "unrealizedPnl": -3613.5,
+      "roi": -3.6567039572549698,
       "peakPrice": 1796.7,
-      "peakRoi": 0.0
+      "peakRoi": 0,
+      "strategies": [
+        "Relative Strength Leader"
+      ]
     },
     {
       "symbol": "SCHNEIDER",
@@ -88,7 +101,7 @@
       "isSniper": true,
       "shares": 78,
       "buyPrice": 1275.4,
-      "currentPrice": 1290.8,
+      "currentPrice": 1295.2,
       "initialStopPrice": 1173.37,
       "stopPrice": 1173.37,
       "target1Price": 1428.45,
@@ -96,10 +109,16 @@
       "targetPrice": 1428.45,
       "scaledOut": false,
       "entryDate": "2026-10-01",
-      "peakPrice": 1290.8,
-      "peakRoi": 1.2074643249176622
+      "peakPrice": 1297,
+      "peakRoi": 1.6935863258585468,
+      "curVal": 101025.6,
+      "unrealizedPnl": 1544.3999999999942,
+      "roi": 1.5524541320370044,
+      "strategies": [
+        "Protocol Fortified"
+      ]
     }
   ],
   "closedTrades": [],
-  "lastUpdated": "2026-10-05T05:29:05.650130+00:00"
+  "lastUpdated": "2026-10-05T05:52:43.217122+00:00"
 }
