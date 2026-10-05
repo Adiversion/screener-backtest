@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 from protocol.signals import TradeSignal
-from protocol.strategies import REGISTRY, register
+from protocol.strategies import register
 
 
 def _weekly_topn(panel, score_col, n, name, extra_filter=None):

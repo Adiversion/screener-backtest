@@ -1,0 +1,31 @@
+name: Guard Paper Trading Portfolio
+
+on:
+  schedule:
+    # Runs every 15 minutes during NSE trading hours: Mon-Fri 03:45 to 10:00 UTC (09:15 to 15:30 IST)
+    - cron: "*/15 4-10 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: guard-paper-portfolio
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run Headless Paper Trading Guardian
+        run: |
+          python scripts/track_paper_portfolio.py --once

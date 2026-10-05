@@ -9,7 +9,7 @@ overridden on the CLI with `--set strategies.<name>.<key>=<value>`.
 """
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import Callable
 
 import numpy as np
 import pandas as pd

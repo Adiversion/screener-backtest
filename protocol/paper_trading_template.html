@@ -45,38 +45,6 @@
     }
 
     .mono { font-family: 'JetBrains Mono', monospace; }
-
-    /* Top Ticker Tape */
-    .ticker-tape-container {
-      background: rgba(3, 7, 18, 0.95);
-      border-bottom: 1px solid var(--border);
-      overflow: hidden;
-      white-space: nowrap;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      backdrop-filter: blur(12px);
-    }
-    .ticker-tape-track {
-      display: inline-flex;
-      gap: 28px;
-      padding: 8px 16px;
-      animation: tickerScroll 45s linear infinite;
-    }
-    .ticker-tape-track:hover { animation-play-state: paused; }
-    @keyframes tickerScroll {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
-    }
-    .ticker-item {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.78rem;
-    }
-    .ticker-item .sym { font-weight: 700; color: #f1f5f9; }
-    .ticker-item .price { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
-    .ticker-item .chg { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; }
     .tick-up { color: var(--emerald); }
     .tick-down { color: var(--rose); }
 
@@ -172,11 +140,12 @@
       background: rgba(245, 158, 11, 0.25);
     }
 
-    /* Main Container */
+    /* Main Container - Full Screen Edge-to-Edge Workstation Layout */
     .container {
-      max-width: 1440px;
-      margin: 0 auto;
-      padding: 20px 24px 60px;
+      max-width: 100% !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 16px 20px 60px !important;
     }
 
     /* Account HUD Grid */
@@ -361,7 +330,6 @@
       border-radius: 4px;
       display: inline-block;
     }
-    .pos-sniper { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
     .pos-standard { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); }
 
     .btn-action-sm {
@@ -546,13 +514,6 @@
 </head>
 <body>
 
-  <!-- Top Real-Time Ticker Tape -->
-  <div class="ticker-tape-container">
-    <div class="ticker-tape-track" id="tickerTrack">
-      <!-- Injected dynamically -->
-    </div>
-  </div>
-
   <!-- Header -->
   <header class="app-header">
     <div class="brand-wrap">
@@ -563,7 +524,6 @@
       </div>
     </div>
     <div class="header-actions">
-      <button class="btn btn-amber" onclick="openDataSourceModal()">📡 Zero-Cost Ticker Guide</button>
       <a href="verifier.html" class="btn btn-amber" style="border-color:rgba(56,189,248,0.4);color:#38bdf8;background:rgba(56,189,248,0.1);">⚡ 7-14D Forward Verifier</a>
       <a href="screener.html" class="btn">🎯 Back to Screener</a>
       <button class="btn btn-primary" onclick="openOrderModal()">➕ New Paper Order</button>
@@ -604,42 +564,35 @@
     <!-- Action Bar -->
     <div class="action-bar">
       <div class="action-left">
-        <div class="live-status-pill">
-          <span class="pulse-dot"></span>
-          <span id="tickerStatusText">INITIALIZING REAL-TIME FEED...</span>
-        </div>
-        <button id="refreshQuotesBtn" class="btn" onclick="refreshAllLiveQuotes()" style="color:#38bdf8;border-color:rgba(56,189,248,0.3);background:rgba(56,189,248,0.08);">
-          <span>⚡</span> Refresh Real Quotes (Finance-Query)
+        <button class="btn btn-primary" onclick="importTopScreenerPicks()" title="1-Click allocate ₹1L into top 5 qualified screener breakout leaders">
+          <span>⚡</span> 1-Click Allocate Top Setups (₹1L)
         </button>
-        <button class="btn" onclick="importTopScreenerPicks()" style="color:#34d399;border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.08);">
-          <span>⚡</span> 1-Click Import Top Screener Picks (₹1L Each)
-        </button>
-        <button class="btn" onclick="importSniperPicks()" style="color:#fbbf24;border-color:rgba(245,158,11,0.3);background:rgba(245,158,11,0.08);">
-          <span>🎯</span> Import Sniper Setups (65%+ WR)
         </button>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <button id="cloudSyncBtn" class="btn" onclick="triggerManualCloudSync()" style="color:#38bdf8;border-color:rgba(56,189,248,0.4);background:rgba(56,189,248,0.12);font-weight:700;" title="Cloudflare KV Edge Memory (Instant access on Phone & Home PC)">
-          <span id="cloudSyncIcon">☁️</span> <span id="cloudSyncText">Cloud: Checking...</span>
-        </button>
         <button id="autoTradeBtn" class="btn" onclick="toggleAutoTrade()" style="color:#10b981;border-color:rgba(16,185,129,0.4);background:rgba(16,185,129,0.12);font-weight:700;" title="Automatic Stop-Loss & 1.5R Profit Taking Engine">
           <span>🤖</span> Auto-Pilot: ON
         </button>
-        <button class="btn" onclick="exportPortfolioJson()" style="color:#e2e8f0;font-size:0.75rem;" title="Download portfolio backup file">
-          <span>💾</span> Export JSON
+        <button id="cloudSyncBtn" class="btn" onclick="triggerManualCloudSync()" style="color:#38bdf8;border-color:rgba(56,189,248,0.3);background:rgba(56,189,248,0.08);font-size:0.78rem;" title="Cloudflare KV Edge Memory (Instant access on Phone & Home PC)">
+          <span id="cloudSyncIcon">☁️</span> <span id="cloudSyncText">Edge Synced</span>
         </button>
-        <button class="btn" onclick="document.getElementById('importFileInput').click()" style="color:#e2e8f0;font-size:0.75rem;" title="Import portfolio backup file">
-          <span>📥</span> Import JSON
+        <button class="btn" onclick="openOptionsModal()" style="color:var(--text-secondary);font-size:0.78rem;" title="Backup, quotes, and account settings">
+          <span>⚙️</span> Options
         </button>
         <input type="file" id="importFileInput" style="display:none;" accept=".json" onchange="importPortfolioFile(event)">
-        <button class="btn" onclick="resetAccount()" style="color:#f87171;font-size:0.75rem;">🔄 Reset</button>
       </div>
     </div>
 
     <!-- Open Positions Table -->
-    <div class="section-title">
-      <span>📈</span> Active Open Positions (<span id="openCountHeader">0</span>)
-      <span style="font-size:0.72rem;font-weight:400;color:var(--text-muted);margin-left:8px;">• Synced to Cloudflare KV Edge • Live on Mobile & Desktop</span>
+    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;">
+        <span>📈</span> Active Open Positions (<span id="openCountHeader">0</span>)
+        <span style="font-size:0.72rem;font-weight:400;color:var(--text-muted);">• Synced to Cloudflare KV Edge • Live on Mobile & Desktop</span>
+      </div>
+      <div class="live-status-pill" style="margin:0;">
+        <span class="pulse-dot"></span>
+        <span id="tickerStatusText">INITIALIZING REAL-TIME FEED...</span>
+      </div>
     </div>
     <div class="table-card">
       <div class="table-scroll">
@@ -692,27 +645,92 @@
       </div>
     </div>
 
-    <!-- Realized Trade Journal -->
-    <div class="section-title">
-      <span>📜</span> Closed Trade Journal & Performance Ledger
+    <!-- Realized Trade Journal & Performance Ledger -->
+    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;">
+        <span>📜</span> Closed Trade Journal & Performance Ledger
+        <span style="font-size:0.72rem;font-weight:400;color:var(--text-muted);">• Complete Audit Trail of All Autonomous & Manual Executions</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <span class="pos-tag" style="background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.4);font-size:0.72rem;">
+          🤖 100% Autonomous Risk Guard Active
+        </span>
+        <button class="btn btn-action-sm" onclick="exportClosedTradesCsv()" title="Download CSV report of all closed trades">
+          📥 Export CSV
+        </button>
+      </div>
     </div>
+
+    <!-- Ledger Performance Stats Card -->
+    <div id="ledgerStatsCard" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));gap:12px;margin-bottom:14px;background:rgba(15,23,42,0.65);border:1px solid var(--border);border-radius:10px;padding:14px 18px;">
+      <div>
+        <div style="font-size:0.68rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;letter-spacing:0.04em;">Total Realized Net P&L</div>
+        <div id="ledgerNetPnl" class="mono" style="font-size:1.25rem;font-weight:800;color:#34d399;margin-top:2px;">₹0</div>
+      </div>
+      <div>
+        <div style="font-size:0.68rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;letter-spacing:0.04em;">Win / Loss Record</div>
+        <div id="ledgerRecord" class="mono" style="font-size:1.25rem;font-weight:800;color:#ffffff;margin-top:2px;">0W - 0L (0.0%)</div>
+      </div>
+      <div>
+        <div style="font-size:0.68rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;letter-spacing:0.04em;">Profit Factor</div>
+        <div id="ledgerProfitFactor" class="mono" style="font-size:1.25rem;font-weight:800;color:#fbbf24;margin-top:2px;">--</div>
+      </div>
+      <div>
+        <div style="font-size:0.68rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;letter-spacing:0.04em;">Avg Win / Avg Loss</div>
+        <div id="ledgerAvgWinLoss" class="mono" style="font-size:1.05rem;font-weight:700;color:#cbd5e1;margin-top:4px;">₹0 / ₹0</div>
+      </div>
+      <div>
+        <div style="font-size:0.68rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;letter-spacing:0.04em;">Auto-Execution Ratio</div>
+        <div id="ledgerAutoRatio" class="mono" style="font-size:1.05rem;font-weight:700;color:#38bdf8;margin-top:4px;">100% Autonomous</div>
+      </div>
+    </div>
+
     <div class="table-card">
       <div class="table-scroll">
         <table>
           <thead>
             <tr>
-              <th>Symbol</th>
+              <th>Symbol & Setup</th>
               <th>Entry Date</th>
-              <th>Exit Date</th>
+              <th>Exit Date & Time</th>
               <th class="num">Shares</th>
               <th class="num">Entry (₹)</th>
               <th class="num">Exit (₹)</th>
               <th class="num">Realized P&L (₹)</th>
               <th class="num">Return (%)</th>
-              <th>Exit Reason</th>
+              <th>Execution Type & Reason</th>
             </tr>
           </thead>
           <tbody id="closedBody">
+            <!-- Injected dynamically -->
+          </tbody>
+        </table>
+    <!-- Strategy Framework Validation & Alpha Scorecard -->
+    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;align-items:center;flex-wrap:gap:8px;">
+        <span>🔬</span> Strategy Framework Performance & Edge Scorecard
+        <span style="font-size:0.72rem;font-weight:400;color:var(--text-muted);">• Auditing Realized Alpha Across Screener Trading Models (Backed by Cloudflare KV Edge)</span>
+      </div>
+      <span class="pos-tag" style="background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);font-size:0.72rem;">
+        ☁️ Edge Memory Audit Active
+      </span>
+    </div>
+
+    <div class="table-card">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Framework / Strategy Model</th>
+              <th class="num">Total Executions</th>
+              <th class="num">Win Rate (%)</th>
+              <th class="num">Realized P&L (₹)</th>
+              <th class="num">Avg ROI (%)</th>
+              <th class="num">Profit Factor</th>
+              <th>Statistical Edge Status</th>
+            </tr>
+          </thead>
+          <tbody id="frameworkStatsBody">
             <!-- Injected dynamically -->
           </tbody>
         </table>
@@ -751,6 +769,40 @@
       <div style="margin-top:18px;display:flex;justify-content:flex-end;gap:10px;">
         <button class="btn" onclick="closeOrderModal()">Cancel</button>
         <button class="btn btn-primary" onclick="submitManualOrder()">Submit Paper Buy Order</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Portfolio Options & Maintenance Modal -->
+  <div id="optionsModal" class="modal-overlay" onclick="if(event.target===this)closeOptionsModal()">
+    <div class="modal-card" style="max-width:480px;">
+      <div class="modal-header">
+        <h3 style="color:#ffffff;font-size:1.05rem;font-weight:700;">⚙️ Account & Portfolio Options</h3>
+        <div class="close-icon" onclick="closeOptionsModal()">&times;</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-top:6px;">
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:12px;">
+          <div style="font-weight:700;color:#38bdf8;font-size:0.85rem;margin-bottom:2px;">Force Real-Time Quote Refresh</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px;">Poll REST APIs to forcefully refresh LTP for all open positions.</div>
+          <button id="refreshQuotesBtn" class="btn btn-action-sm" onclick="refreshAllLiveQuotes(); closeOptionsModal();" style="color:#38bdf8;border-color:rgba(56,189,248,0.3);background:rgba(56,189,248,0.08);">
+            ⚡ Refresh Quotes Now
+          </button>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:12px;">
+          <div style="font-weight:700;color:#34d399;font-size:0.85rem;margin-bottom:2px;">Offline JSON Backup</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px;">Save an offline JSON file to your disk or restore a previous backup.</div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-action-sm" onclick="exportPortfolioJson()" style="font-size:0.75rem;">💾 Download JSON</button>
+            <button class="btn btn-action-sm" onclick="document.getElementById('importFileInput').click()" style="font-size:0.75rem;">📥 Restore JSON</button>
+          </div>
+        </div>
+        <div style="background:rgba(244,63,94,0.06);border:1px solid rgba(244,63,94,0.25);border-radius:8px;padding:12px;">
+          <div style="font-weight:700;color:#f87171;font-size:0.85rem;margin-bottom:2px;">Reset Account Balance</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px;">Wipe all open positions and reset starting cash to ₹10,00,000.</div>
+          <button class="btn btn-action-sm" onclick="resetAccount(); closeOptionsModal();" style="color:#f87171;border-color:rgba(244,63,94,0.4);background:rgba(244,63,94,0.12);font-size:0.75rem;">
+            ⚠️ Reset Account to ₹10L Cash
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -902,6 +954,10 @@
               renderClosed();
               updateCloudSyncStatus('synced', 'Cloud: Up to Date');
               showToastNotification(`☁️ Loaded ${portfolio.positions.length} active positions from Cloudflare KV Edge`, 'info');
+              if (liveWs && liveWs.readyState === WebSocket.OPEN) {
+                subscribeSymbolsToStream(getAllSubscribedSymbols());
+              }
+              refreshAllLiveQuotes();
               return;
             }
           }
@@ -982,16 +1038,14 @@
       }
     }
 
-    // Live Prices Map (Initialized from Screener Audited Closes)
+    // Live Prices Map (Dedicated Strictly to Active Open Positions)
     const livePrices = {};
-    if (D && D.candidates) {
-      D.candidates.forEach(c => {
-        livePrices[c.symbol] = {
-          price: c.close,
-          open: c.close,
-          high: c.high || (c.close * 1.01),
-          low: c.low || (c.close * 0.99),
-          prevClose: c.close,
+    if (portfolio && Array.isArray(portfolio.positions)) {
+      portfolio.positions.forEach(p => {
+        livePrices[p.symbol] = {
+          price: p.currentPrice || p.buyPrice,
+          open: p.buyPrice,
+          prevClose: p.buyPrice,
           tickDirection: 0
         };
       });
@@ -1007,6 +1061,13 @@
 
     // Pure JavaScript Protobuf Decoder for Yahoo Streamer (wss://streamer.finance.yahoo.com/)
     // Reconstructed from Yahoo's __finStreamer-proto.js (Zero external dependencies)
+    /**
+     * Decode Yahoo Finance's protobuf-encoded live quote into a plain object.
+     * Yahoo streams quotes as a base64 protobuf; this walks the wire format
+     * (varint / length-delimited fields) and extracts the price fields.
+     * @param {string} base64Str - base64 protobuf payload from the Yahoo stream.
+     * @returns {object} decoded quote fields, or {} when unparseable.
+     */
     function decodeYahooProtobuf(base64Str) {
       try {
         const binaryString = atob(base64Str);
@@ -1033,6 +1094,10 @@
               if ((b & 0x80) === 0) break;
               shift += 7;
             }
+            if (fieldNumber === 3) result.time = val;
+            else if (fieldNumber === 7) result.marketHours = val;
+            else if (fieldNumber === 9) result.dayVolume = val;
+            else if (fieldNumber === 22) result.lastSize = val;
             result['f_' + fieldNumber] = val;
           } else if (wireType === 5) { // 32-bit float
             if (pos + 4 <= bytes.length) {
@@ -1100,9 +1165,8 @@
       if (streamState === 'LIVE_TICK') {
         textEl.textContent = `⚡ LIVE STREAM ACTIVE • ${ms.istTimeString}`;
         if (dot) dot.style.background = '#10b981';
-      } else if (streamState === 'FQ_CONNECTED' || streamState === 'WS_CONNECTED') {
-        const modeLabel = currentStreamerMode === 'finance-query' ? 'FINANCE-QUERY WS' : 'YAHOO STREAMER';
-        textEl.textContent = ms.isOpen ? `🟢 ${modeLabel} CONNECTED • STREAMING REAL TICKS` : `${ms.statusLabel} • ${modeLabel} READY`;
+      } else if (streamState === 'WS_CONNECTED') {
+        textEl.textContent = ms.isOpen ? `🟢 YAHOO STREAMER CONNECTED • STREAMING REAL TICKS` : `${ms.statusLabel} • YAHOO STREAMER READY`;
         if (dot) dot.style.background = ms.isOpen ? '#10b981' : '#f59e0b';
       } else if (!ms.isOpen) {
         textEl.textContent = `🔴 ${ms.statusLabel} • REAL LTP / AUDITED CLOSE (ZERO SIMULATION)`;
@@ -1113,58 +1177,112 @@
       }
     }
 
-    // Multi-Source Live WebSocket Streamer (Finance-Query + Yahoo Fallback)
+    // Direct High-Frequency Live WebSocket Streamer (Yahoo Streamer Engine)
     let liveWs = null;
     let wsReconnectTimer = null;
-    let currentStreamerMode = 'finance-query'; // 'finance-query' or 'yahoo'
+    let lastTickReceivedTime = 0;
 
     function getAllSubscribedSymbols() {
-      const set = new Set(['^NSEI']);
-      if (D && D.candidates) {
-        D.candidates.forEach(c => set.add(toYahooSymbol(c.symbol)));
+      const set = new Set();
+      if (portfolio && Array.isArray(portfolio.positions)) {
+        portfolio.positions.forEach(p => {
+          const s = toYahooSymbol(p.symbol);
+          if (s) set.add(s);
+        });
       }
-      portfolio.positions.forEach(p => set.add(toYahooSymbol(p.symbol)));
       return Array.from(set);
     }
 
     function subscribeSymbolsToStream(symbols) {
       if (!liveWs || liveWs.readyState !== WebSocket.OPEN) return;
       try {
-        if (currentStreamerMode === 'finance-query') {
-          liveWs.send(JSON.stringify({ action: 'subscribe', symbols: symbols }));
-        } else {
-          liveWs.send(JSON.stringify({ subscribe: symbols }));
-        }
+        liveWs.send(JSON.stringify({ subscribe: symbols }));
       } catch (_) {}
     }
 
-    function handleLiveTick(sym, newPrice) {
-      if (!sym || newPrice == null || isNaN(newPrice) || newPrice <= 0) return;
-      const oldPrice = livePrices[sym] ? livePrices[sym].price : newPrice;
-      const tickDir = newPrice > oldPrice ? 1 : (newPrice < oldPrice ? -1 : 0);
-
-      if (!livePrices[sym]) {
-        livePrices[sym] = { price: newPrice, prevClose: newPrice, tickDirection: tickDir };
-      } else {
-        livePrices[sym].price = newPrice;
-        livePrices[sym].tickDirection = tickDir;
+    function unsubscribeSymbol(sym) {
+      if (!sym) return;
+      if (liveWs && liveWs.readyState === WebSocket.OPEN) {
+        try {
+          liveWs.send(JSON.stringify({ unsubscribe: [toYahooSymbol(sym)] }));
+        } catch (_) {}
       }
-
-      // Real-time flash on DOM
-      const el = document.getElementById('livePrice_' + sym);
-      if (el) {
-        el.textContent = '₹' + newPrice.toFixed(2);
-        if (tickDir !== 0) {
-          el.className = 'mono ' + (tickDir === 1 ? 'flash-up tick-up' : 'flash-down tick-down');
-        }
-      }
-
-      updateOpenPositionsPnl();
-      renderTickerTape();
-      updateStatusPill('LIVE_TICK');
     }
 
-    function connectLiveStream(mode = 'finance-query') {
+    // Sub-Second Live Tick Dispatcher (60 FPS requestAnimationFrame Batching)
+    let pendingTicks = {};
+    let rafScheduled = false;
+
+    /**
+     * Queue one live price tick for an open position.
+     * Ticks are coalesced into `pendingTicks` and flushed once per animation
+     * frame, so a burst of stream messages triggers a single re-render.
+     * @param {string} sym - symbol the tick belongs to.
+     * @param {number} newPrice - latest traded price.
+     * @param {number} chgPct - percent change for the session.
+     * @param {object} rawTick - original stream payload, if any.
+     */
+    function queueLiveTick(sym, newPrice, chgPct, rawTick) {
+      if (!sym || newPrice == null || isNaN(newPrice) || newPrice <= 0) return;
+      // Strictly track active open positions only
+      const isOpen = portfolio && Array.isArray(portfolio.positions) && portfolio.positions.some(p => p.symbol.toUpperCase() === sym.toUpperCase());
+      if (!isOpen) return;
+
+      lastTickReceivedTime = Date.now();
+      pendingTicks[sym] = { price: newPrice, chgPct: chgPct, rawTick: rawTick };
+
+      if (!rafScheduled) {
+        rafScheduled = true;
+        requestAnimationFrame(flushPendingTicks);
+      }
+    }
+
+    /**
+     * Drain the coalesced tick queue and repaint the affected rows once.
+     * Scheduled via requestAnimationFrame by `queueLiveTick`.
+     */
+    function flushPendingTicks() {
+      rafScheduled = false;
+      const ticks = pendingTicks;
+      pendingTicks = {};
+
+      let hasUpdate = false;
+      for (const [sym, tick] of Object.entries(ticks)) {
+        const oldPrice = livePrices[sym] ? livePrices[sym].price : tick.price;
+        const tickDir = tick.price > oldPrice ? 1 : (tick.price < oldPrice ? -1 : 0);
+
+        if (!livePrices[sym]) {
+          livePrices[sym] = { price: tick.price, prevClose: tick.price, tickDirection: tickDir };
+        } else {
+          livePrices[sym].price = tick.price;
+          livePrices[sym].tickDirection = tickDir;
+        }
+        if (tick.chgPct != null) {
+          livePrices[sym].chgPct = tick.chgPct;
+        }
+
+        // Sub-second Flash animation directly on live price cell
+        const el = document.getElementById('livePrice_' + sym);
+        if (el) {
+          el.textContent = '₹' + tick.price.toFixed(2);
+          if (tickDir !== 0) {
+            el.className = 'num mono ' + (tickDir === 1 ? 'flash-up tick-up' : 'flash-down tick-down');
+          }
+        }
+        hasUpdate = true;
+      }
+
+      if (hasUpdate) {
+        updateOpenPositionsPnl();
+        updateStatusPill('LIVE_TICK');
+      }
+    }
+
+    function handleLiveTick(sym, newPrice, chgPct) {
+      queueLiveTick(sym, newPrice, chgPct);
+    }
+
+    function connectLiveStream() {
       clearTimeout(wsReconnectTimer);
       const symbols = getAllSubscribedSymbols();
 
@@ -1173,49 +1291,27 @@
         liveWs = null;
       }
 
-      currentStreamerMode = mode;
       updateStatusPill('CONNECTING');
 
-      const wsUrl = mode === 'finance-query' 
-        ? 'wss://finance-query.com/v2/stream' 
-        : 'wss://streamer.finance.yahoo.com/';
-
       try {
-        const ws = new WebSocket(wsUrl);
+        const ws = new WebSocket('wss://streamer.finance.yahoo.com/');
         liveWs = ws;
 
         ws.onopen = () => {
           if (ws.readyState === WebSocket.OPEN) {
             subscribeSymbolsToStream(symbols);
-            updateStatusPill(mode === 'finance-query' ? 'FQ_CONNECTED' : 'WS_CONNECTED');
+            updateStatusPill('WS_CONNECTED');
           }
         };
 
         ws.onmessage = (event) => {
           try {
             if (typeof event.data === 'string') {
-              // Try JSON (Finance-Query protocol)
-              try {
-                const parsed = JSON.parse(event.data);
-                if (parsed) {
-                  const s = (parsed.symbol || parsed.id || '').replace(/\.NS$/i, '').toUpperCase();
-                  const p = parsed.price != null ? parseFloat(parsed.price) : (parsed.regularMarketPrice != null ? parseFloat(parsed.regularMarketPrice) : null);
-                  if (s && p != null && !isNaN(p)) {
-                    handleLiveTick(s, p);
-                    return;
-                  }
-                }
-              } catch (_) {}
-
-              // Try Protobuf Base64 (Yahoo Finance protocol)
-              try {
-                const tick = decodeYahooProtobuf(event.data);
-                if (tick && tick.price != null && !isNaN(tick.price)) {
-                  const s = String(tick.id || '').replace(/\.NS$/i, '').toUpperCase();
-                  handleLiveTick(s, parseFloat(tick.price.toFixed(2)));
-                  return;
-                }
-              } catch (_) {}
+              const tick = decodeYahooProtobuf(event.data);
+              if (tick && tick.price != null && !isNaN(tick.price)) {
+                const s = String(tick.id || '').replace(/\.NS$/i, '').toUpperCase();
+                queueLiveTick(s, parseFloat(tick.price.toFixed(2)), tick.changePercent, tick);
+              }
             }
           } catch (err) {
             console.warn('Live tick parse error:', err);
@@ -1230,16 +1326,13 @@
           if (liveWs === ws) liveWs = null;
           updateStatusPill('IDLE');
           if (document.visibilityState === 'visible') {
-            const nextMode = mode === 'finance-query' ? 'yahoo' : 'finance-query';
-            wsReconnectTimer = setTimeout(() => connectLiveStream(nextMode), 6000);
+            wsReconnectTimer = setTimeout(() => connectLiveStream(), 3000);
           }
         };
       } catch (e) {
         console.warn('WebSocket init error:', e);
         updateStatusPill('IDLE');
-        if (mode === 'finance-query') {
-          wsReconnectTimer = setTimeout(() => connectLiveStream('yahoo'), 3000);
-        }
+        wsReconnectTimer = setTimeout(() => connectLiveStream(), 3000);
       }
     }
 
@@ -1250,7 +1343,7 @@
     async function fetchRealQuote(symbol) {
       const symNs = toYahooSymbol(symbol);
 
-      // 1. Primary: Finance-Query REST API (CORS enabled: Access-Control-Allow-Origin: *)
+      // 1. Primary: Finance-Query REST API (CORS enabled)
       try {
         const res = await fetch(`${FQ_REST_BASE}/${encodeURIComponent(symNs)}`, { cache: 'no-store' });
         if (res.ok) {
@@ -1287,41 +1380,53 @@
       return null;
     }
 
+    let isRefreshingQuotes = false;
     async function refreshAllLiveQuotes() {
-      const refreshBtn = document.getElementById('refreshQuotesBtn');
-      if (refreshBtn) refreshBtn.innerHTML = '<span>⏳</span> Fetching Real Quotes (Finance-Query)...';
+      if (isRefreshingQuotes) return;
+      const symbols = Array.from(new Set(
+        (portfolio && Array.isArray(portfolio.positions) ? portfolio.positions : []).map(p => p.symbol)
+      ));
+      if (symbols.length === 0) return;
 
-      const symbols = Array.from(new Set([
-        ...portfolio.positions.map(p => p.symbol),
-        ...(D && D.candidates ? D.candidates.slice(0, 10).map(c => c.symbol) : [])
-      ]));
+      isRefreshingQuotes = true;
+      const refreshBtn = document.getElementById('refreshQuotesBtn');
+      if (refreshBtn) refreshBtn.innerHTML = '<span>⏳</span> Refreshing Active Positions...';
 
       let updatedCount = 0;
-      for (const sym of symbols) {
-        const quote = await fetchRealQuote(sym);
-        if (quote && quote.price > 0) {
-          const oldPrice = livePrices[sym] ? livePrices[sym].price : quote.price;
-          const tickDir = quote.price > oldPrice ? 1 : (quote.price < oldPrice ? -1 : 0);
-          if (!livePrices[sym]) {
-            livePrices[sym] = { price: quote.price, prevClose: quote.prevClose || quote.price, tickDirection: tickDir };
-          } else {
-            livePrices[sym].price = quote.price;
-            if (quote.prevClose) livePrices[sym].prevClose = quote.prevClose;
-            livePrices[sym].tickDirection = tickDir;
+      try {
+        const results = await Promise.all(symbols.map(async sym => {
+          try {
+            const quote = await fetchRealQuote(sym);
+            return { sym, quote };
+          } catch (_) {
+            return { sym, quote: null };
           }
-          updatedCount++;
+        }));
+
+        for (const { sym, quote } of results) {
+          if (quote && quote.price > 0) {
+            const oldPrice = livePrices[sym] ? livePrices[sym].price : quote.price;
+            const tickDir = quote.price > oldPrice ? 1 : (quote.price < oldPrice ? -1 : 0);
+            if (!livePrices[sym]) {
+              livePrices[sym] = { price: quote.price, prevClose: quote.prevClose || quote.price, tickDirection: tickDir };
+            } else {
+              livePrices[sym].price = quote.price;
+              if (quote.prevClose) livePrices[sym].prevClose = quote.prevClose;
+              livePrices[sym].tickDirection = tickDir;
+            }
+            updatedCount++;
+          }
         }
+
+        updateOpenPositionsPnl();
+      } finally {
+        isRefreshingQuotes = false;
       }
 
-      updateOpenPositionsPnl();
-      renderPositions();
-      renderWatchlist();
-      renderTickerTape();
-
       if (refreshBtn) {
-        refreshBtn.innerHTML = `<span>✓</span> Updated ${updatedCount} Real Quotes`;
+        refreshBtn.innerHTML = `<span>✓</span> Updated ${updatedCount} Active Positions`;
         setTimeout(() => {
-          refreshBtn.innerHTML = '<span>⚡</span> Refresh Real Quotes (Finance-Query)';
+          refreshBtn.innerHTML = '<span>⚡</span> Refresh Active Quotes (Live)';
         }, 3000);
       }
     }
@@ -1400,40 +1505,85 @@
       event.target.value = '';
     }
 
+    /**
+     * Apply the autonomous risk engine to one open position: raise the stop to
+     * breakeven after a profit threshold, trail it, then exit when breached.
+     * @param {object} pos - the position record (mutated in place).
+     * @param {number} idx - index of the position in `portfolio.positions`.
+     * @returns {boolean} true when the position was closed by this call.
+     */
     function checkAutomaticExecution(pos, idx) {
       if (!autoTradeEnabled) return false;
       const cur = pos.currentPrice;
       if (!cur || cur <= 0) return false;
 
-      // 1. Automatic Stop Loss Execution
+      pos.peakPrice = Math.max(pos.peakPrice || pos.buyPrice, cur);
+      const roi = ((cur - pos.buyPrice) / pos.buyPrice) * 100;
+      pos.peakRoi = Math.max(pos.peakRoi || 0, roi);
+      const nowStr = new Date().toISOString().split('T')[0];
+      const timeStr = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+      // 1. AUTO BREAKEVEN SHIELD:
+      // If stock reaches +2.0% profit (or +0.5R) and stop is still below buyPrice:
+      // Automatically raise stop to buyPrice (Breakeven)! Principal is 100% protected.
+      if (roi >= 2.0 && pos.stopPrice < pos.buyPrice) {
+        pos.stopPrice = pos.buyPrice;
+        pos.stopReason = 'Auto Breakeven Shield (+2% Gain Hit)';
+        showToastNotification(`🛡️ Auto Breakeven Shield: ${pos.symbol} in profit (+${roi.toFixed(1)}%). Stop automatically raised to ₹${pos.buyPrice.toFixed(2)} (Trade is now 100% Zero-Risk)!`, 'success');
+        return 'MODIFIED';
+      }
+
+      // 2. AUTO DYNAMIC TRAILING STOP:
+      // As stock rallies above +3.5%, automatically trail the stop upward to lock floating profit!
+      if (pos.peakRoi >= 3.5) {
+        const profitLockStop = pos.buyPrice + (pos.peakPrice - pos.buyPrice) * 0.55;
+        const trailingBufferStop = pos.peakPrice * 0.96; // 4% off peak
+        const computedTrail = +(Math.max(profitLockStop, trailingBufferStop)).toFixed(2);
+        if (computedTrail > pos.stopPrice) {
+          pos.stopPrice = computedTrail;
+          pos.stopReason = `Auto Trailing Stop (${pos.peakRoi.toFixed(1)}% Peak)`;
+          return 'MODIFIED';
+        }
+      }
+
+      // 3. AUTO STOP LOSS OR TRAILING STOP HIT:
       if (cur <= pos.stopPrice) {
         const exitLoss = (pos.shares * cur) - (pos.shares * pos.buyPrice);
         const exitRoi = ((cur - pos.buyPrice) / pos.buyPrice) * 100;
         portfolio.cash += pos.shares * cur;
-        const isBreakevenExit = pos.stopPrice >= pos.buyPrice;
-        const reason = isBreakevenExit 
-          ? `🛡️ Auto Breakeven Exit at ₹${cur.toFixed(2)} (+${exitRoi.toFixed(2)}%)`
-          : `🛑 Auto Stop-Loss Triggered at ₹${cur.toFixed(2)} (${exitRoi.toFixed(2)}%)`;
+        
+        let reason = '';
+        if (pos.stopPrice > pos.buyPrice) {
+          reason = `🛡️ Auto Trailing Stop Executed at ₹${cur.toFixed(2)} (Peak ₹${(pos.peakPrice || cur).toFixed(2)}, Locked +${exitRoi.toFixed(1)}%)`;
+        } else if (pos.stopPrice >= pos.buyPrice) {
+          reason = `🛡️ Auto Breakeven Shield Executed at ₹${cur.toFixed(2)} (+${exitRoi.toFixed(1)}%)`;
+        } else {
+          reason = `🛑 Auto Stop-Loss Triggered at ₹${cur.toFixed(2)} (${exitRoi.toFixed(1)}%)`;
+        }
         
         portfolio.closedTrades.push({
           symbol: pos.symbol,
+          setupType: pos.setupType,
+          strategies: pos.strategies || [pos.setupType || 'Breakout Model'],
           shares: pos.shares,
           buyPrice: pos.buyPrice,
           exitPrice: cur,
           pnl: exitLoss,
           roi: exitRoi,
           entryDate: pos.entryDate,
-          exitDate: new Date().toISOString().split('T')[0],
+          exitDate: `${nowStr} ${timeStr}`,
           exitReason: reason
         });
-        showToastNotification(`🛑 Stop Executed: ${pos.symbol} closed at ₹${cur.toFixed(2)} (${exitRoi.toFixed(2)}%)`, exitLoss >= 0 ? 'info' : 'error');
+        showToastNotification(`${exitLoss >= 0 ? '🛡️ Profit Guard' : '🛑 Risk Guard'}: ${pos.symbol} closed at ₹${cur.toFixed(2)} (${exitRoi >= 0 ? '+' : ''}${exitRoi.toFixed(1)}%)`, exitLoss >= 0 ? 'success' : 'error');
+        unsubscribeSymbol(pos.symbol);
+        delete livePrices[pos.symbol];
         portfolio.positions.splice(idx, 1);
-        savePortfolio();
-        return true;
+        return 'REMOVED';
       }
 
-      // 2. Automatic Target 1 (+1.5R) Scale-Out
-      const target1 = pos.target1Price || pos.targetPrice || (pos.buyPrice + 1.5 * (pos.buyPrice - (pos.initialStopPrice || pos.stopPrice)));
+      // 4. AUTO TARGET 1 (+1.5R) 50% PROFIT BANK:
+      const riskPerShare = Math.max(0.1, pos.buyPrice - (pos.initialStopPrice || pos.stopPrice));
+      const target1 = pos.target1Price || pos.targetPrice || +(pos.buyPrice + 1.5 * riskPerShare).toFixed(2);
       if (!pos.scaledOut && cur >= target1) {
         const halfShares = Math.floor(pos.shares / 2);
         if (halfShares > 0) {
@@ -1442,45 +1592,50 @@
           portfolio.cash += halfShares * cur;
           portfolio.closedTrades.push({
             symbol: pos.symbol,
+            setupType: pos.setupType,
+            strategies: pos.strategies || [pos.setupType || 'Breakout Model'],
             shares: halfShares,
             buyPrice: pos.buyPrice,
             exitPrice: cur,
             pnl: pnlHalf,
             roi: roiHalf,
             entryDate: pos.entryDate,
-            exitDate: new Date().toISOString().split('T')[0],
-            exitReason: `🎯 Auto Target 1.5R Locked (50% Scale-Out at ₹${cur.toFixed(2)})`
+            exitDate: `${nowStr} ${timeStr}`,
+            exitReason: `🎯 Auto Target 1.5R Locked (50% Scale-Out at ₹${cur.toFixed(2)}, +${roiHalf.toFixed(1)}%)`
           });
           pos.shares -= halfShares;
           pos.scaledOut = true;
-          pos.stopPrice = pos.buyPrice; // Stop raised to Breakeven entry price!
-          showToastNotification(`🎯 Target 1.5R Reached! ${pos.symbol}: 50% profit banked (+₹${Math.round(pnlHalf).toLocaleString('en-IN')}). Stop raised to Breakeven (₹${pos.buyPrice.toFixed(2)})!`, 'success');
-          savePortfolio();
-          return false;
+          // Stop raised for remaining 50% runner to Breakeven + 0.5% (guaranteeing overall net profit!)
+          pos.stopPrice = +(Math.max(pos.stopPrice, pos.buyPrice * 1.005)).toFixed(2);
+          showToastNotification(`🎯 Target 1.5R Reached! ${pos.symbol}: 50% profit banked (+₹${Math.round(pnlHalf).toLocaleString('en-IN')}). Stop raised to ₹${pos.stopPrice.toFixed(2)}!`, 'success');
+          return 'MODIFIED';
         }
       }
 
-      // 3. Automatic Target 2 (+2.5R) Runner Exit
-      const target2 = pos.target2Price || (pos.buyPrice + 2.5 * (pos.buyPrice - (pos.initialStopPrice || pos.stopPrice)));
+      // 5. AUTO TARGET 2 (+2.5R) RUNNER EXIT:
+      const target2 = pos.target2Price || +(pos.buyPrice + 2.5 * riskPerShare).toFixed(2);
       if (pos.scaledOut && cur >= target2) {
         const pnlFinal = (pos.shares * cur) - (pos.shares * pos.buyPrice);
         const roiFinal = ((cur - pos.buyPrice) / pos.buyPrice) * 100;
         portfolio.cash += pos.shares * cur;
         portfolio.closedTrades.push({
           symbol: pos.symbol,
+          setupType: pos.setupType,
+          strategies: pos.strategies || [pos.setupType || 'Breakout Model'],
           shares: pos.shares,
           buyPrice: pos.buyPrice,
           exitPrice: cur,
           pnl: pnlFinal,
           roi: roiFinal,
           entryDate: pos.entryDate,
-          exitDate: new Date().toISOString().split('T')[0],
+          exitDate: `${nowStr} ${timeStr}`,
           exitReason: `🏆 Auto Target 2.5R Runner Locked (+${roiFinal.toFixed(2)}%)`
         });
         showToastNotification(`🏆 Target 2.5R Runner Closed! ${pos.symbol} locked at ₹${cur.toFixed(2)} (+${roiFinal.toFixed(2)}%)!`, 'success');
+        unsubscribeSymbol(pos.symbol);
+        delete livePrices[pos.symbol];
         portfolio.positions.splice(idx, 1);
-        savePortfolio();
-        return true;
+        return 'REMOVED';
       }
 
       return false;
@@ -1496,13 +1651,14 @@
         pos.unrealizedPnl = pos.curVal - (pos.shares * pos.buyPrice);
         pos.roi = ((cur - pos.buyPrice) / pos.buyPrice) * 100;
 
-        const removed = checkAutomaticExecution(pos, i);
-        if (removed) stateChanged = true;
+        const action = checkAutomaticExecution(pos, i);
+        if (action === 'REMOVED' || action === 'MODIFIED') {
+          stateChanged = true;
+        }
       }
       renderHUD();
       if (stateChanged) {
-        renderPositions();
-        renderClosed();
+        savePortfolio();
       } else {
         renderPositionsFast();
       }
@@ -1602,25 +1758,38 @@
         const roi = ((cur - p.buyPrice) / p.buyPrice) * 100;
         const isUp = pnl >= 0;
 
-        const target1 = p.target1Price || p.targetPrice || (p.buyPrice * 1.075);
+        const riskPerShare = Math.max(0.1, p.buyPrice - (p.initialStopPrice || p.stopPrice));
+        const target1 = p.target1Price || p.targetPrice || +(p.buyPrice + 1.5 * riskPerShare).toFixed(2);
         const targetDist = target1 - p.buyPrice;
         const curProgress = targetDist > 0 ? Math.min(100, Math.max(0, ((cur - p.buyPrice) / targetDist) * 100)) : 0;
         
+        const isTrailing = p.stopPrice > p.buyPrice;
         const isBreakeven = p.stopPrice >= p.buyPrice;
-        const stopHtml = isBreakeven 
-          ? `<span class="pos-tag" style="background:rgba(16,185,129,0.18);color:#34d399;border:1px solid rgba(16,185,129,0.4);" title="Trade is 100% Risk-Free">🛡️ BE ₹${p.stopPrice.toFixed(2)}</span>`
-          : `<span class="mono" style="color:#f87171;font-weight:600;">₹${p.stopPrice.toFixed(2)}</span>`;
+        const stopHtml = isTrailing
+          ? `<span class="pos-tag" style="background:rgba(16,185,129,0.2);color:#34d399;border:1px solid rgba(16,185,129,0.4);" title="Trailing Stop Locking Profit">🛡️ TRAIL ₹${p.stopPrice.toFixed(2)}</span>`
+          : (isBreakeven 
+            ? `<span class="pos-tag" style="background:rgba(16,185,129,0.18);color:#34d399;border:1px solid rgba(16,185,129,0.4);" title="Trade is 100% Risk-Free (Breakeven Shield)">🛡️ BE ₹${p.stopPrice.toFixed(2)}</span>`
+            : `<span class="mono" style="color:#f87171;font-weight:600;">₹${p.stopPrice.toFixed(2)}</span>`);
 
         const target1Html = p.scaledOut
           ? `<span class="pos-tag" style="background:rgba(56,189,248,0.18);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);" title="50% Profit Booked into Cash Margin">✅ 50% LOCKED</span>`
           : `<span class="mono" style="color:#34d399;font-weight:600;">₹${target1.toFixed(2)}</span>`;
+
+        let guardBadge = `<span class="pos-tag" id="guardStatus_${p.symbol}" style="background:rgba(16,185,129,0.10);color:#10b981;border:1px solid rgba(16,185,129,0.3);font-size:0.68rem;" title="Autonomous surveillance: Auto-Breakeven at +2%, Auto-Bank 50% at 1.5R, Auto-Trailing">🤖 Autonomous Guard</span>`;
+        if (p.scaledOut) {
+          guardBadge = `<span class="pos-tag" id="guardStatus_${p.symbol}" style="background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);font-size:0.68rem;" title="50% Profit Banked. Runner trailing automatically.">🤖 50% Banked • Runner</span>`;
+        } else if (isTrailing) {
+          guardBadge = `<span class="pos-tag" id="guardStatus_${p.symbol}" style="background:rgba(16,185,129,0.18);color:#34d399;border:1px solid rgba(16,185,129,0.4);font-size:0.68rem;" title="Stop is trailing peak gains automatically">🛡️ Auto Trail: ₹${p.stopPrice.toFixed(2)}</span>`;
+        } else if (isBreakeven) {
+          guardBadge = `<span class="pos-tag" id="guardStatus_${p.symbol}" style="background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.4);font-size:0.68rem;" title="Breakeven Shield Active - Trade is 100% Zero-Risk">🛡️ Breakeven Shield</span>`;
+        }
 
         return `
           <tr>
             <td>
               <div style="font-weight:700;color:#38bdf8;font-size:0.92rem;">${p.symbol}</div>
               <div style="display:flex;gap:4px;margin-top:2px;">
-                <span class="pos-tag ${p.isSniper ? 'pos-sniper' : 'pos-standard'}">${p.setupType || 'Breakout'}</span>
+                <span class="pos-tag pos-standard">${p.setupType || 'Breakout'}</span>
                 ${p.scaledOut ? '<span class="pos-tag" style="background:rgba(56,189,248,0.12);color:#38bdf8;">RUNNER 50%</span>' : ''}
               </div>
             </td>
@@ -1628,19 +1797,19 @@
             <td class="num mono">₹${p.buyPrice.toFixed(2)}</td>
             <td class="num mono">₹${Math.round(invested).toLocaleString('en-IN')}</td>
             <td class="num mono" id="livePrice_${p.symbol}">₹${cur.toFixed(2)}</td>
-            <td class="num mono" style="font-weight:700;color:${isUp ? '#10b981' : '#f43f5e'};">
+            <td class="num mono" id="pnlCell_${p.symbol}" style="font-weight:700;color:${isUp ? '#10b981' : '#f43f5e'};">
               ${isUp ? '+' : ''}₹${Math.round(pnl).toLocaleString('en-IN')} (${roi >= 0 ? '+' : ''}${roi.toFixed(1)}%)
             </td>
-            <td class="num mono">${stopHtml}</td>
-            <td class="num mono">${target1Html}</td>
+            <td class="num mono" id="stopCell_${p.symbol}">${stopHtml}</td>
+            <td class="num mono" id="targetCell_${p.symbol}">${target1Html}</td>
             <td style="text-align:center;">
-              <span class="mono" style="font-size:0.7rem;color:var(--text-secondary);">${curProgress.toFixed(0)}%</span>
-              <div class="progress-track"><div class="progress-fill" style="width:${curProgress}%;"></div></div>
+              <span class="mono" id="progressVal_${p.symbol}" style="font-size:0.7rem;color:var(--text-secondary);">${curProgress.toFixed(0)}%</span>
+              <div class="progress-track"><div class="progress-fill" id="progressBar_${p.symbol}" style="width:${curProgress}%;"></div></div>
             </td>
             <td style="text-align:center;">
-              <div style="display:flex;gap:4px;justify-content:center;align-items:center;">
-                <span class="pos-tag" style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);font-size:0.68rem;" title="Auto-Pilot will auto-sell if stop or target is hit">🤖 Auto-Guarded</span>
-                <button class="btn-action-sm btn-close" title="Close Position Manually" onclick="closePosition(${idx})">Close</button>
+              <div style="display:flex;gap:6px;justify-content:center;align-items:center;">
+                ${guardBadge}
+                <button class="btn-action-sm btn-close" title="Emergency manual market close" onclick="closePosition(${idx})">Exit</button>
               </div>
             </td>
           </tr>
@@ -1649,11 +1818,75 @@
     }
 
     function renderPositionsFast() {
-      // Updates table cells in-place without rebuilding DOM
+      // High-performance sub-second in-place DOM updates (zero layout reflow)
       portfolio.positions.forEach(p => {
         const cur = p.currentPrice || p.buyPrice;
-        const el = document.getElementById('livePrice_' + p.symbol);
-        if (el) el.textContent = '₹' + cur.toFixed(2);
+        const invested = p.shares * p.buyPrice;
+        const curVal = p.shares * cur;
+        const pnl = curVal - invested;
+        const roi = ((cur - p.buyPrice) / p.buyPrice) * 100;
+        const isUp = pnl >= 0;
+
+        const elPrice = document.getElementById('livePrice_' + p.symbol);
+        if (elPrice) elPrice.textContent = '₹' + cur.toFixed(2);
+
+        const elPnl = document.getElementById('pnlCell_' + p.symbol);
+        if (elPnl) {
+          elPnl.style.color = isUp ? '#10b981' : '#f43f5e';
+          elPnl.textContent = `${isUp ? '+' : ''}₹${Math.round(pnl).toLocaleString('en-IN')} (${roi >= 0 ? '+' : ''}${roi.toFixed(1)}%)`;
+        }
+
+        const isTrailing = p.stopPrice > p.buyPrice;
+        const isBreakeven = p.stopPrice >= p.buyPrice;
+        const stopHtml = isTrailing
+          ? `<span class="pos-tag" style="background:rgba(16,185,129,0.2);color:#34d399;border:1px solid rgba(16,185,129,0.4);" title="Trailing Stop Locking Profit">🛡️ TRAIL ₹${p.stopPrice.toFixed(2)}</span>`
+          : (isBreakeven 
+            ? `<span class="pos-tag" style="background:rgba(16,185,129,0.18);color:#34d399;border:1px solid rgba(16,185,129,0.4);" title="Trade is 100% Risk-Free (Breakeven Shield)">🛡️ BE ₹${p.stopPrice.toFixed(2)}</span>`
+            : `<span class="mono" style="color:#f87171;font-weight:600;">₹${p.stopPrice.toFixed(2)}</span>`);
+        const elStop = document.getElementById('stopCell_' + p.symbol);
+        if (elStop) elStop.innerHTML = stopHtml;
+
+        const riskPerShare = Math.max(0.1, p.buyPrice - (p.initialStopPrice || p.stopPrice));
+        const target1 = p.target1Price || p.targetPrice || +(p.buyPrice + 1.5 * riskPerShare).toFixed(2);
+        const target1Html = p.scaledOut
+          ? `<span class="pos-tag" style="background:rgba(56,189,248,0.18);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);" title="50% Profit Booked into Cash Margin">✅ 50% LOCKED</span>`
+          : `<span class="mono" style="color:#34d399;font-weight:600;">₹${target1.toFixed(2)}</span>`;
+        const elTarget = document.getElementById('targetCell_' + p.symbol);
+        if (elTarget) elTarget.innerHTML = target1Html;
+
+        const targetDist = target1 - p.buyPrice;
+        const curProgress = targetDist > 0 ? Math.min(100, Math.max(0, ((cur - p.buyPrice) / targetDist) * 100)) : 0;
+
+        const elProgVal = document.getElementById('progressVal_' + p.symbol);
+        if (elProgVal) elProgVal.textContent = curProgress.toFixed(0) + '%';
+
+        const elProgBar = document.getElementById('progressBar_' + p.symbol);
+        if (elProgBar) elProgBar.style.width = curProgress + '%';
+
+        const elGuard = document.getElementById('guardStatus_' + p.symbol);
+        if (elGuard) {
+          if (p.scaledOut) {
+            elGuard.textContent = '🤖 50% Banked • Runner';
+            elGuard.style.background = 'rgba(56,189,248,0.15)';
+            elGuard.style.color = '#38bdf8';
+            elGuard.style.borderColor = 'rgba(56,189,248,0.4)';
+          } else if (isTrailing) {
+            elGuard.textContent = `🛡️ Auto Trail: ₹${p.stopPrice.toFixed(2)}`;
+            elGuard.style.background = 'rgba(16,185,129,0.18)';
+            elGuard.style.color = '#34d399';
+            elGuard.style.borderColor = 'rgba(16,185,129,0.4)';
+          } else if (isBreakeven) {
+            elGuard.textContent = '🛡️ Breakeven Shield';
+            elGuard.style.background = 'rgba(16,185,129,0.15)';
+            elGuard.style.color = '#34d399';
+            elGuard.style.borderColor = 'rgba(16,185,129,0.4)';
+          } else {
+            elGuard.textContent = '🤖 Autonomous Guard';
+            elGuard.style.background = 'rgba(16,185,129,0.10)';
+            elGuard.style.color = '#10b981';
+            elGuard.style.borderColor = 'rgba(16,185,129,0.3)';
+          }
+        }
       });
     }
 
@@ -1670,7 +1903,6 @@
           <tr>
             <td>
               <b style="color:#38bdf8;">${c.symbol}</b>
-              ${c.is_sniper ? '<span class="pos-tag pos-sniper" style="margin-left:4px;">🎯 SNIPER</span>' : ''}
             </td>
             <td>
               <div style="font-size:0.78rem;color:#f1f5f9;">${c.company || c.symbol}</div>
@@ -1698,59 +1930,242 @@
     }
 
     function renderClosed() {
+      const trades = portfolio.closedTrades || [];
       const tb = document.getElementById('closedBody');
-      if (portfolio.closedTrades.length === 0) {
-        tb.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-muted);">No closed trades yet.</td></tr>`;
+      
+      // Calculate Performance Ledger Stats
+      const totalRealized = trades.reduce((acc, t) => acc + (t.pnl || 0), 0);
+      const wins = trades.filter(t => (t.pnl || 0) > 0);
+      const losses = trades.filter(t => (t.pnl || 0) <= 0);
+      const winCount = wins.length;
+      const lossCount = losses.length;
+      const totalCount = trades.length;
+      const winRate = totalCount > 0 ? ((winCount / totalCount) * 100).toFixed(1) : '0.0';
+      const winSum = wins.reduce((acc, t) => acc + t.pnl, 0);
+      const lossSum = losses.reduce((acc, t) => acc + Math.abs(t.pnl), 0);
+      const profitFactor = lossSum > 0 ? (winSum / lossSum).toFixed(2) : (winSum > 0 ? '∞' : '--');
+      const avgWin = winCount > 0 ? Math.round(winSum / winCount) : 0;
+      const avgLoss = lossCount > 0 ? Math.round(lossSum / lossCount) : 0;
+      
+      const autoCount = trades.filter(t => {
+        const r = String(t.exitReason || '');
+        return r.includes('Auto') || r.includes('Target') || r.includes('Shield') || r.includes('Trail') || r.includes('Stop');
+      }).length;
+      const autoRatio = totalCount > 0 ? ((autoCount / totalCount) * 100).toFixed(0) + '% Autonomous' : '100% Autonomous';
+
+      // Update Ledger Stats Card Elements
+      const elNet = document.getElementById('ledgerNetPnl');
+      if (elNet) {
+        const sign = totalRealized >= 0 ? '+' : '';
+        elNet.textContent = `₹${sign}${Math.round(totalRealized).toLocaleString('en-IN')}`;
+        elNet.style.color = totalRealized >= 0 ? '#34d399' : '#f87171';
+      }
+      const elRec = document.getElementById('ledgerRecord');
+      if (elRec) elRec.textContent = `${winCount}W - ${lossCount}L (${winRate}%)`;
+      const elPf = document.getElementById('ledgerProfitFactor');
+      if (elPf) elPf.textContent = profitFactor;
+      const elAvg = document.getElementById('ledgerAvgWinLoss');
+      if (elAvg) elAvg.textContent = `+₹${avgWin.toLocaleString('en-IN')} / -₹${avgLoss.toLocaleString('en-IN')}`;
+      const elRatio = document.getElementById('ledgerAutoRatio');
+      if (elRatio) elRatio.textContent = autoRatio;
+
+      if (!tb) return;
+      if (trades.length === 0) {
+        tb.innerHTML = `
+          <tr>
+            <td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted);font-size:0.84rem;">
+              🤖 No closed trades yet. Active open positions are continuously guarded by the <b>Autonomous Risk & Profit Taking Engine</b>.<br>
+              As stops, trailing stops, or targets are reached, executions will be audited and logged here automatically.
+            </td>
+          </tr>
+        `;
         return;
       }
-      tb.innerHTML = portfolio.closedTrades.map(t => {
-        const isWin = t.pnl > 0;
+
+      tb.innerHTML = trades.map(t => {
+        const isWin = (t.pnl || 0) > 0;
+        const reason = String(t.exitReason || '');
+        let badgeStyle = 'background:rgba(255,255,255,0.06);color:#cbd5e1;border:1px solid rgba(255,255,255,0.15);';
+        let badgeLabel = '⚡ Manual Exit';
+
+        if (reason.includes('1.5R') || reason.includes('Scale-Out')) {
+          badgeStyle = 'background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);';
+          badgeLabel = '🎯 Auto 1.5R Banked (50%)';
+        } else if (reason.includes('Trailing')) {
+          badgeStyle = 'background:rgba(16,185,129,0.18);color:#34d399;border:1px solid rgba(16,185,129,0.45);';
+          badgeLabel = '🛡️ Auto Trailing Stop';
+        } else if (reason.includes('Breakeven')) {
+          badgeStyle = 'background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.4);';
+          badgeLabel = '🛡️ Auto Breakeven Shield';
+        } else if (reason.includes('2.5R') || reason.includes('Runner')) {
+          badgeStyle = 'background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.4);';
+          badgeLabel = '🏆 Auto 2.5R Runner Locked';
+        } else if (reason.includes('Stop-Loss') || reason.includes('Stop Triggered')) {
+          badgeStyle = 'background:rgba(244,63,94,0.15);color:#f87171;border:1px solid rgba(244,63,94,0.4);';
+          badgeLabel = '🛑 Auto Stop-Loss';
+        }
+
         return `
           <tr>
-            <td style="font-weight:700;color:#38bdf8;">${t.symbol}</td>
-            <td class="mono" style="font-size:0.75rem;">${t.entryDate}</td>
-            <td class="mono" style="font-size:0.75rem;">${t.exitDate}</td>
-            <td class="num mono">${t.shares}</td>
-            <td class="num mono">₹${t.buyPrice.toFixed(2)}</td>
-            <td class="num mono">₹${t.exitPrice.toFixed(2)}</td>
+            <td>
+              <div style="font-weight:700;color:#38bdf8;font-size:0.9rem;">${t.symbol}</div>
+              <div style="font-size:0.7rem;color:var(--text-muted);">${t.setupType || 'Breakout Model'}</div>
+            </td>
+            <td class="mono" style="font-size:0.75rem;">${t.entryDate || '--'}</td>
+            <td class="mono" style="font-size:0.75rem;color:#cbd5e1;">${t.exitDate || '--'}</td>
+            <td class="num mono" style="font-weight:600;">${t.shares}</td>
+            <td class="num mono">₹${parseFloat(t.buyPrice).toFixed(2)}</td>
+            <td class="num mono">₹${parseFloat(t.exitPrice).toFixed(2)}</td>
             <td class="num mono" style="font-weight:700;color:${isWin ? '#10b981' : '#f43f5e'};">
               ${isWin ? '+' : ''}₹${Math.round(t.pnl).toLocaleString('en-IN')}
             </td>
             <td class="num mono" style="font-weight:700;color:${isWin ? '#10b981' : '#f43f5e'};">
-              ${isWin ? '+' : ''}${t.roi.toFixed(1)}%
+              ${isWin ? '+' : ''}${parseFloat(t.roi).toFixed(2)}%
             </td>
-            <td><span class="pos-tag" style="background:rgba(255,255,255,0.06);color:#cbd5e1;">${t.exitReason}</span></td>
+            <td>
+              <span class="pos-tag" style="${badgeStyle}" title="${reason}">${badgeLabel}</span>
+              <div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px;">${reason}</div>
+            </td>
           </tr>
         `;
       }).reverse().join('');
+      renderFrameworkStats();
     }
 
-    function renderTickerTape() {
-      const track = document.getElementById('tickerTrack');
-      if (!track) return;
-      const symbols = Object.keys(livePrices);
-      if (symbols.length === 0) {
-        track.innerHTML = '<span style="color:var(--text-muted);font-size:0.75rem;">Connecting to real-time ticker stream...</span>';
+    function renderFrameworkStats() {
+      const tb = document.getElementById('frameworkStatsBody');
+      if (!tb) return;
+      const trades = portfolio.closedTrades || [];
+      const openPos = portfolio.positions || [];
+
+      const allFrameworks = [
+        'Relative Strength Leader',
+        'Stan Weinstein Stage 2',
+        'Minervini Template',
+        'Qullamaggie Breakout',
+        'CANSLIM Pivot',
+        'Protocol Fortified',
+        'Institutional Delivery Absorption',
+        'PKScreener VCP',
+        'Turtle Trading',
+        'Darvas Box',
+        'Wyckoff Closing Range',
+        'Connors RSI Pullback',
+        'Manual Discretionary'
+      ];
+
+      const stats = {};
+      allFrameworks.forEach(fw => {
+        stats[fw] = { count: 0, wins: 0, pnl: 0, roiSum: 0, winSum: 0, lossSum: 0, openCount: 0 };
+      });
+
+      // Count open positions
+      openPos.forEach(p => {
+        const fwList = Array.isArray(p.strategies) && p.strategies.length > 0 
+          ? p.strategies 
+          : [p.setupType || 'Breakout Model'];
+        fwList.forEach(fw => {
+          if (!stats[fw]) stats[fw] = { count: 0, wins: 0, pnl: 0, roiSum: 0, winSum: 0, lossSum: 0, openCount: 0 };
+          stats[fw].openCount++;
+        });
+      });
+
+      // Count closed trades
+      trades.forEach(t => {
+        const fwList = Array.isArray(t.strategies) && t.strategies.length > 0 
+          ? t.strategies 
+          : [t.setupType || 'Breakout Model'];
+        fwList.forEach(fw => {
+          if (!stats[fw]) stats[fw] = { count: 0, wins: 0, pnl: 0, roiSum: 0, winSum: 0, lossSum: 0, openCount: 0 };
+          stats[fw].count++;
+          stats[fw].pnl += (t.pnl || 0);
+          stats[fw].roiSum += (t.roi || 0);
+          if ((t.pnl || 0) > 0) {
+            stats[fw].wins++;
+            stats[fw].winSum += t.pnl;
+          } else {
+            stats[fw].lossSum += Math.abs(t.pnl || 0);
+          }
+        });
+      });
+
+      const activeFws = Object.entries(stats).filter(([_, s]) => s.count > 0 || s.openCount > 0);
+      activeFws.sort((a, b) => b[1].pnl - a[1].pnl);
+
+      if (activeFws.length === 0) {
+        tb.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);font-size:0.82rem;">
+              🔬 Framework performance will dynamically calculate as soon as trades execute and close. Currently monitoring ${openPos.length} open positions.
+            </td>
+          </tr>
+        `;
         return;
       }
-      const items = [...symbols, ...symbols].map(sym => {
-        const data = livePrices[sym];
-        const p = data.price || 0;
-        const prev = data.prevClose || p;
-        const chg = prev > 0 ? ((p - prev) / prev) * 100 : 0;
-        const isUp = chg >= 0;
-        const sign = isUp ? '+' : '';
-        const cls = isUp ? 'tick-up' : 'tick-down';
-        const arrow = isUp ? '▲' : '▼';
+
+      tb.innerHTML = activeFws.map(([fw, s]) => {
+        const winRate = s.count > 0 ? ((s.wins / s.count) * 100).toFixed(1) + '%' : '--';
+        const avgRoi = s.count > 0 ? (s.roiSum / s.count).toFixed(2) + '%' : '--';
+        const pf = s.lossSum > 0 ? (s.winSum / s.lossSum).toFixed(2) : (s.winSum > 0 ? '∞' : '--');
+        const isUp = s.pnl >= 0;
+
+        let verdict = `<span class="pos-tag" style="background:rgba(56,189,248,0.12);color:#38bdf8;">🟡 ${s.openCount} Open Active</span>`;
+        if (s.count >= 2) {
+          if (s.pnl > 0 && parseFloat(winRate) >= 55) {
+            verdict = `<span class="pos-tag" style="background:rgba(16,185,129,0.18);color:#34d399;border:1px solid rgba(16,185,129,0.4);">🟢 High Edge (${winRate} WR)</span>`;
+          } else if (s.pnl > 0) {
+            verdict = `<span class="pos-tag" style="background:rgba(16,185,129,0.12);color:#10b981;">🟢 Net Profitable</span>`;
+          } else {
+            verdict = `<span class="pos-tag" style="background:rgba(244,63,94,0.15);color:#f87171;">🔴 Under Review</span>`;
+          }
+        }
+
         return `
-          <div class="ticker-item">
-            <span class="sym">${sym}</span>
-            <span class="price">₹${p.toFixed(2)}</span>
-            <span class="chg ${cls}">${arrow} ${sign}${chg.toFixed(2)}%</span>
-          </div>
+          <tr>
+            <td>
+              <b style="color:#f8fafc;">${fw}</b>
+              ${s.openCount > 0 ? `<span class="pos-tag" style="background:rgba(56,189,248,0.15);color:#38bdf8;margin-left:6px;font-size:0.68rem;">${s.openCount} Active</span>` : ''}
+            </td>
+            <td class="num mono">${s.count} closed</td>
+            <td class="num mono" style="font-weight:700;color:${parseFloat(winRate) >= 50 ? '#10b981' : (s.count > 0 ? '#f43f5e' : 'inherit')};">${winRate}</td>
+            <td class="num mono" style="font-weight:700;color:${isUp ? '#10b981' : '#f43f5e'};">
+              ${isUp ? '+' : ''}₹${Math.round(s.pnl).toLocaleString('en-IN')}
+            </td>
+            <td class="num mono">${avgRoi}</td>
+            <td class="num mono">${pf}</td>
+            <td>${verdict}</td>
+          </tr>
         `;
       }).join('');
-      track.innerHTML = items;
+    }
+
+    function exportClosedTradesCsv() {
+      const trades = portfolio.closedTrades || [];
+      if (trades.length === 0) {
+        alert('No closed trades to export yet.');
+        return;
+      }
+      const headers = ['Symbol', 'Setup', 'Shares', 'Buy Price', 'Exit Price', 'Realized PnL', 'ROI %', 'Entry Date', 'Exit Date', 'Execution Reason'];
+      const rows = trades.map(t => [
+        t.symbol,
+        `"${(t.setupType || 'Breakout Model').replace(/"/g, '""')}"`,
+        t.shares,
+        parseFloat(t.buyPrice).toFixed(2),
+        parseFloat(t.exitPrice).toFixed(2),
+        Math.round(t.pnl || 0),
+        parseFloat(t.roi || 0).toFixed(2),
+        t.entryDate || '',
+        t.exitDate || '',
+        `"${(t.exitReason || '').replace(/"/g, '""')}"`
+      ]);
+      const csv = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const a = document.createElement('a');
+      a.setAttribute('href', encodeURI(csv));
+      a.setAttribute('download', `astra_closed_trades_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      showToastNotification('📥 Closed Trades CSV downloaded successfully!', 'success');
     }
 
     // Trade Operations
@@ -1776,7 +2191,9 @@
       portfolio.positions.push({
         symbol: cand.symbol,
         setupType: cand.strategies[0],
-        isSniper: Boolean(cand.is_sniper),
+        strategies: cand.strategies || [cand.strategies[0]],
+        company: cand.company || cand.symbol,
+        sector: cand.sector || 'General',
         shares: shares,
         buyPrice: cand.close,
         currentPrice: cand.close,
@@ -1799,21 +2216,6 @@
       if (!D || !D.candidates) return;
       const topPicks = D.candidates.slice(0, 5);
       topPicks.forEach(c => {
-        if (!portfolio.positions.some(p => p.symbol === c.symbol)) {
-          buyCandidate(c.symbol);
-        }
-      });
-    }
-
-    function importSniperPicks() {
-      if (!D || !D.candidates) return;
-      const snipers = D.candidates.filter(c => c.is_sniper || c.strategies.includes('Sniper Mode (65%+ WR)'));
-      if (snipers.length === 0) {
-        alert('No qualified Sniper Mode setups on current market date. Defaulting to top 3 RS leaders.');
-        importTopScreenerPicks();
-        return;
-      }
-      snipers.forEach(c => {
         if (!portfolio.positions.some(p => p.symbol === c.symbol)) {
           buyCandidate(c.symbol);
         }
@@ -1872,13 +2274,20 @@
         exitDate: new Date().toISOString().split('T')[0],
         exitReason: 'Manual Market Close'
       });
+      const closedSym = p.symbol;
+      delete livePrices[closedSym];
       portfolio.positions.splice(idx, 1);
       savePortfolio();
+      if (liveWs && liveWs.readyState === WebSocket.OPEN) {
+        subscribeSymbolsToStream(getAllSubscribedSymbols());
+      }
       renderWatchlist();
     }
 
     function openOrderModal() { document.getElementById('orderModal').classList.add('open'); }
     function closeOrderModal() { document.getElementById('orderModal').classList.remove('open'); }
+    function openOptionsModal() { document.getElementById('optionsModal').classList.add('open'); }
+    function closeOptionsModal() { document.getElementById('optionsModal').classList.remove('open'); }
     function openDataSourceModal() { document.getElementById('dataSourceModal').classList.add('open'); }
     function closeDataSourceModal() { document.getElementById('dataSourceModal').classList.remove('open'); }
 
@@ -1911,7 +2320,6 @@
       portfolio.positions.push({
         symbol: sym,
         setupType: 'Manual Discretionary',
-        isSniper: false,
         shares: shares,
         buyPrice: price,
         currentPrice: price,
@@ -1926,6 +2334,7 @@
 
       closeOrderModal();
       savePortfolio();
+      refreshAllLiveQuotes();
     }
 
     // Initial Render
@@ -1933,34 +2342,35 @@
     renderPositions();
     renderWatchlist();
     renderClosed();
-    renderTickerTape();
 
     // Fetch and Sync Portfolio from Cloudflare KV Edge
     fetchCloudPortfolio();
 
-    // Connect Real-Time Live WebSocket Streamer (Finance-Query + Yahoo Fallback, Zero Simulation)
+    // Connect Real-Time Live WebSocket Streamer (Yahoo Streamer Direct, Zero Simulation)
     updateStatusPill('INITIAL');
-    connectLiveStream('finance-query');
+    connectLiveStream();
+
+    // Immediate initial real quote fetch
+    refreshAllLiveQuotes();
+
+    // 4-Second Live Watchdog & Auto-refresh
     setInterval(() => {
       const ms = getNseMarketStatus();
       updateStatusPill(liveWs && liveWs.readyState === WebSocket.OPEN ? 'WS_CONNECTED' : 'IDLE');
-      // On live trading days, if WebSocket is disconnected or idle, run automated REST safety poll
-      if (ms.isOpen && (!liveWs || liveWs.readyState !== WebSocket.OPEN)) {
+      const isSilent = (Date.now() - lastTickReceivedTime) > 12000;
+      if (ms.isOpen && (!liveWs || liveWs.readyState !== WebSocket.OPEN || isSilent)) {
         refreshAllLiveQuotes();
       }
-    }, 12000);
+    }, 4000);
 
     // Mobile / Tab Resume Handler: Instant Re-sync when phone is unlocked or tab opened
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
         fetchCloudPortfolio();
         if (!liveWs || liveWs.readyState !== WebSocket.OPEN) {
-          connectLiveStream(currentStreamerMode);
+          connectLiveStream();
         }
-        const ms = getNseMarketStatus();
-        if (ms.isOpen) {
-          refreshAllLiveQuotes();
-        }
+        refreshAllLiveQuotes();
       }
     });
 

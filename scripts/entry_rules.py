@@ -28,7 +28,6 @@ selective-looking 100% one.
 """
 from __future__ import annotations
 
-import math
 import sys
 from pathlib import Path
 
@@ -39,18 +38,13 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from protocol.data import load_history  # noqa: E402
+from protocol.stats import t_stat  # noqa: E402
 
 CACHE = ROOT / "reports" / "scored_panel.parquet"
 HOLD = 20
 CONFIRM_PATIENCE = 10
 RETEST_PATIENCE = 15
 
-
-def t_stat(diffs: np.ndarray) -> float:
-    d = pd.Series(diffs).dropna()
-    if len(d) < 3 or d.std() == 0:
-        return float("nan")
-    return float(d.mean() / (d.std() / np.sqrt(len(d))))
 
 
 def build_bars(px: pd.DataFrame) -> dict[str, dict]:

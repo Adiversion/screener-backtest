@@ -1378,7 +1378,6 @@
     white-space: nowrap;
   }
 
-  .strat-tag.sniper { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.5); font-weight: 700; }
   .strat-tag.protocol { background: rgba(245, 158, 11, 0.12); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
   .strat-tag.rs { background: rgba(139, 92, 246, 0.12); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.3); }
   .strat-tag.minervini { background: rgba(168, 85, 247, 0.12); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.3); }
@@ -1664,7 +1663,6 @@
         <a href="screener.html" class="drawer-link" onclick="closeMobileMenu(); navigateToPage('screener', 'toolbarSection');">🎯 Qualified Breakouts Screener</a>
         <a href="verifier.html" class="drawer-link" style="color:#38bdf8;font-weight:700;" onclick="closeMobileMenu(); navigateToPage('verifier', 'forwardVerifierSection');">⚡ 7-14 Day Forward Trade Verifier</a>
         <a href="paper_trading.html" class="drawer-link" style="color:#38bdf8;font-weight:700;">💼 Live Paper Trading Station</a>
-        <a href="javascript:void(0)" class="drawer-link" style="color:#f59e0b;" onclick="closeMobileMenu();openSniperModal();">🎯 65%+ Win Rate Sniper Playbook</a>
         <a href="javascript:void(0)" class="drawer-link" style="color:#fbbf24;" onclick="closeMobileMenu();openUsicModal();">🏆 USIC Champions Playbook (+1,499%)</a>
         <a href="javascript:void(0)" class="drawer-link" style="color:#34d399;" onclick="closeMobileMenu();openWalkForwardModal();">🛡️ Walk-Forward OOS Validation (61,007 Trades)</a>
         <a href="javascript:void(0)" class="drawer-link" onclick="closeMobileMenu();openPrinciplesModal();">🏛️ 5 Institutional Quant Truths</a>
@@ -1746,7 +1744,6 @@
       <span>📚</span> Institutional Playbooks:
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-      <button class="btn-chip" onclick="openSniperModal()" style="border-color:rgba(245,158,11,0.4);color:#f59e0b;background:rgba(245,158,11,0.08);padding:4px 10px;font-size:0.75rem;">🎯 65%+ Sniper</button>
       <button class="btn-chip" onclick="openUsicModal()" style="border-color:rgba(251,191,36,0.4);color:#fbbf24;background:rgba(251,191,36,0.08);padding:4px 10px;font-size:0.75rem;">🏆 USIC Playbook</button>
       <button class="btn-chip" onclick="openWalkForwardModal()" style="border-color:rgba(52,211,153,0.4);color:#34d399;background:rgba(52,211,153,0.08);padding:4px 10px;font-size:0.75rem;">🛡️ Walk-Forward OOS</button>
       <button class="btn-chip" onclick="openWyckoffGuideModal()" style="padding:4px 10px;font-size:0.75rem;">🌊 Wyckoff VSA</button>
@@ -1801,7 +1798,6 @@
 
     <select id="tagFilter" class="custom-select">
       <option value="">All Setup Categories</option>
-      <option value="sniper">🎯 Sniper Qualified (65%+ WR)</option>
       <option value="sector_leader">🏭 Sector Tailwind (Tier 1 & 2)</option>
       <option value="shelf">Multi-Touch Shelves (≥2x Tested)</option>
       <option value="wyckoff_abs">Wyckoff Absorption (High Effort & Result)</option>
@@ -2421,175 +2417,6 @@
   </div>
 </div>
 
-<!-- 65%+ Win Rate Sniper Playbook Modal -->
-<div id="sniperModal" class="modal-overlay" onclick="if(event.target===this)closeModal('sniperModal')">
-  <div class="modal-card" style="max-width:940px;">
-    <div class="modal-header">
-      <div>
-        <h2 style="font-size:1.35rem;font-weight:800;color:#f59e0b;display:flex;align-items:center;gap:8px;">
-          <span>🎯</span> Institutional 65%+ Win Rate Sniper Playbook
-        </h2>
-        <div style="color:var(--text-secondary);font-size:0.82rem;margin-top:2px;">
-          Empirical 2.56M Bar Confluence Matrix • 7-Gate Precision Engine • USIC Staged Execution Rules
-        </div>
-      </div>
-      <div class="close-icon" onclick="closeModal('sniperModal')">&times;</div>
-    </div>
-
-    <!-- Core Scorecard KPIs -->
-    <div class="modal-stats-grid" style="grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));margin-bottom:16px;">
-      <div class="modal-stat-box" style="border-color:rgba(245,158,11,0.3);background:rgba(245,158,11,0.06);">
-        <div class="label" style="color:#f59e0b;">Sniper Win Rate</div>
-        <div class="val mono" style="color:#fbbf24;">65.3%</div>
-      </div>
-      <div class="modal-stat-box">
-        <div class="label">Profit Factor</div>
-        <div class="val mono" style="color:#34d399;">3.82</div>
-      </div>
-      <div class="modal-stat-box">
-        <div class="label">Win / Loss Ratio</div>
-        <div class="val mono" style="color:#38bdf8;">2.38:1</div>
-      </div>
-      <div class="modal-stat-box">
-        <div class="label">Expectancy / Trade</div>
-        <div class="val mono" style="color:#fbbf24;">+5.80%</div>
-      </div>
-      <div class="modal-stat-box">
-        <div class="label">Avg Win / Avg Loss</div>
-        <div class="val mono" style="color:#cbd5e1;font-size:0.95rem;">+11.5% / -4.8%</div>
-      </div>
-      <div class="modal-stat-box">
-        <div class="label">Audited Sample</div>
-        <div class="val mono" style="color:#94a3b8;font-size:0.95rem;">75 Pristine Setups</div>
-      </div>
-    </div>
-
-    <!-- The 7 Institutional Confluence Gates -->
-    <div class="modal-section">
-      <div class="modal-section-title"><span>🛡️</span> The 7 Precision Gates to Reach 65%+ Win Rate (NSE Backtest)</div>
-      <div class="content-narrative">
-        <p style="margin-bottom:8px;font-size:0.85rem;color:var(--text-secondary);">
-          Raw unconstrained breakouts average 38.4% to 45.3% win rate across all 2,317 stocks. Only when filtered through this strict 7-gate confluence does the win rate systematically elevate to 65.3% with a 3.82 Profit Factor:
-        </p>
-        <div style="overflow-x:auto;">
-          <table style="width:100%;font-size:0.82rem;border-collapse:collapse;color:#cbd5e1;">
-            <thead>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.12);text-align:left;color:#f59e0b;">
-                <th style="padding:6px;">Gate</th>
-                <th style="padding:6px;">Mathematical Constraint</th>
-                <th style="padding:6px;">Institutional Mechanism</th>
-                <th style="padding:6px;" class="num">Win Rate Impact</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
-                <td style="padding:6px;"><b>1. Market Regime Gating</b></td>
-                <td style="padding:6px;" class="mono">Breadth ≥ 40%, EW > SMA20</td>
-                <td style="padding:6px;">Eliminates bear market distribution drag (CASH preservation)</td>
-                <td style="padding:6px;color:#34d399;" class="num mono">+1.1%</td>
-              </tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
-                <td style="padding:6px;"><b>2. Stan Weinstein Stage 2</b></td>
-                <td style="padding:6px;" class="mono">Close > SMA50 > SMA200</td>
-                <td style="padding:6px;">Guarantees institutional base markup alignment</td>
-                <td style="padding:6px;color:#34d399;" class="num mono">+1.4%</td>
-              </tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
-                <td style="padding:6px;"><b>3. Relative Strength Dominance</b></td>
-                <td style="padding:6px;" class="mono">RS Rating ≥ 85 (Top 15%)</td>
-                <td style="padding:6px;">Only buys true market leaders, never lagging beta churn</td>
-                <td style="padding:6px;color:#34d399;" class="num mono">+1.5%</td>
-              </tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
-                <td style="padding:6px;"><b>4. Wyckoff Supply Absorption</b></td>
-                <td style="padding:6px;" class="mono">CR ≥ 65%, RVOL ≥ 1.4x</td>
-                <td style="padding:6px;">Confirms institutions absorb overhead sellers at resistance</td>
-                <td style="padding:6px;color:#34d399;" class="num mono">+0.2%</td>
-              </tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
-                <td style="padding:6px;"><b>5. Minervini VCP Compression</b></td>
-                <td style="padding:6px;" class="mono">5-Day Range Spread ≤ 6.0%</td>
-                <td style="padding:6px;">Vigorously contracts supply volatility before breakout</td>
-                <td style="padding:6px;color:#34d399;" class="num mono;font-weight:700;">+8.1%</td>
-              </tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
-                <td style="padding:6px;"><b>6. Industry Sector Tailwind</b></td>
-                <td style="padding:6px;" class="mono">Parent Industry Rank ≥ 60%</td>
-                <td style="padding:6px;">50% of stock moves are sector-driven; rides group momentum</td>
-                <td style="padding:6px;color:#34d399;" class="num mono">+6.8%</td>
-              </tr>
-              <tr>
-                <td style="padding:6px;"><b>7. Anti-Chase Extension Veto</b></td>
-                <td style="padding:6px;" class="mono">SMA50 Extension ≤ 20%</td>
-                <td style="padding:6px;">Prevents buying exhausted 100m sprint tops</td>
-                <td style="padding:6px;color:#34d399;" class="num mono">+0.9%</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- The Expectancy Reality Check -->
-    <div class="modal-section">
-      <div class="modal-section-title"><span>⚖️</span> The Expectancy Reality: Win Rate vs. Payoff Ratio</div>
-      <div class="content-narrative">
-        <p style="margin-bottom:8px;font-size:0.85rem;color:var(--text-secondary);">
-          Mathematical Expectancy: <code>E = (Win Rate × Avg Win) - (Loss Rate × Avg Loss)</code>. Why high win rates without risk/reward destroy portfolios:
-        </p>
-        <div style="overflow-x:auto;">
-          <table style="width:100%;font-size:0.82rem;border-collapse:collapse;color:#cbd5e1;">
-            <thead>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.12);text-align:left;color:#38bdf8;">
-                <th style="padding:6px;">System Architecture</th>
-                <th style="padding:6px;" class="num">Win Rate</th>
-                <th style="padding:6px;" class="num">Avg Win</th>
-                <th style="padding:6px;" class="num">Avg Loss</th>
-                <th style="padding:6px;" class="num">Expected Value (E)</th>
-                <th style="padding:6px;">Long-Term Outcome</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
-                <td style="padding:6px;"><b style="color:#f43f5e;">Retail Scalp Trap</b></td>
-                <td style="padding:6px;" class="num mono">70.0%</td>
-                <td style="padding:6px;" class="num mono">+2.0%</td>
-                <td style="padding:6px;" class="num mono">-6.0%</td>
-                <td style="padding:6px;" class="num mono" style="color:#f87171;">-0.40%</td>
-                <td style="padding:6px;color:#f87171;">Account blowup despite 70% win rate!</td>
-              </tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
-                <td style="padding:6px;"><b style="color:#38bdf8;">Jim Simons / RenTech Medallion</b></td>
-                <td style="padding:6px;" class="num mono">51.0%</td>
-                <td style="padding:6px;" class="num mono">+4.5%</td>
-                <td style="padding:6px;" class="num mono">-2.0%</td>
-                <td style="padding:6px;" class="num mono" style="color:#34d399;">+1.31%</td>
-                <td style="padding:6px;color:#34d399;">Greatest fund in history (+66%/year)</td>
-              </tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
-                <td style="padding:6px;"><b style="color:#fbbf24;">USIC Champions (Minervini/Luk)</b></td>
-                <td style="padding:6px;" class="num mono">52.0%</td>
-                <td style="padding:6px;" class="num mono">+15.0%</td>
-                <td style="padding:6px;" class="num mono">-4.5%</td>
-                <td style="padding:6px;" class="num mono" style="color:#34d399;">+5.64%</td>
-                <td style="padding:6px;color:#34d399;">Verified championships (+1,499% return)</td>
-              </tr>
-              <tr>
-                <td style="padding:6px;"><b style="color:#f59e0b;">Our 7-Gate Sniper Suite</b></td>
-                <td style="padding:6px;" class="num mono;color:#f59e0b;font-weight:700;">65.3%</td>
-                <td style="padding:6px;" class="num mono;color:#34d399;">+11.5%</td>
-                <td style="padding:6px;" class="num mono;">-4.8%</td>
-                <td style="padding:6px;" class="num mono;color:#34d399;font-weight:700;">+5.80%</td>
-                <td style="padding:6px;color:#34d399;font-weight:700;">Elite compounding + High Win Rate</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
 <script>
 const D = __JSON_PAYLOAD__;
 let basketMode = false;
@@ -2694,6 +2521,11 @@ function getFrameworkTier(count) {
   return { cls: 'tier-subtle', icon: '🔹', text: `${count}/12 FRAMEWORKS ACHIEVED` };
 }
 
+/**
+ * Re-render the screener candidate grid from the current filter controls.
+ * Applies the free-text (symbol/company/sector), sector, framework and tag
+ * filters, then sorts and paints the table. Called on every filter change.
+ */
 function render() {
   const q = document.getElementById('searchBox').value.trim().toLowerCase();
   const sec = document.getElementById('sectorFilter').value;
@@ -2708,7 +2540,6 @@ function render() {
     const mStrat = !strat || c.strategies.includes(strat);
     let mTag = true;
     if (tag === '52w') mTag = c.breakout_type === '52-Week High Breakout';
-    else if (tag === 'sniper') mTag = c.is_sniper;
     else if (tag === 'sector_leader') mTag = c.is_sector_tailwind;
     else if (tag === 'vol') mTag = c.rvol >= 5.0;
     else if (tag === 'deliv') mTag = c.deliv_pct >= 50.0;
@@ -2970,9 +2801,6 @@ function render() {
     }).join('');
 
     let alertBadges = '';
-    if (c.is_sniper) {
-      alertBadges += '<span class="badge-pill" style="background:rgba(245,158,11,0.18);color:#fbbf24;border:1px solid rgba(245,158,11,0.45);font-weight:700;" title="Passed all 7 High-Precision Confluence Gates (65.3% Win Rate, 3.82 PF)">🎯 65%+ Sniper</span>';
-    }
     if (c.crsi !== undefined && c.crsi <= 25.0) {
       alertBadges += `<span class="badge-pill" style="background:rgba(236,72,153,0.18);color:#f472b6;border:1px solid rgba(236,72,153,0.45);font-weight:700;" title="Connors RSI oversold dip (${c.crsi}) within Stage 2 uptrend">📉 CRSI ${c.crsi} Dip</span>`;
     }
@@ -3076,7 +2904,6 @@ function render() {
       const stratTags = (c.strategies || []).map(s => {
         let cls = 'protocol';
         let shortName = s;
-        if (s.includes('Sniper')) { cls = 'sniper'; shortName = '🎯 Sniper 65%+'; }
         else if (s.includes('Minervini')) { cls = 'minervini'; shortName = 'Minervini'; }
         else if (s.includes('Weinstein')) { cls = 'weinstein'; shortName = 'Weinstein Stage 2'; }
         else if (s.includes('Relative Strength')) { cls = 'rs'; shortName = 'RS Leader'; }
@@ -3375,6 +3202,11 @@ function openUsicModal() {
 
 let currentModalSymbol = null;
 
+/**
+ * Open the stock inspector modal for one symbol and populate every section:
+ * framework-score banner, badges, technical scorecard and the chart.
+ * @param {string} sym - NSE symbol; a no-op when absent from D.candidates.
+ */
 function openModal(sym) {
   currentModalSymbol = sym;
   const c = D.candidates.find(x => x.symbol === sym);
@@ -3400,7 +3232,6 @@ function openModal(sym) {
     mStratGrid.innerHTML = (c.strategies || []).map(s => {
       let cls = 'protocol';
       let shortName = s;
-      if (s.includes('Sniper')) { cls = 'sniper'; shortName = '🎯 Sniper 65%+'; }
       else if (s.includes('Minervini')) { cls = 'minervini'; shortName = 'Minervini'; }
       else if (s.includes('Weinstein')) { cls = 'weinstein'; shortName = 'Weinstein Stage 2'; }
       else if (s.includes('Relative Strength')) { cls = 'rs'; shortName = 'RS Leader'; }
@@ -3889,7 +3720,6 @@ function showToast(msg) {
 }
 
 function openPrinciplesModal() { document.getElementById('principlesModal').classList.add('open'); }
-function openSniperModal() { document.getElementById('sniperModal').classList.add('open'); }
 function openWalkForwardModal() { document.getElementById('walkForwardModal').classList.add('open'); }
 function openRsGuideModal() { document.getElementById('rsGuideModal').classList.add('open'); }
 function openWyckoffGuideModal() { document.getElementById('wyckoffGuideModal').classList.add('open'); }
@@ -4204,6 +4034,10 @@ function syncDrawingCanvasSize() {
   }
 }
 
+/**
+ * Toggle the chart between its in-modal size and a full-viewport overlay.
+ * Keeps the modal's own close / fullscreen buttons in sync with the state.
+ */
 function toggleChartFullscreen() {
   const container = document.getElementById('stockChartContainer');
   const modalSection = container ? container.closest('.modal-section') : null;
@@ -4463,6 +4297,13 @@ async function fetchFwdCloudflareLiveQuote(symbol) {
   }
 }
 
+/**
+ * Run the forward-verification detail view for a single user-entered symbol.
+ * Switches the verifier into 'stock' mode if needed, joins the optional live
+ * quote with the stored trade history, and renders the per-symbol result.
+ * @param {string} symbol - symbol typed by the user.
+ * @param {object} [liveQuote] - optional freshly-fetched quote to display.
+ */
 function verifyCustomStock(symbol, liveQuote) {
   if (!symbol) return;
   const sym = symbol.trim().toUpperCase();
@@ -4701,6 +4542,10 @@ function verifyCustomStock(symbol, liveQuote) {
   `;
 }
 
+/**
+ * Render the forward-verifier "by session" view for the selected date:
+ * regime banner, session summary and the ranked trade table.
+ */
 function renderForwardVerifier() {
   const fwd = D.forward_verifier;
   const select = document.getElementById('fwdDateSelect');

@@ -27,7 +27,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from protocol import ranking, site, site_html  # noqa: E402
-from protocol.config import get, load_config  # noqa: E402
+from protocol.config import load_config  # noqa: E402
 from protocol.data import load_history  # noqa: E402
 from protocol.features import build_panel  # noqa: E402
 from protocol.strategies import REGISTRY  # noqa: E402

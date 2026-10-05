@@ -51,7 +51,7 @@ import numpy as np
 import pandas as pd
 
 from protocol.costs import CostModel
-from protocol import crosssec_report
+from protocol.reporting import crosssec_report
 
 to_markdown = crosssec_report.to_markdown
 
@@ -124,30 +124,6 @@ def round_trip_bps(model: CostModel, capital: float) -> float:
     """
     dp_bps = 1e4 * model.dp_charge / max(capital, 1.0)
     return 1e4 * (model.buy_rate + model.sell_rate) + dp_bps
-
-
-def _walk_forward_folds(dates: list[pd.Timestamp], n_folds: int,
-                        oos_from: pd.Timestamp) -> list[dict[str, Any]]:
-    """Contiguous in-sample / out-of-sample split of the rebalance calendar."""
-    if not dates:
-        return []
-    n_folds = max(int(n_folds), 2)
-    edges = np.linspace(0, len(dates), n_folds + 1).astype(int)
-    folds = []
-    for k in range(n_folds):
-        chunk = dates[edges[k]:edges[k + 1]]
-        if not chunk:
-            continue
-        oos = [d for d in chunk if d >= oos_from]
-        folds.append({
-            "fold": k + 1,
-            "from": str(min(chunk).date()), "to": str(max(chunk).date()),
-            "rebalances": len(chunk),
-            "oos_rebalances": len(oos),
-            "regime": "OOS" if min(chunk) >= oos_from else
-                      ("MIXED" if oos else "IS"),
-        })
-    return folds
 
 
 def run_baskets(panel: dict[str, pd.DataFrame], cfg: dict,
@@ -227,9 +203,3 @@ def run_baskets(panel: dict[str, pd.DataFrame], cfg: dict,
                 })
     return crosssec_report.summarise(buckets, universe, tops, horizon, freq,
                                      cost_rate, rt_bps, capital, cfg)
-
-
-def _turnover(prev: list[str] | None, cur: list[str]) -> float:
-    if not prev:
-        return 1.0
-    return 1.0 - len(set(prev) & set(cur)) / len(cur)

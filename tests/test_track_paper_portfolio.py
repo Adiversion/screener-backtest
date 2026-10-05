@@ -71,6 +71,14 @@ class TestTrackPaperPortfolio(unittest.TestCase):
         self.assertEqual(events[0]["action"], "STOP")
 
     def test_target1_scale_out_and_breakeven_raise(self):
+        """A single +8% tick runs the whole risk engine, in rule order.
+
+        The guardian polls every 15 minutes, so it cannot assume another tick is
+        coming: one evaluation applies every rule in sequence. The breakeven
+        shield lifts the stop to entry, the trailing stop then locks profit
+        above it (1000 + (1080 - 1000) * 0.55 = 1044), and the +1.5R target
+        scales out half the position. The stop therefore ends ABOVE breakeven.
+        """
         port = {
             "initialCapital": 1000000.0,
             "cash": 900000.0,
@@ -93,12 +101,46 @@ class TestTrackPaperPortfolio(unittest.TestCase):
         pos = updated["positions"][0]
         self.assertEqual(pos["shares"], 50)
         self.assertTrue(pos["scaledOut"])
-        self.assertEqual(pos["stopPrice"], 1000.0)  # Raised to Breakeven!
+        # Raised to breakeven, then trailed to lock the move (above entry).
+        self.assertEqual(pos["stopPrice"], 1044.0)
+        self.assertGreater(pos["stopPrice"], pos["buyPrice"])
         self.assertEqual(len(updated["closedTrades"]), 1)
         self.assertEqual(updated["closedTrades"][0]["shares"], 50)
         self.assertEqual(updated["closedTrades"][0]["pnl"], 4000.0)
-        self.assertEqual(len(events), 1)
-        self.assertEqual(events[0]["action"], "TARGET1")
+        # Every rule that fired is reported, in evaluation order.
+        self.assertEqual([e["action"] for e in events],
+                         ["BREAKEVEN_SHIELD", "TRAIL_UPDATE", "TARGET1"])
+
+    def test_target1_scale_out_raises_stop_above_breakeven(self):
+        """Target 1 alone scales out half and lifts the stop to breakeven+0.5%.
+
+        Price sits below both the +2% shield and the +3.5% peak trailing
+        thresholds, so the +1.5R scale-out is the only action taken.
+        """
+        port = {
+            "initialCapital": 1000000.0,
+            "cash": 900000.0,
+            "positions": [{
+                "symbol": "DIXON",
+                "shares": 100,
+                "buyPrice": 1000.0,
+                "stopPrice": 950.0,
+                "initialStopPrice": 950.0,
+                "target1Price": 1005.0,
+                "target2Price": 1125.0,
+                "scaledOut": False
+            }],
+            "closedTrades": []
+        }
+        updated, events = evaluate_staged_positions(port, {"DIXON": 1010.0})
+        pos = updated["positions"][0]
+        self.assertEqual(pos["shares"], 50)
+        self.assertTrue(pos["scaledOut"])
+        self.assertEqual(pos["stopPrice"], 1005.0)  # Breakeven + 0.5%
+        self.assertEqual(len(updated["closedTrades"]), 1)
+        self.assertEqual(updated["closedTrades"][0]["shares"], 50)
+        self.assertEqual(updated["closedTrades"][0]["pnl"], 500.0)
+        self.assertEqual([e["action"] for e in events], ["TARGET1"])
 
 
 if __name__ == "__main__":

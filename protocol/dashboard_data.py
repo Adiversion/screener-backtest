@@ -12,23 +12,16 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from protocol.data import load_history
 from protocol.corporate_events import get_corporate_audit
 from protocol.wyckoff_pa import evaluate_wyckoff_pa
 from protocol.universe_lookup import build_universe_lookup
-from protocol.github_screeners import (
-    compute_screener_features, screen_canslim, screen_darvas_box,
-    screen_minervini, screen_pkscreener_vcp, screen_protocol_v2,
-    screen_qullamaggie, screen_relative_strength, screen_stan_weinstein,
-    screen_turtle_trading, screen_wyckoff_closing_range, screen_sector_momentum_leader,
-    screen_connors_rsi_pullback, screen_institutional_delivery,
-)
+from protocol.frameworks import load_delivery_map, run_frameworks
+from protocol.github_screeners import compute_screener_features
 from protocol.regime import get_regime_at
 from protocol.sector import (
     get_company_name, get_sector, compute_industry_momentum,
     get_symbol_industry_momentum
 )
-from protocol.sniper_mode import evaluate_sniper_gates
 from protocol.forward_verifier import build_forward_verification_suite
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -55,38 +48,11 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp = "2026
     l52_cnt = int((feat["Close"] <= feat["l52"] * 1.001).sum()) if "l52" in feat.columns else 0
     net_new_highs = h52_cnt - l52_cnt
 
-    # Load delivery data if available
-    deliv_map: dict[str, float] = {}
-    deliv_file = ROOT / "data" / "delivery_history.parquet"
-    if deliv_file.exists():
-        try:
-            ddf = pd.read_parquet(deliv_file)
-            ddf["Date"] = pd.to_datetime(ddf["Date"]).dt.normalize()
-            dsub = ddf[ddf["Date"] == asof]
-            deliv_map = dict(zip(dsub["Symbol"].astype(str), dsub["DelivPct"].astype(float)))
-        except Exception:
-            pass
-
+    deliv_map = load_delivery_map(asof)
     ind_df = compute_industry_momentum(feat)
 
-    # Screen all 12 independent, non-overlapping frameworks
-    # NOTE: Sniper Mode (65%+ WR) is NOT a screener here — it is a composite 7-gate
-    # badge evaluated per-candidate via evaluate_sniper_gates (is_sniper field).
-    groups = [
-        ("Protocol Fortified", screen_protocol_v2(feat, top_n=60, min_turnover_cr=0.5)),
-        ("Relative Strength Leader", screen_relative_strength(feat, top_n=60, min_turnover_cr=0.5)),
-        ("Minervini Template", screen_minervini(feat, top_n=60, min_turnover_cr=0.5)),
-        ("Stan Weinstein Stage 2", screen_stan_weinstein(feat, top_n=60, min_turnover_cr=0.5)),
-        ("Qullamaggie Breakout", screen_qullamaggie(feat, top_n=60, min_turnover_cr=0.5)),
-        ("CANSLIM Pivot", screen_canslim(feat, top_n=60, min_turnover_cr=0.5)),
-        ("PKScreener VCP", screen_pkscreener_vcp(feat, top_n=60, min_turnover_cr=0.5)),
-        ("Turtle Trading", screen_turtle_trading(feat, top_n=60, min_turnover_cr=0.5)),
-        ("Darvas Box", screen_darvas_box(feat, top_n=60, min_turnover_cr=0.5)),
-        ("Wyckoff Closing Range", screen_wyckoff_closing_range(feat, top_n=60, min_turnover_cr=0.5)),
-        ("Sector Momentum Leader", screen_sector_momentum_leader(feat, top_n=60, min_turnover_cr=0.5, ind_df=ind_df)),
-        ("Institutional Delivery Absorption", screen_institutional_delivery(feat, deliv_map=deliv_map, top_n=60, min_turnover_cr=0.5)),
-        ("Connors RSI Pullback", screen_connors_rsi_pullback(feat, top_n=60, min_turnover_cr=0.5)),
-    ]
+    groups = run_frameworks(feat, top_n=60, min_turnover_cr=0.5,
+                            ind_df=ind_df, deliv_map=deliv_map)
 
     feat_by_sym = {row["Symbol"]: row for _, row in feat.iterrows()}
     candidates: dict[str, dict[str, Any]] = {}
@@ -179,7 +145,6 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp = "2026
         "candidates": cand_list,
         "universe_lookup": build_universe_lookup(feat, candidates, deliv_map),
         "walk_forward": _load_report("walk_forward_report.json"),
-        "sniper_report": _load_report("sniper_mode_report.json"),
         "industry_rankings": ind_df.to_dict(orient="records") if not ind_df.empty else [],
         "forward_verifier": build_forward_verification_suite(df, max_dates=16),
         "default_capital_per_stock": 100000,
@@ -235,8 +200,6 @@ def _build_single_candidate(f: pd.Series, deliv_pct: float | None, ind_df: pd.Da
     is_extended = ext50 > 0.20
 
     ind_info = get_symbol_industry_momentum(sym, ind_df) if ind_df is not None else {}
-    audit_sniper = evaluate_sniper_gates(f, deliv_pct=deliv_pct, ind_rank=ind_info.get("rs_rank"))
-
     r60 = float(f["r60"]) if "r60" in f and not pd.isna(f["r60"]) else (
         float(f["R60"]) if "R60" in f and not pd.isna(f["R60"]) else r20
     )
@@ -252,7 +215,6 @@ def _build_single_candidate(f: pd.Series, deliv_pct: float | None, ind_df: pd.Da
         "INSTITUTIONAL DELIVERY ≥50%" if dp >= 50.0 else "",
         "LOW VOLATILITY ADVANTAGE" if is_low_vol else "",
         "CAUTION: EXTENDED >20%" if is_extended else "",
-        "🎯 SNIPER QUALIFIED (65%+ WR)" if audit_sniper.is_sniper else "",
         f"SECTOR TAILWIND: {str(ind_info.get('tier','')).split(':')[0]}" if ind_info.get("is_tailwind") else "",
         f"OVERSOLD DIP (CRSI {crsi_val:.0f})" if crsi_val <= 25.0 else "",
         "60D BASE CEILING CLEARED" if (has_overhead_ceiling and ceiling_cleared) else (
@@ -335,8 +297,6 @@ def _build_single_candidate(f: pd.Series, deliv_pct: float | None, ind_df: pd.Da
         "industry_tier": ind_info.get("tier", "Tier 3: Neutral"),
         "industry_rs": ind_info.get("rs_rank", 50.0),
         "is_sector_tailwind": bool(ind_info.get("is_tailwind", False)),
-        "is_sniper": audit_sniper.is_sniper,
-        "sniper_score": audit_sniper.score,
         "badges": badges,
         "catalyst_warning": audit["warning_text"],
         "ma_stack": {

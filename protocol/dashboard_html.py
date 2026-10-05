@@ -19,8 +19,8 @@ PAPER_TRADING_TEMPLATE = Path(__file__).resolve().parent / "paper_trading_templa
 _PAPER_TRADING_CANDIDATE_FIELDS = {
     "symbol", "company", "sector", "industry", "close", "high", "low",
     "stop", "target_2r", "rvol", "rs_rating", "ret20", "adr",
-    "strategies", "is_sniper", "is_extended", "framework_count",
-    "deliv_pct", "sniper_gates",
+    "strategies", "is_extended", "framework_count",
+    "deliv_pct",
 }
 
 # Top-level payload keys that paper_trading.html does not need at all.
@@ -28,7 +28,6 @@ _PAPER_TRADING_DROP_KEYS = {
     "forward_verifier",  # heavy multi-symbol verification suite
     "universe_lookup",   # full universe symbol map for inspector search
     "walk_forward",      # walk-forward fold results
-    "sniper_report",     # sniper mode full report
     "industry_rankings", # sector momentum matrix
 }
 

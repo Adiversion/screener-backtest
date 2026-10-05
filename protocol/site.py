@@ -69,14 +69,6 @@ def latest_session(ranked: pd.DataFrame) -> pd.Timestamp:
     return pd.Timestamp(full.index.max() if len(full) else per_day.index.max())
 
 
-def score_universe(panel: dict[str, pd.DataFrame], cfg: dict,
-                   asof: pd.Timestamp) -> pd.DataFrame:
-    """Every symbol's raw fields, percentiles, score, coverage and gate verdict."""
-    ranked = ranking.rank_all(ranking.build_long(panel, cfg), cfg,
-                              quality.COMPONENTS)
-    return ranked[ranked["date"] == np.datetime64(asof)].copy()
-
-
 def _row_payload(row: pd.Series, percentile: float, sectors: dict,
                  tag: str | None) -> dict[str, Any]:
     out: dict[str, Any] = {

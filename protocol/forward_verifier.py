@@ -18,11 +18,10 @@ import pandas as pd
 from protocol.regime import get_regime_at
 from protocol.github_screeners import (
     compute_screener_features, screen_protocol_v2, screen_minervini,
-    screen_qullamaggie, screen_canslim, screen_pkscreener_vcp,
+    screen_qullamaggie, screen_canslim,
     screen_relative_strength, screen_stan_weinstein, screen_turtle_trading,
     screen_darvas_box
 )
-from protocol.sniper_mode import screen_sniper_mode
 from protocol.sector import get_company_name, get_sector
 
 
@@ -225,12 +224,6 @@ def build_forward_verification_suite(
         # Extract shortlisted candidates across main strategies
         cands_set: set[str] = set()
         cands_meta: dict[str, list[str]] = {}
-
-        # 1. Sniper Mode
-        snipers = screen_sniper_mode(feat, top_n=5)
-        for s in snipers:
-            cands_set.add(s.symbol)
-            cands_meta.setdefault(s.symbol, []).append("Sniper Mode (65%+ WR)")
 
         # 2. Protocol Fortified
         proto = screen_protocol_v2(feat, top_n=5)
