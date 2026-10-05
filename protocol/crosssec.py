@@ -53,6 +53,8 @@ import pandas as pd
 from protocol.costs import CostModel
 from protocol import crosssec_report
 
+to_markdown = crosssec_report.to_markdown
+
 # name -> source column. All are point-in-time features already in the panel.
 SCORES: dict[str, str] = {
     "momentum60": "ret60",

@@ -74,7 +74,10 @@ def main() -> int:
     if args.mode == "validation":
         assert_validation_gate(cfg, exploratory)
 
-    cutoff = args.cutoff or get(cfg, "validation.validation_end")
+    if args.cutoff:
+        cutoff = None if str(args.cutoff).lower() in ("none", "latest", "all") else args.cutoff
+    else:
+        cutoff = get(cfg, "validation.validation_end") if args.mode == "validation" else None
     history = load_history(args.data)
     if cutoff:
         history = history[history["Date"] <= pd.Timestamp(cutoff)]

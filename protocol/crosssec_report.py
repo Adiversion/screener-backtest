@@ -31,11 +31,11 @@ def folds(recs: list[dict[str, Any]], cost_rate: float, n_folds: int,
         chunk = recs[edges[k]:edges[k + 1]]
         if not chunk:
             continue
-    prev, nets = None, []
-    for r in chunk:
-        turn = turnover(prev, r["names"])
-        nets.append(r["gross"] - turn * cost_rate)
-        prev = r["names"]
+        prev, nets = None, []
+        for r in chunk:
+            turn = turnover(prev, r["names"])
+            nets.append(r["gross"] - turn * cost_rate)
+            prev = r["names"]
         out.append({"fold": k + 1, "n": len(chunk),
                     "from": str(chunk[0]["date"].date()),
                     "to": str(chunk[-1]["date"].date()),

@@ -203,6 +203,8 @@ SPLIT_TOLERANCE = 0.06
 
 def _confirm_split(ratio: float) -> bool:
     """True when the ratio matches a real split/bonus ratio in either direction."""
+    if not np.isfinite(ratio) or ratio <= 0.0:
+        return False
     if ratio >= 1.0:
         return any(abs(ratio / r - 1.0) <= SPLIT_TOLERANCE for r in SPLIT_RATIOS)
     return any(abs((1.0 / ratio) / r - 1.0) <= SPLIT_TOLERANCE for r in SPLIT_RATIOS)

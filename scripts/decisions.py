@@ -52,11 +52,15 @@ def main() -> int:
     args = ap.parse_args()
 
     cfg = load_config(args.config)
-    asof = pd.Timestamp(args.asof or get(cfg, "validation.validation_end"))
     history = load_history(args.data)
     if args.symbols != "all":
         syms = [s.strip().upper() for s in args.symbols.split(",")]
         history = history[history["Symbol"].isin(syms)]
+    if args.asof:
+        asof = pd.Timestamp(args.asof)
+    else:
+        available = pd.Timestamp(history["Date"].max())
+        asof = max(available, pd.Timestamp(get(cfg, "validation.validation_end")))
     history = history[history["Date"] <= asof]
     if history.empty:
         print("no data on/before", asof.date())

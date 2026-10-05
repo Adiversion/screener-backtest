@@ -25,7 +25,11 @@ def fetch_annex_data() -> dict[str, int]:
 
     try:
         from nse import NSE
-        with NSE(download_folder=DATA_DIR, server=False) as nse:
+        try:
+            ctx = NSE(download_folder=DATA_DIR)
+        except TypeError:
+            ctx = NSE(download_folder=DATA_DIR, server=False)
+        with ctx as nse:
             # 1. Fetch Board Meetings / Results calendar
             try:
                 bm = nse.boardMeetings()
