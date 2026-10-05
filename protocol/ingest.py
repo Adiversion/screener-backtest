@@ -27,7 +27,7 @@ network.
 from __future__ import annotations
 
 import io
-from datetime import date
+from datetime import date, timedelta
 from typing import Iterable
 
 import pandas as pd
@@ -195,7 +195,8 @@ def fetch_yfinance(symbols: Iterable[str], start: str, end: str | None = None,
     """Adjusted daily OHLCV for NSE tickers. Symbols without '.NS' get it."""
     import yfinance as yf
 
-    end = end or date.today().isoformat()
+    # yfinance end date is exclusive: to include today's trading candle, end must be tomorrow
+    end = end or (date.today() + timedelta(days=1)).isoformat()
     frames: list[pd.DataFrame] = []
     syms = [s if s.endswith(".NS") else f"{s}.NS" for s in symbols]
     for i in range(0, len(syms), batch):

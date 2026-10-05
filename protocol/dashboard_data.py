@@ -37,8 +37,20 @@ def _load_report(filename: str) -> dict[str, Any]:
     return {}
 
 
-def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp = "2026-10-01") -> dict[str, Any]:
+def _load_weekly_confluence() -> pd.DataFrame:
+    for p in (ROOT / "reports" / "weekly_confluence.csv", ROOT / "data" / "weekly_confluence.csv"):
+        if p.exists():
+            try:
+                return pd.read_csv(p)
+            except Exception:
+                pass
+    return pd.DataFrame()
+
+
+def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp | None = None) -> dict[str, Any]:
     """Build complete dashboard payload with enriched technical breakdown."""
+    if asof_date is None or asof_date == "latest":
+        asof_date = df["Date"].max()
     asof = pd.Timestamp(asof_date).normalize()
     reg = get_regime_at(df, asof)
     feat = compute_screener_features(df, asof)
@@ -69,6 +81,59 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp = "2026
                 candidates[sym] = cand
             else:
                 candidates[sym]["strategies"].append(strat_name)
+
+    # Enrich candidates with weekly timeframe confluence and add weekly swing watchlist
+    weekly_df = _load_weekly_confluence()
+    weekly_map = {}
+    if not weekly_df.empty and "Symbol" in weekly_df.columns:
+        weekly_map = {str(row["Symbol"]): row for _, row in weekly_df.iterrows()}
+
+    for sym, cand in list(candidates.items()):
+        wrow = weekly_map.get(sym)
+        if wrow is not None:
+            cand["weekly_bucket"] = str(wrow.get("bucket", "DAILY_ONLY"))
+            cand["weekly_gates"] = int(wrow.get("n_gates", 0)) if pd.notna(wrow.get("n_gates")) else 0
+            cand["weekly_grade"] = str(wrow.get("w_grade", "")) if pd.notna(wrow.get("w_grade")) else ""
+            cand["weekly_strong"] = bool(wrow.get("w_strong", False))
+            cand["weekly_gates_list"] = str(wrow.get("gates", "")).split(", ") if pd.notna(wrow.get("gates")) else []
+            cand["weekly_rvol13"] = round(float(wrow["w_rvol13"]), 1) if pd.notna(wrow.get("w_rvol13")) else None
+            cand["weekly_ext_ma30"] = round(float(wrow["w_ext_ma30"]) * 100, 1) if pd.notna(wrow.get("w_ext_ma30")) else None
+            cand["weekly_rsi"] = round(float(wrow["w_rsi14"]), 1) if pd.notna(wrow.get("w_rsi14")) else None
+            if cand["weekly_bucket"] == "BOTH":
+                cand["badges"].append({"text": "🏆 DUAL CONFLUENCE", "style": "background:rgba(192,132,252,0.22);color:#c084fc;border:1px solid rgba(192,132,252,0.45);font-weight:700;"})
+        else:
+            cand["weekly_bucket"] = "DAILY_ONLY"
+            cand["weekly_gates"] = 0
+            cand["weekly_grade"] = ""
+            cand["weekly_strong"] = False
+            cand["weekly_gates_list"] = []
+
+    # Also include top WEEKLY_ONLY swing candidates (weekly strong bases before daily breakout)
+    if not weekly_df.empty and "bucket" in weekly_df.columns:
+        w_only = weekly_df[weekly_df["bucket"] == "WEEKLY_ONLY"].sort_values(by="n_gates", ascending=False)
+        for _, wrow in w_only.iterrows():
+            wsym = str(wrow["Symbol"])
+            if wsym in candidates:
+                continue
+            wf = feat_by_sym.get(wsym)
+            if wf is None:
+                continue
+            wcand = _build_single_candidate(wf, deliv_map.get(wsym), ind_df=ind_df)
+            gates_list = str(wrow.get("gates", "")).split(", ") if pd.notna(wrow.get("gates")) else []
+            wcand["strategies"] = [f"Weekly: {g.strip()}" for g in gates_list[:3]] if gates_list else ["Weekly Stage 2 Base"]
+            wcand["setup_badge"] = "WEEKLY BASE"
+            wcand["setup_desc"] = f"Weekly Stage 2 Base ({wrow['n_gates']}/12 Gates): {wrow.get('w_grade', 'A+')} Grade"
+            wcand["weekly_bucket"] = "WEEKLY_ONLY"
+            wcand["is_weekly_watchlist"] = True
+            wcand["weekly_gates"] = int(wrow.get("n_gates", 0)) if pd.notna(wrow.get("n_gates")) else 0
+            wcand["weekly_grade"] = str(wrow.get("w_grade", "")) if pd.notna(wrow.get("w_grade")) else ""
+            wcand["weekly_strong"] = True
+            wcand["weekly_gates_list"] = gates_list
+            wcand["weekly_rvol13"] = round(float(wrow["w_rvol13"]), 1) if pd.notna(wrow.get("w_rvol13")) else None
+            wcand["weekly_ext_ma30"] = round(float(wrow["w_ext_ma30"]) * 100, 1) if pd.notna(wrow.get("w_ext_ma30")) else None
+            wcand["weekly_rsi"] = round(float(wrow["w_rsi14"]), 1) if pd.notna(wrow.get("w_rsi14")) else None
+            wcand["badges"].append({"text": "📅 WEEKLY STRONG", "style": "background:rgba(56,189,248,0.2);color:#38bdf8;border:1px solid rgba(56,189,248,0.45);font-weight:700;"})
+            candidates[wsym] = wcand
 
     # Attach recent 120 daily OHLCV candles and EMAs/SMAs to each candidate for interactive charting
     cand_symbols = set(candidates.keys())
@@ -106,17 +171,22 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp = "2026
             })
         cand["candles"] = cand_candles
 
-    # Sort: Frameworks count DESC, Safe extension priority, then 20d return DESC
+    # Sort: Dual confluence & Daily leaders first, then weekly swing watchlist
     def sort_key(c: dict[str, Any]) -> tuple:
-        return (len(c["strategies"]), -(1 if c["is_extended"] else 0), c["ret20"])
+        is_w_only = 1 if c.get("weekly_bucket") == "WEEKLY_ONLY" else 0
+        is_both = 1 if c.get("weekly_bucket") == "BOTH" else 0
+        return (-is_w_only, is_both, len(c["strategies"]), -(1 if c["is_extended"] else 0), c["ret20"])
 
     cand_list = sorted(candidates.values(), key=sort_key, reverse=True)
 
     # Compute high-level dashboard KPIs
     total_cands = len(cand_list)
-    high_conviction = sum(1 for c in cand_list if len(c["strategies"]) >= 3)
+    high_conviction = sum(1 for c in cand_list if len(c["strategies"]) >= 3 or c.get("weekly_bucket") == "BOTH")
     avg_rvol = round(float(np.mean([c["rvol"] for c in cand_list])), 1) if cand_list else 0.0
     inst_deliv_cnt = sum(1 for c in cand_list if c["deliv_pct"] >= 50.0)
+    both_cnt = sum(1 for c in cand_list if c.get("weekly_bucket") == "BOTH")
+    weekly_only_cnt = sum(1 for c in cand_list if c.get("weekly_bucket") == "WEEKLY_ONLY")
+    daily_only_cnt = sum(1 for c in cand_list if c.get("weekly_bucket") == "DAILY_ONLY")
 
     return {
         "asof": str(asof.date()),
@@ -141,6 +211,14 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp = "2026
             "high_conviction": high_conviction,
             "avg_rvol": avg_rvol,
             "institutional_delivery_count": inst_deliv_cnt,
+            "both_count": both_cnt,
+            "weekly_only_count": weekly_only_cnt,
+            "daily_only_count": daily_only_cnt,
+        },
+        "weekly_kpis": {
+            "both_count": both_cnt,
+            "weekly_only_count": weekly_only_cnt,
+            "daily_only_count": daily_only_cnt,
         },
         "candidates": cand_list,
         "universe_lookup": build_universe_lookup(feat, candidates, deliv_map),

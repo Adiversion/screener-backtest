@@ -77,6 +77,10 @@ jobs:
       - name: Candidate screen and dashboard
         run: python scripts/screen_candidates.py
 
+      - name: Weekly timeframe confluence screen
+        continue-on-error: true
+        run: python scripts/screen_weekly.py
+
       # The static research site: a 0.5 MB index plus one lazily-fetched detail
       # file per symbol, so the search box works on a phone with no backend.
       - name: Build the research site

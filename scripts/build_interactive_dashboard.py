@@ -19,6 +19,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+import pandas as pd
+
 from protocol.dashboard_data import build_candidate_data  # noqa: E402
 from protocol.dashboard_html import get_dashboard_html, get_paper_trading_html  # noqa: E402
 from protocol.data import load_history  # noqa: E402
@@ -73,9 +75,11 @@ def make_404_html() -> str:
 </html>"""
 
 
-def build_app(data_path: str, asof_date: str = "2026-10-01", outdir: str = "reports") -> Path:
+def build_app(data_path: str, asof_date: str | None = None, outdir: str = "reports") -> Path:
     """Build and write interactive screener and paper trading station to reports/ and docs/."""
     df = load_history(data_path)
+    if asof_date is None or asof_date == "latest":
+        asof_date = pd.Timestamp(df["Date"].max()).strftime("%Y-%m-%d")
     app_data = build_candidate_data(df, asof_date=asof_date)
     screener_html = get_dashboard_html(app_data)
     paper_html = get_paper_trading_html(app_data)
@@ -118,7 +122,7 @@ def build_app(data_path: str, asof_date: str = "2026-10-01", outdir: str = "repo
 def main() -> int:
     ap = argparse.ArgumentParser(description="Build Interactive Dashboard")
     ap.add_argument("--data", default=str(ROOT / "data" / "nse_all_history.parquet"))
-    ap.add_argument("--asof", default="2026-10-01")
+    ap.add_argument("--asof", default=None, help="as-of session date (default: latest session in data)")
     ap.add_argument("--outdir", default=str(ROOT / "reports"))
     args = ap.parse_args()
 

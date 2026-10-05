@@ -1609,6 +1609,12 @@
     document.write('<script src="https://unpkg.com/lightweight-charts@5.0.3/dist/lightweight-charts.standalone.production.js"><\/script>');
   }
 </script>
+<script src="lightweight-charts-drawing.umd.cjs"></script>
+<script>
+  if (typeof LightweightChartsDrawing === 'undefined') {
+    document.write('<script src="https://cdn.jsdelivr.net/npm/lightweight-charts-drawing@0.6.1/dist/lightweight-charts-drawing.umd.cjs"><\/script>');
+  }
+</script>
 </head>
 <body>
 <div class="container">
@@ -1798,6 +1804,9 @@
 
     <select id="tagFilter" class="custom-select">
       <option value="">All Setup Categories</option>
+      <option value="tf_both">🏆 Dual Confluence (Daily + Weekly Strong)</option>
+      <option value="tf_weekly">📅 Weekly Strong Watchlist (Stage 2 Bases)</option>
+      <option value="tf_daily">⚡ Daily Breakout Candidates</option>
       <option value="sector_leader">🏭 Sector Tailwind (Tier 1 & 2)</option>
       <option value="shelf">Multi-Touch Shelves (≥2x Tested)</option>
       <option value="wyckoff_abs">Wyckoff Absorption (High Effort & Result)</option>
@@ -1832,6 +1841,20 @@
       <button class="view-btn" onclick="exportCsvCandidates()" title="Download full candidate list with trade plans as CSV" style="background:rgba(16,185,129,0.1);color:#34d399;border-color:rgba(16,185,129,0.3);">
         📥 Export CSV
       </button>
+    </div>
+  </div>
+
+  <!-- Timeframe Confluence Ribbon -->
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;padding:8px 12px;background:rgba(15,23,42,0.6);border:1px solid rgba(255,255,255,0.06);border-radius:8px;">
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+      <span style="font-size:0.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">TIMEFRAME CONFLUENCE:</span>
+      <button id="tfBtnAll" class="chart-link-pill" onclick="setTimeframeFilter('all')" style="font-size:0.72rem;padding:3px 10px;cursor:pointer;font-weight:700;background:rgba(56,189,248,0.2);color:#38bdf8;border-color:#38bdf8;">All Candidates (<span id="cntAll">0</span>)</button>
+      <button id="tfBtnBoth" class="chart-link-pill" onclick="setTimeframeFilter('both')" style="font-size:0.72rem;padding:3px 10px;cursor:pointer;font-weight:700;color:#c084fc;border-color:rgba(192,132,252,0.4);" title="Stocks clearing BOTH daily breakout AND weekly Stage 2 structure">🏆 Dual Confluence (<span id="cntBoth">0</span>)</button>
+      <button id="tfBtnWeekly" class="chart-link-pill" onclick="setTimeframeFilter('weekly')" style="font-size:0.72rem;padding:3px 10px;cursor:pointer;font-weight:700;color:#38bdf8;border-color:rgba(56,189,248,0.4);" title="Weekly Stage 2 strong bases setting up before daily pivot (Swing Watchlist)">📅 Weekly Strong Watchlist (<span id="cntWeekly">0</span>)</button>
+      <button id="tfBtnDaily" class="chart-link-pill" onclick="setTimeframeFilter('daily')" style="font-size:0.72rem;padding:3px 10px;cursor:pointer;font-weight:600;color:#94a3b8;border-color:rgba(255,255,255,0.1);" title="Daily breakout candidates">⚡ Daily Only (<span id="cntDaily">0</span>)</button>
+    </div>
+    <div style="font-size:0.72rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">
+      <span>Weinstein 30W • Darvas Box • Minervini SEPA</span>
     </div>
   </div>
 
@@ -2011,11 +2034,14 @@
           <button id="pill_signals" class="chart-link-pill" onclick="toggleIndicator('signals')" style="font-size:0.68rem;padding:2px 6px;color:#ec4899;border-color:rgba(236,72,153,0.3);cursor:pointer;font-weight:700;" title="Toggle Pine Script Confluence Signals on Candles">🎯 Pine Signals</button>
         </div>
         <!-- Right: TradingView Manual Drawing Tools -->
-        <div style="display:flex;align-items:center;gap:4px;">
+        <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
           <span style="font-size:0.68rem;color:var(--text-muted);font-weight:700;margin-right:2px;">TOOLS:</span>
           <button id="btnToolHorz" class="chart-link-pill" onclick="activateDrawTool('horz')" style="font-size:0.68rem;padding:2px 8px;cursor:pointer;border-color:rgba(251,191,36,0.3);color:#fbbf24;" title="Click anywhere on chart to draw a Horizontal S/R line">📏 Horz Line</button>
           <button id="btnToolTrend" class="chart-link-pill" onclick="activateDrawTool('trend')" style="font-size:0.68rem;padding:2px 8px;cursor:pointer;border-color:rgba(56,189,248,0.3);color:#38bdf8;" title="Click 2 points on chart to draw a manual Trendline">✏️ Trendline</button>
-          <button class="chart-link-pill" onclick="clearUserDrawings()" style="font-size:0.68rem;padding:2px 6px;color:#f87171;border-color:rgba(239,68,68,0.3);cursor:pointer;" title="Clear all user drawn lines">🗑️ Clear</button>
+          <button id="btnToolBox" class="chart-link-pill" onclick="activateDrawTool('box')" style="font-size:0.68rem;padding:2px 8px;cursor:pointer;border-color:rgba(168,85,247,0.3);color:#c084fc;" title="Click 2 diagonal points on chart to draw an S/R Consolidation Box">📦 S/R Box</button>
+          <button id="btnToolFib" class="chart-link-pill" onclick="activateDrawTool('fib')" style="font-size:0.68rem;padding:2px 8px;cursor:pointer;border-color:rgba(16,185,129,0.3);color:#10b981;" title="Click 2 points on chart to draw Fibonacci Retracement">📐 Fib</button>
+          <button class="chart-link-pill" onclick="clearUserDrawings()" style="font-size:0.68rem;padding:2px 6px;color:#f87171;border-color:rgba(239,68,68,0.3);cursor:pointer;" title="Clear all user drawn lines and boxes">🗑️ Clear</button>
+          <button class="chart-link-pill" onclick="resetChartScale()" style="font-size:0.68rem;padding:2px 6px;color:#94a3b8;border-color:rgba(255,255,255,0.1);cursor:pointer;" title="Drag right price axis up/down with mouse to move chart down. Click here to reset to default fit.">🔄 Reset Fit</button>
         </div>
       </div>
 
@@ -2521,6 +2547,22 @@ function getFrameworkTier(count) {
   return { cls: 'tier-subtle', icon: '🔹', text: `${count}/12 FRAMEWORKS ACHIEVED` };
 }
 
+let currentActiveTimeframeFilter = 'all';
+
+function setTimeframeFilter(tf) {
+  currentActiveTimeframeFilter = tf;
+  ['all', 'both', 'weekly', 'daily'].forEach(k => {
+    const btn = document.getElementById('tfBtn' + k.charAt(0).toUpperCase() + k.slice(1));
+    if (btn) {
+      const active = (currentActiveTimeframeFilter === k);
+      btn.style.background = active ? (k === 'both' ? 'rgba(192,132,252,0.25)' : (k === 'weekly' ? 'rgba(56,189,248,0.25)' : 'rgba(56,189,248,0.2)')) : 'transparent';
+      btn.style.borderColor = active ? (k === 'both' ? '#c084fc' : '#38bdf8') : 'rgba(255,255,255,0.1)';
+      btn.style.color = active ? (k === 'both' ? '#c084fc' : '#38bdf8') : '#94a3b8';
+    }
+  });
+  render();
+}
+
 /**
  * Re-render the screener candidate grid from the current filter controls.
  * Applies the free-text (symbol/company/sector), sector, framework and tag
@@ -2534,12 +2576,29 @@ function render() {
   const cap = 100000;
   const capLabel = '₹1L';
 
+  // Update timeframe counter badges
+  const cntAll = document.getElementById('cntAll');
+  const cntBoth = document.getElementById('cntBoth');
+  const cntWeekly = document.getElementById('cntWeekly');
+  const cntDaily = document.getElementById('cntDaily');
+  if (cntAll) cntAll.textContent = D.candidates.length;
+  if (cntBoth) cntBoth.textContent = (D.weekly_kpis && D.weekly_kpis.both_count !== undefined) ? D.weekly_kpis.both_count : D.candidates.filter(c => c.weekly_bucket === 'BOTH').length;
+  if (cntWeekly) cntWeekly.textContent = (D.weekly_kpis && D.weekly_kpis.weekly_only_count !== undefined) ? D.weekly_kpis.weekly_only_count : D.candidates.filter(c => c.weekly_bucket === 'WEEKLY_ONLY').length;
+  if (cntDaily) cntDaily.textContent = (D.weekly_kpis && D.weekly_kpis.daily_only_count !== undefined) ? D.weekly_kpis.daily_only_count : D.candidates.filter(c => c.weekly_bucket === 'DAILY_ONLY').length;
+
   let filtered = D.candidates.filter(c => {
+    if (currentActiveTimeframeFilter === 'both' && c.weekly_bucket !== 'BOTH') return false;
+    if (currentActiveTimeframeFilter === 'weekly' && c.weekly_bucket !== 'WEEKLY_ONLY') return false;
+    if (currentActiveTimeframeFilter === 'daily' && c.weekly_bucket === 'WEEKLY_ONLY') return false;
+
     const mQ = !q || c.symbol.toLowerCase().includes(q) || (c.company && c.company.toLowerCase().includes(q)) || (c.sector && c.sector.toLowerCase().includes(q));
     const mSec = !sec || c.sector === sec;
     const mStrat = !strat || c.strategies.includes(strat);
     let mTag = true;
-    if (tag === '52w') mTag = c.breakout_type === '52-Week High Breakout';
+    if (tag === 'tf_both') mTag = c.weekly_bucket === 'BOTH';
+    else if (tag === 'tf_weekly') mTag = c.weekly_bucket === 'WEEKLY_ONLY';
+    else if (tag === 'tf_daily') mTag = c.weekly_bucket === 'DAILY_ONLY';
+    else if (tag === '52w') mTag = c.breakout_type === '52-Week High Breakout';
     else if (tag === 'sector_leader') mTag = c.is_sector_tailwind;
     else if (tag === 'vol') mTag = c.rvol >= 5.0;
     else if (tag === 'deliv') mTag = c.deliv_pct >= 50.0;
@@ -3315,9 +3374,12 @@ let currentChartMarkers = [];
 let currentSeriesMarkersPlugin = null;
 let userDrawnPriceLines = [];
 let userDrawnTrendlines = [];
+let userDrawnBoxes = [];
 let activeDrawTool = null;
 let trendlineStart = null;
+let boxStart = null;
 let chartOnlyFullscreenMode = false;
+let currentChartDrawingManagerInstance = null;
 
 function renderStockChart(c) {
   const tvLink = document.getElementById('mTvLink');
@@ -3330,6 +3392,11 @@ function renderStockChart(c) {
   const container = document.getElementById('stockChartContainer');
   const legendBar = document.getElementById('chartLegendBar');
   if (!container) return;
+
+  if (currentChartDrawingManagerInstance) {
+    try { currentChartDrawingManagerInstance.destroy(); } catch (e) {}
+    currentChartDrawingManagerInstance = null;
+  }
 
   if (currentStockChartInstance) {
     try {
@@ -3413,6 +3480,22 @@ function renderStockChart(c) {
     rightPriceScale: {
       borderColor: isLight ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.1)',
       autoScale: true,
+      scaleMargins: {
+        top: 0.18,
+        bottom: 0.22,
+      },
+    },
+    handleScroll: {
+      vertTouchDrag: true,
+      horzTouchDrag: true,
+      mouseWheel: true,
+      pressedMouseMove: true,
+    },
+    handleScale: {
+      axisPressedMouseMove: { time: true, price: true },
+      axisDoubleClickReset: { time: true, price: true },
+      mouseWheel: true,
+      pinch: true,
     },
     timeScale: {
       borderColor: isLight ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.1)',
@@ -3444,6 +3527,14 @@ function renderStockChart(c) {
     },
   });
   volumeSeries.setData(volumeData);
+
+  if (typeof LightweightChartsDrawing !== 'undefined' && typeof LightweightChartsDrawing.DrawingManager === 'function') {
+    try {
+      currentChartDrawingManagerInstance = new LightweightChartsDrawing.DrawingManager(chart, candleSeries);
+    } catch (e) {
+      console.warn('LightweightChartsDrawing init error:', e);
+    }
+  }
 
   chartSeriesRefs = {
     candle: candleSeries,
@@ -3775,6 +3866,10 @@ function toggleChartTheme() {
       },
       rightPriceScale: {
         borderColor: isLight ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.1)',
+        scaleMargins: {
+          top: 0.18,
+          bottom: 0.22,
+        },
       },
       timeScale: {
         borderColor: isLight ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.1)',
@@ -3911,6 +4006,8 @@ function activateDrawTool(tool) {
 
   const btnH = document.getElementById('btnToolHorz');
   const btnT = document.getElementById('btnToolTrend');
+  const btnB = document.getElementById('btnToolBox');
+  const btnF = document.getElementById('btnToolFib');
   const overlay = document.getElementById('chartDrawOverlay');
   const container = document.getElementById('stockChartContainer');
 
@@ -3922,11 +4019,41 @@ function activateDrawTool(tool) {
     btnT.style.background = activeDrawTool === 'trend' ? 'rgba(56,189,248,0.25)' : 'transparent';
     btnT.style.borderColor = activeDrawTool === 'trend' ? '#38bdf8' : 'rgba(56,189,248,0.3)';
   }
+  if (btnB) {
+    btnB.style.background = activeDrawTool === 'box' ? 'rgba(168,85,247,0.25)' : 'transparent';
+    btnB.style.borderColor = activeDrawTool === 'box' ? '#c084fc' : 'rgba(168,85,247,0.3)';
+  }
+  if (btnF) {
+    btnF.style.background = activeDrawTool === 'fib' ? 'rgba(16,185,129,0.25)' : 'transparent';
+    btnF.style.borderColor = activeDrawTool === 'fib' ? '#10b981' : 'rgba(16,185,129,0.3)';
+  }
+
+  if (currentChartDrawingManagerInstance) {
+    const toolMap = {
+      'horz': 'horizontal-line',
+      'trend': 'trend-line',
+      'box': 'rectangle',
+      'fib': 'fib-retracement',
+    };
+    try {
+      currentChartDrawingManagerInstance.setTool(toolMap[activeDrawTool] || null);
+    } catch (e) {
+      console.warn('DrawingManager setTool error:', e);
+    }
+  }
 
   if (activeDrawTool === 'trend') {
     if (overlay) overlay.style.pointerEvents = 'auto';
     if (container) container.style.cursor = 'crosshair';
     showToast('Click Point A, then click Point B to draw a Trendline');
+  } else if (activeDrawTool === 'box') {
+    if (overlay) overlay.style.pointerEvents = 'auto';
+    if (container) container.style.cursor = 'crosshair';
+    showToast('Click 1st corner, then click opposite corner to draw S/R Box');
+  } else if (activeDrawTool === 'fib') {
+    if (overlay) overlay.style.pointerEvents = 'auto';
+    if (container) container.style.cursor = 'crosshair';
+    showToast('Click Swing Low, then click Swing High for Fibonacci Retracement');
   } else if (activeDrawTool === 'horz') {
     if (overlay) overlay.style.pointerEvents = 'none';
     if (container) container.style.cursor = 'crosshair';
@@ -3935,10 +4062,14 @@ function activateDrawTool(tool) {
     if (overlay) overlay.style.pointerEvents = 'none';
     if (container) container.style.cursor = 'default';
     trendlineStart = null;
+    boxStart = null;
   }
 }
 
 function clearUserDrawings() {
+  if (currentChartDrawingManagerInstance) {
+    try { currentChartDrawingManagerInstance.clear(); } catch(e){}
+  }
   if (chartSeriesRefs.candle && userDrawnPriceLines.length) {
     userDrawnPriceLines.forEach(l => {
       try { chartSeriesRefs.candle.removePriceLine(l); } catch(e){}
@@ -3946,13 +4077,30 @@ function clearUserDrawings() {
     userDrawnPriceLines = [];
   }
   userDrawnTrendlines = [];
+  userDrawnBoxes = [];
+  trendlineStart = null;
+  boxStart = null;
   const overlay = document.getElementById('chartDrawOverlay');
   if (overlay) {
     const ctx = overlay.getContext('2d');
     ctx.clearRect(0, 0, overlay.width, overlay.height);
   }
   activateDrawTool(null);
-  showToast('Cleared all user drawn lines.');
+  showToast('Cleared all user drawn lines, boxes and Fibonacci.');
+}
+
+function resetChartScale() {
+  if (!currentStockChartInstance) return;
+  try {
+    currentStockChartInstance.timeScale().resetTimeScale();
+    currentStockChartInstance.priceScale('right').applyOptions({
+      autoScale: true,
+      scaleMargins: { top: 0.18, bottom: 0.22 },
+    });
+    showToast('Chart scale reset to default fit.');
+  } catch (e) {
+    console.warn('resetChartScale error:', e);
+  }
 }
 
 function initTrendlineCanvas() {
@@ -3960,9 +4108,21 @@ function initTrendlineCanvas() {
   if (!overlay || overlay._hasListeners) return;
   overlay._hasListeners = true;
 
-  function redrawTrendlines() {
+  function redrawAllCanvasDrawings() {
     const ctx = overlay.getContext('2d');
     ctx.clearRect(0, 0, overlay.width, overlay.height);
+
+    userDrawnBoxes.forEach(b => {
+      ctx.save();
+      ctx.fillStyle = 'rgba(168, 85, 247, 0.15)';
+      ctx.fillRect(b.x, b.y, b.w, b.h);
+      ctx.strokeStyle = '#c084fc';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 3]);
+      ctx.strokeRect(b.x, b.y, b.w, b.h);
+      ctx.restore();
+    });
+
     ctx.lineWidth = 2;
     ctx.strokeStyle = '#38bdf8';
     userDrawnTrendlines.forEach(line => {
@@ -3974,44 +4134,77 @@ function initTrendlineCanvas() {
   }
 
   overlay.addEventListener('click', (e) => {
-    if (activeDrawTool !== 'trend') return;
     const rect = overlay.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    if (!trendlineStart) {
-      trendlineStart = { x, y };
-      showToast('Anchor point set. Now click second point to complete trendline.');
-    } else {
-      userDrawnTrendlines.push({
-        x1: trendlineStart.x,
-        y1: trendlineStart.y,
-        x2: x,
-        y2: y,
-      });
-      trendlineStart = null;
-      redrawTrendlines();
-      showToast('Trendline drawn!');
-      activateDrawTool(null);
+    if (activeDrawTool === 'trend') {
+      if (!trendlineStart) {
+        trendlineStart = { x, y };
+        showToast('Anchor point set. Now click second point to complete trendline.');
+      } else {
+        userDrawnTrendlines.push({
+          x1: trendlineStart.x,
+          y1: trendlineStart.y,
+          x2: x,
+          y2: y,
+        });
+        trendlineStart = null;
+        redrawAllCanvasDrawings();
+        showToast('Trendline drawn!');
+        activateDrawTool(null);
+      }
+    } else if (activeDrawTool === 'box') {
+      if (!boxStart) {
+        boxStart = { x, y };
+        showToast('First corner set. Now click opposite corner to complete box.');
+      } else {
+        userDrawnBoxes.push({
+          x: Math.min(boxStart.x, x),
+          y: Math.min(boxStart.y, y),
+          w: Math.abs(x - boxStart.x),
+          h: Math.abs(y - boxStart.y),
+        });
+        boxStart = null;
+        redrawAllCanvasDrawings();
+        showToast('S/R Consolidation Box drawn!');
+        activateDrawTool(null);
+      }
     }
   });
 
   overlay.addEventListener('mousemove', (e) => {
-    if (activeDrawTool !== 'trend' || !trendlineStart) return;
     const rect = overlay.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    redrawTrendlines();
-    const ctx = overlay.getContext('2d');
-    ctx.save();
-    ctx.setLineDash([4, 4]);
-    ctx.strokeStyle = '#fbbf24';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(trendlineStart.x, trendlineStart.y);
-    ctx.lineTo(x, y);
-    ctx.stroke();
-    ctx.restore();
+
+    if (activeDrawTool === 'trend' && trendlineStart) {
+      redrawAllCanvasDrawings();
+      const ctx = overlay.getContext('2d');
+      ctx.save();
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(trendlineStart.x, trendlineStart.y);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      ctx.restore();
+    } else if (activeDrawTool === 'box' && boxStart) {
+      redrawAllCanvasDrawings();
+      const ctx = overlay.getContext('2d');
+      ctx.save();
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = '#c084fc';
+      ctx.fillStyle = 'rgba(168, 85, 247, 0.12)';
+      const bx = Math.min(boxStart.x, x);
+      const by = Math.min(boxStart.y, y);
+      const bw = Math.abs(x - boxStart.x);
+      const bh = Math.abs(y - boxStart.y);
+      ctx.fillRect(bx, by, bw, bh);
+      ctx.strokeRect(bx, by, bw, bh);
+      ctx.restore();
+    }
   });
 }
 
@@ -4021,8 +4214,21 @@ function syncDrawingCanvasSize() {
   if (!overlay || !container) return;
   overlay.width = container.clientWidth;
   overlay.height = container.clientHeight;
+  const ctx = overlay.getContext('2d');
+  ctx.clearRect(0, 0, overlay.width, overlay.height);
+
+  userDrawnBoxes.forEach(b => {
+    ctx.save();
+    ctx.fillStyle = 'rgba(168, 85, 247, 0.15)';
+    ctx.fillRect(b.x, b.y, b.w, b.h);
+    ctx.strokeStyle = '#c084fc';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3, 3]);
+    ctx.strokeRect(b.x, b.y, b.w, b.h);
+    ctx.restore();
+  });
+
   if (userDrawnTrendlines.length) {
-    const ctx = overlay.getContext('2d');
     ctx.lineWidth = 2;
     ctx.strokeStyle = '#38bdf8';
     userDrawnTrendlines.forEach(line => {
@@ -4118,11 +4324,20 @@ function closeModal(id) {
     }
   }
   document.getElementById(id).classList.remove('open');
-  if (id === 'stockModal' && currentStockChartInstance) {
-    try {
-      currentStockChartInstance.remove();
-    } catch (e) {}
-    currentStockChartInstance = null;
+  if (id === 'stockModal') {
+    if (currentChartDrawingManagerInstance) {
+      try {
+        currentChartDrawingManagerInstance.destroy();
+      } catch (e) {}
+      currentChartDrawingManagerInstance = null;
+    }
+    if (currentStockChartInstance) {
+      try {
+        currentStockChartInstance.remove();
+      } catch (e) {}
+      currentStockChartInstance = null;
+      currentSeriesMarkersPlugin = null;
+    }
   }
 }
 
