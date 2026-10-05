@@ -565,12 +565,8 @@
     <!-- Action Bar -->
     <div class="action-bar">
       <div class="action-left">
-        <div class="live-status-pill">
-          <span class="pulse-dot"></span>
-          <span id="tickerStatusText">INITIALIZING REAL-TIME FEED...</span>
-        </div>
         <button id="refreshQuotesBtn" class="btn" onclick="refreshAllLiveQuotes()" style="color:#38bdf8;border-color:rgba(56,189,248,0.3);background:rgba(56,189,248,0.08);">
-          <span>⚡</span> Refresh Real Quotes (Finance-Query)
+          <span>⚡</span> Refresh Live Quotes
         </button>
         <button class="btn" onclick="importTopScreenerPicks()" style="color:#34d399;border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.08);">
           <span>⚡</span> 1-Click Import Top Screener Picks (₹1L Each)
@@ -598,9 +594,15 @@
     </div>
 
     <!-- Open Positions Table -->
-    <div class="section-title">
-      <span>📈</span> Active Open Positions (<span id="openCountHeader">0</span>)
-      <span style="font-size:0.72rem;font-weight:400;color:var(--text-muted);margin-left:8px;">• Synced to Cloudflare KV Edge • Live on Mobile & Desktop</span>
+    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;">
+        <span>📈</span> Active Open Positions (<span id="openCountHeader">0</span>)
+        <span style="font-size:0.72rem;font-weight:400;color:var(--text-muted);">• Synced to Cloudflare KV Edge • Live on Mobile & Desktop</span>
+      </div>
+      <div class="live-status-pill" style="margin:0;">
+        <span class="pulse-dot"></span>
+        <span id="tickerStatusText">INITIALIZING REAL-TIME FEED...</span>
+      </div>
     </div>
     <div class="table-card">
       <div class="table-scroll">
@@ -996,6 +998,10 @@
               if ((b & 0x80) === 0) break;
               shift += 7;
             }
+            if (fieldNumber === 3) result.time = val;
+            else if (fieldNumber === 7) result.marketHours = val;
+            else if (fieldNumber === 9) result.dayVolume = val;
+            else if (fieldNumber === 22) result.lastSize = val;
             result['f_' + fieldNumber] = val;
           } else if (wireType === 5) { // 32-bit float
             if (pos + 4 <= bytes.length) {
@@ -1098,37 +1104,73 @@
       } catch (_) {}
     }
 
-    function handleLiveTick(sym, newPrice, chgPct) {
+    function unsubscribeSymbol(sym) {
+      if (!sym) return;
+      if (liveWs && liveWs.readyState === WebSocket.OPEN) {
+        try {
+          liveWs.send(JSON.stringify({ unsubscribe: [toYahooSymbol(sym)] }));
+        } catch (_) {}
+      }
+    }
+
+    // Sub-Second Live Tick Dispatcher (60 FPS requestAnimationFrame Batching)
+    let pendingTicks = {};
+    let rafScheduled = false;
+
+    function queueLiveTick(sym, newPrice, chgPct, rawTick) {
       if (!sym || newPrice == null || isNaN(newPrice) || newPrice <= 0) return;
       // Strictly track active open positions only
       const isOpen = portfolio && Array.isArray(portfolio.positions) && portfolio.positions.some(p => p.symbol.toUpperCase() === sym.toUpperCase());
       if (!isOpen) return;
 
       lastTickReceivedTime = Date.now();
-      const oldPrice = livePrices[sym] ? livePrices[sym].price : newPrice;
-      const tickDir = newPrice > oldPrice ? 1 : (newPrice < oldPrice ? -1 : 0);
+      pendingTicks[sym] = { price: newPrice, chgPct: chgPct, rawTick: rawTick };
 
-      if (!livePrices[sym]) {
-        livePrices[sym] = { price: newPrice, prevClose: newPrice, tickDirection: tickDir };
-      } else {
-        livePrices[sym].price = newPrice;
-        livePrices[sym].tickDirection = tickDir;
+      if (!rafScheduled) {
+        rafScheduled = true;
+        requestAnimationFrame(flushPendingTicks);
       }
-      if (chgPct != null) {
-        livePrices[sym].chgPct = chgPct;
-      }
+    }
 
-      // Real-time flash on DOM for open position cell if exists
-      const el = document.getElementById('livePrice_' + sym);
-      if (el) {
-        el.textContent = '₹' + newPrice.toFixed(2);
-        if (tickDir !== 0) {
-          el.className = 'num mono ' + (tickDir === 1 ? 'flash-up tick-up' : 'flash-down tick-down');
+    function flushPendingTicks() {
+      rafScheduled = false;
+      const ticks = pendingTicks;
+      pendingTicks = {};
+
+      let hasUpdate = false;
+      for (const [sym, tick] of Object.entries(ticks)) {
+        const oldPrice = livePrices[sym] ? livePrices[sym].price : tick.price;
+        const tickDir = tick.price > oldPrice ? 1 : (tick.price < oldPrice ? -1 : 0);
+
+        if (!livePrices[sym]) {
+          livePrices[sym] = { price: tick.price, prevClose: tick.price, tickDirection: tickDir };
+        } else {
+          livePrices[sym].price = tick.price;
+          livePrices[sym].tickDirection = tickDir;
         }
+        if (tick.chgPct != null) {
+          livePrices[sym].chgPct = tick.chgPct;
+        }
+
+        // Sub-second Flash animation directly on live price cell
+        const el = document.getElementById('livePrice_' + sym);
+        if (el) {
+          el.textContent = '₹' + tick.price.toFixed(2);
+          if (tickDir !== 0) {
+            el.className = 'num mono ' + (tickDir === 1 ? 'flash-up tick-up' : 'flash-down tick-down');
+          }
+        }
+        hasUpdate = true;
       }
 
-      updateOpenPositionsPnl();
-      updateStatusPill('LIVE_TICK');
+      if (hasUpdate) {
+        updateOpenPositionsPnl();
+        updateStatusPill('LIVE_TICK');
+      }
+    }
+
+    function handleLiveTick(sym, newPrice, chgPct) {
+      queueLiveTick(sym, newPrice, chgPct);
     }
 
     function connectLiveStream() {
@@ -1159,7 +1201,7 @@
               const tick = decodeYahooProtobuf(event.data);
               if (tick && tick.price != null && !isNaN(tick.price)) {
                 const s = String(tick.id || '').replace(/\.NS$/i, '').toUpperCase();
-                handleLiveTick(s, parseFloat(tick.price.toFixed(2)), tick.changePercent);
+                queueLiveTick(s, parseFloat(tick.price.toFixed(2)), tick.changePercent, tick);
               }
             }
           } catch (err) {
@@ -1381,6 +1423,8 @@
           exitReason: reason
         });
         showToastNotification(`🛑 Stop Executed: ${pos.symbol} closed at ₹${cur.toFixed(2)} (${exitRoi.toFixed(2)}%)`, exitLoss >= 0 ? 'info' : 'error');
+        unsubscribeSymbol(pos.symbol);
+        delete livePrices[pos.symbol];
         portfolio.positions.splice(idx, 1);
         savePortfolio();
         return true;
@@ -1410,7 +1454,7 @@
           pos.stopPrice = pos.buyPrice; // Stop raised to Breakeven entry price!
           showToastNotification(`🎯 Target 1.5R Reached! ${pos.symbol}: 50% profit banked (+₹${Math.round(pnlHalf).toLocaleString('en-IN')}). Stop raised to Breakeven (₹${pos.buyPrice.toFixed(2)})!`, 'success');
           savePortfolio();
-          return false;
+          return true;
         }
       }
 
@@ -1432,6 +1476,8 @@
           exitReason: `🏆 Auto Target 2.5R Runner Locked (+${roiFinal.toFixed(2)}%)`
         });
         showToastNotification(`🏆 Target 2.5R Runner Closed! ${pos.symbol} locked at ₹${cur.toFixed(2)} (+${roiFinal.toFixed(2)}%)!`, 'success');
+        unsubscribeSymbol(pos.symbol);
+        delete livePrices[pos.symbol];
         portfolio.positions.splice(idx, 1);
         savePortfolio();
         return true;
@@ -1582,18 +1628,19 @@
             <td class="num mono">₹${p.buyPrice.toFixed(2)}</td>
             <td class="num mono">₹${Math.round(invested).toLocaleString('en-IN')}</td>
             <td class="num mono" id="livePrice_${p.symbol}">₹${cur.toFixed(2)}</td>
-            <td class="num mono" style="font-weight:700;color:${isUp ? '#10b981' : '#f43f5e'};">
+            <td class="num mono" id="pnlCell_${p.symbol}" style="font-weight:700;color:${isUp ? '#10b981' : '#f43f5e'};">
               ${isUp ? '+' : ''}₹${Math.round(pnl).toLocaleString('en-IN')} (${roi >= 0 ? '+' : ''}${roi.toFixed(1)}%)
             </td>
-            <td class="num mono">${stopHtml}</td>
-            <td class="num mono">${target1Html}</td>
+            <td class="num mono" id="stopCell_${p.symbol}">${stopHtml}</td>
+            <td class="num mono" id="targetCell_${p.symbol}">${target1Html}</td>
             <td style="text-align:center;">
-              <span class="mono" style="font-size:0.7rem;color:var(--text-secondary);">${curProgress.toFixed(0)}%</span>
-              <div class="progress-track"><div class="progress-fill" style="width:${curProgress}%;"></div></div>
+              <span class="mono" id="progressVal_${p.symbol}" style="font-size:0.7rem;color:var(--text-secondary);">${curProgress.toFixed(0)}%</span>
+              <div class="progress-track"><div class="progress-fill" id="progressBar_${p.symbol}" style="width:${curProgress}%;"></div></div>
             </td>
             <td style="text-align:center;">
               <div style="display:flex;gap:4px;justify-content:center;align-items:center;">
                 <span class="pos-tag" style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);font-size:0.68rem;" title="Auto-Pilot will auto-sell if stop or target is hit">🤖 Auto-Guarded</span>
+                ${!p.scaledOut && cur > p.buyPrice ? `<button class="btn-action-sm" style="background:rgba(56,189,248,0.12);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);" title="Book 50% Profit Now & Raise Stop to Breakeven" onclick="lockTarget1(${idx})">50%</button>` : ''}
                 <button class="btn-action-sm btn-close" title="Close Position Manually" onclick="closePosition(${idx})">Close</button>
               </div>
             </td>
@@ -1603,11 +1650,46 @@
     }
 
     function renderPositionsFast() {
-      // Updates table cells in-place without rebuilding DOM
+      // High-performance sub-second in-place DOM updates (zero layout reflow)
       portfolio.positions.forEach(p => {
         const cur = p.currentPrice || p.buyPrice;
-        const el = document.getElementById('livePrice_' + p.symbol);
-        if (el) el.textContent = '₹' + cur.toFixed(2);
+        const invested = p.shares * p.buyPrice;
+        const curVal = p.shares * cur;
+        const pnl = curVal - invested;
+        const roi = ((cur - p.buyPrice) / p.buyPrice) * 100;
+        const isUp = pnl >= 0;
+
+        const elPrice = document.getElementById('livePrice_' + p.symbol);
+        if (elPrice) elPrice.textContent = '₹' + cur.toFixed(2);
+
+        const elPnl = document.getElementById('pnlCell_' + p.symbol);
+        if (elPnl) {
+          elPnl.style.color = isUp ? '#10b981' : '#f43f5e';
+          elPnl.textContent = `${isUp ? '+' : ''}₹${Math.round(pnl).toLocaleString('en-IN')} (${roi >= 0 ? '+' : ''}${roi.toFixed(1)}%)`;
+        }
+
+        const isBreakeven = p.stopPrice >= p.buyPrice;
+        const stopHtml = isBreakeven 
+          ? `<span class="pos-tag" style="background:rgba(16,185,129,0.18);color:#34d399;border:1px solid rgba(16,185,129,0.4);" title="Trade is 100% Risk-Free">🛡️ BE ₹${p.stopPrice.toFixed(2)}</span>`
+          : `<span class="mono" style="color:#f87171;font-weight:600;">₹${p.stopPrice.toFixed(2)}</span>`;
+        const elStop = document.getElementById('stopCell_' + p.symbol);
+        if (elStop) elStop.innerHTML = stopHtml;
+
+        const target1 = p.target1Price || p.targetPrice || (p.buyPrice * 1.075);
+        const target1Html = p.scaledOut
+          ? `<span class="pos-tag" style="background:rgba(56,189,248,0.18);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);" title="50% Profit Booked into Cash Margin">✅ 50% LOCKED</span>`
+          : `<span class="mono" style="color:#34d399;font-weight:600;">₹${target1.toFixed(2)}</span>`;
+        const elTarget = document.getElementById('targetCell_' + p.symbol);
+        if (elTarget) elTarget.innerHTML = target1Html;
+
+        const targetDist = target1 - p.buyPrice;
+        const curProgress = targetDist > 0 ? Math.min(100, Math.max(0, ((cur - p.buyPrice) / targetDist) * 100)) : 0;
+
+        const elProgVal = document.getElementById('progressVal_' + p.symbol);
+        if (elProgVal) elProgVal.textContent = curProgress.toFixed(0) + '%';
+
+        const elProgBar = document.getElementById('progressBar_' + p.symbol);
+        if (elProgBar) elProgBar.style.width = curProgress + '%';
       });
     }
 
