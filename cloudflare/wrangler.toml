@@ -1,0 +1,11 @@
+name = "astra-quant-edge"
+main = "worker.js"
+compatibility_date = "2024-09-23"
+
+# Optional: Bind an R2 bucket for zero-egress static asset storage
+# [[r2_buckets]]
+# binding = "R2_DATA"
+# bucket_name = "astra-quant-tapes"
+
+[vars]
+ORIGIN_URL = "https://anadi-9.github.io/screener-backtest"

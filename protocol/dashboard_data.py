@@ -140,36 +140,32 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp | None 
     sub_df = df[(df["Symbol"].isin(cand_symbols)) & (df["Date"] <= asof)].copy()
     sub_df.sort_values(by=["Symbol", "Date"], inplace=True)
     
+    tapes: dict[str, list[list[Any]]] = {}
+
     for sym, cand in candidates.items():
         sym_history = sub_df[sub_df["Symbol"] == sym].copy()
         if sym_history.empty:
             cand["candles"] = []
+            tapes[sym] = []
             continue
-        
-        sym_history["ema10"] = sym_history["Close"].ewm(span=10, adjust=False).mean()
-        sym_history["ema20"] = sym_history["Close"].ewm(span=20, adjust=False).mean()
-        sym_history["sma50"] = sym_history["Close"].rolling(50).mean()
-        sym_history["sma200"] = sym_history["Close"].rolling(200).mean()
-        sym_history["vol_sma"] = sym_history["Volume"].rolling(20).mean()
 
-        # Provide up to 1500 daily bars (~6 years of daily OHLCV) for full multi-year cycle analysis
+        # Full multi-year tape (up to 1500 bars / ~6 years of daily OHLCV) stored as compact tuples:
+        # [date_str, open, high, low, close, volume]
+        # Redundant MAs (EMA10/20, SMA50/200) are computed dynamically client-side in sub-millisecond time.
         display_bars = sym_history.tail(1500)
-        cand_candles = []
+        tape_rows: list[list[Any]] = []
         for r in display_bars.itertuples():
-            cand_candles.append({
-                "time": str(pd.to_datetime(r.Date).strftime("%Y-%m-%d")),
-                "open": round(float(r.Open), 2),
-                "high": round(float(r.High), 2),
-                "low": round(float(r.Low), 2),
-                "close": round(float(r.Close), 2),
-                "volume": int(r.Volume),
-                "ema10": round(float(r.ema10), 2) if not pd.isna(r.ema10) else None,
-                "ema20": round(float(r.ema20), 2) if not pd.isna(r.ema20) else None,
-                "sma50": round(float(r.sma50), 2) if not pd.isna(r.sma50) else None,
-                "sma200": round(float(r.sma200), 2) if not pd.isna(r.sma200) else None,
-                "vol_sma": int(r.vol_sma) if not pd.isna(r.vol_sma) else None,
-            })
-        cand["candles"] = cand_candles
+            tape_rows.append([
+                str(pd.to_datetime(r.Date).strftime("%Y-%m-%d")),
+                round(float(r.Open), 2),
+                round(float(r.High), 2),
+                round(float(r.Low), 2),
+                round(float(r.Close), 2),
+                int(r.Volume),
+            ])
+        tapes[sym] = tape_rows
+        # Embed recent 150 daily bars in main payload for instant zero-latency first paint
+        cand["candles"] = tape_rows[-150:] if len(tape_rows) > 150 else tape_rows
 
     # Sort: Dual confluence & Daily leaders first, then weekly swing watchlist
     def sort_key(c: dict[str, Any]) -> tuple:
@@ -187,6 +183,8 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp | None 
     both_cnt = sum(1 for c in cand_list if c.get("weekly_bucket") == "BOTH")
     weekly_only_cnt = sum(1 for c in cand_list if c.get("weekly_bucket") == "WEEKLY_ONLY")
     daily_only_cnt = sum(1 for c in cand_list if c.get("weekly_bucket") == "DAILY_ONLY")
+
+    full_universe = build_universe_lookup(feat, candidates, deliv_map)
 
     return {
         "asof": str(asof.date()),
@@ -221,11 +219,13 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp | None 
             "daily_only_count": daily_only_cnt,
         },
         "candidates": cand_list,
-        "universe_lookup": build_universe_lookup(feat, candidates, deliv_map),
+        "universe_lookup": {s: full_universe[s] for s in cand_symbols if s in full_universe},
         "walk_forward": _load_report("walk_forward_report.json"),
         "industry_rankings": ind_df.to_dict(orient="records") if not ind_df.empty else [],
         "forward_verifier": build_forward_verification_suite(df, max_dates=16),
         "default_capital_per_stock": 100000,
+        "_tapes": tapes,
+        "_full_universe_lookup": full_universe,
     }
 
 

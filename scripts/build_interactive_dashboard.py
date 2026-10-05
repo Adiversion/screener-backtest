@@ -12,6 +12,7 @@ Generates reports/index.html, reports/interactive_screener.html, and docs/index.
 from __future__ import annotations
 
 import argparse
+import json
 import shutil
 import sys
 from pathlib import Path
@@ -24,6 +25,41 @@ import pandas as pd
 from protocol.dashboard_data import build_candidate_data  # noqa: E402
 from protocol.dashboard_html import get_dashboard_html, get_paper_trading_html  # noqa: E402
 from protocol.data import load_history  # noqa: E402
+
+CLOUDFLARE_HEADERS = """# Cloudflare Pages & Edge CDN HTTP Response Headers
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+
+# Edge Cache Tapes: 24h edge cache with stale-while-revalidate and CORS
+/tapes/*
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  Content-Type: application/json; charset=utf-8
+
+# Edge Cache Diagnostic Data: 24h edge cache with CORS
+/data/*
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  Content-Type: application/json; charset=utf-8
+
+/*.json
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  Content-Type: application/json; charset=utf-8
+
+# Static Vendor Scripts: 1-year immutable cache
+/*.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.cjs
+  Cache-Control: public, max-age=31536000, immutable
+
+# HTML Pages: immediate revalidation so latest screener data appears instantly
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+"""
 
 
 def make_redirect_html(target_file: str) -> str:
@@ -101,11 +137,32 @@ def build_app(data_path: str, asof_date: str | None = None, outdir: str = "repor
     for section in ("screener", "macro", "inspector", "verifier", "paper_trading"):
         files.append((Path(section) / "index.html", make_redirect_html(f"{section}.html")))
 
+    tapes = app_data.get("_tapes", {})
+    full_universe = app_data.get("_full_universe_lookup", {})
+
     for root in (out, ROOT / "docs"):
         for rel, content in files:
             target = root / rel
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(content, encoding="utf-8")
+
+        # 1. Historical daily candle tapes for Cloudflare edge lazy-fetch
+        tapes_dir = root / "tapes"
+        tapes_dir.mkdir(parents=True, exist_ok=True)
+        for sym, bars in tapes.items():
+            tape_file = tapes_dir / f"{sym}.json"
+            tape_file.write_text(json.dumps(bars, separators=(",", ":")), encoding="utf-8")
+
+        # 2. Forensic universe lookup for Inspector deep searches
+        if full_universe:
+            data_dir = root / "data"
+            data_dir.mkdir(parents=True, exist_ok=True)
+            universe_file = data_dir / "universe_lookup.json"
+            universe_file.write_text(json.dumps(full_universe, separators=(",", ":")), encoding="utf-8")
+
+        # 3. Cloudflare Pages & Edge CDN response headers configuration
+        headers_file = root / "_headers"
+        headers_file.write_text(CLOUDFLARE_HEADERS, encoding="utf-8")
 
     for lib_name in ("lightweight-charts.standalone.production.js", "lightweight-charts-drawing.umd.cjs"):
         src_lib = ROOT / "protocol" / lib_name

@@ -2003,8 +2003,9 @@
     <div class="modal-section" style="margin-bottom:14px;background:rgba(9,13,22,0.6);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:12px 14px;">
       <!-- Chart Top Action Bar -->
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:6px;">
-        <div class="modal-section-title" style="margin:0;font-size:0.88rem;">
+        <div class="modal-section-title" style="margin:0;font-size:0.88rem;display:flex;align-items:center;gap:8px;">
           <span>📈</span> <span id="mChartSectionTitle">Daily Breakout Chart & Order Flow Structure</span>
+          <span id="chartTapeBadge" class="chart-link-pill" style="display:none;font-size:0.65rem;padding:2px 8px;font-weight:700;letter-spacing:0.02em;border-radius:9999px;"></span>
         </div>
         <div style="display:flex;gap:4px;align-items:center;">
           <button id="mThemeToggleBtn" class="chart-link-pill" onclick="toggleChartTheme()" style="border-color:rgba(251,191,36,0.4);color:#fbbf24;background:rgba(251,191,36,0.1);cursor:pointer;font-weight:700;" title="Toggle Native White / Dark Chart Background">☀️ Light Mode</button>
@@ -2447,6 +2448,11 @@
 const D = __JSON_PAYLOAD__;
 let basketMode = false;
 
+// Cloudflare Edge Data Endpoint Configuration
+// Supports: Cloudflare CDN, Cloudflare Pages, Cloudflare Workers, and same-origin static serving
+const CF_DATA_CDN = (typeof window !== 'undefined' && window.CLOUDFLARE_CDN_URL) || '';
+const CF_WORKER_FALLBACK = 'https://nse-quote.audittool-api.workers.dev';
+
 // Initialize Session & Directive
 document.getElementById('asofDate').textContent = D.asof;
 const rb = document.getElementById('regimeBadge');
@@ -2626,14 +2632,21 @@ function render() {
   // Universal Stock Inspector Check
   const inspectorBox = document.getElementById('stockInspectorCard');
   let matchedLookup = null;
-  if (q && q.length >= 2 && D.universe_lookup) {
-    const directKey = q.toUpperCase();
-    if (D.universe_lookup[directKey]) {
-      matchedLookup = D.universe_lookup[directKey];
-    } else {
-      const keys = Object.keys(D.universe_lookup);
-      const foundKey = keys.find(k => k.startsWith(directKey) || (D.universe_lookup[k].company && D.universe_lookup[k].company.toUpperCase().includes(directKey)));
-      if (foundKey) matchedLookup = D.universe_lookup[foundKey];
+  if (q && q.length >= 2) {
+    if (typeof ensureUniverseLookup === 'function') {
+      ensureUniverseLookup().then(full => {
+        if (full && !matchedLookup) filterCards();
+      });
+    }
+    if (D.universe_lookup) {
+      const directKey = q.toUpperCase();
+      if (D.universe_lookup[directKey]) {
+        matchedLookup = D.universe_lookup[directKey];
+      } else {
+        const keys = Object.keys(D.universe_lookup);
+        const foundKey = keys.find(k => k.startsWith(directKey) || (D.universe_lookup[k].company && D.universe_lookup[k].company.toUpperCase().includes(directKey)));
+        if (foundKey) matchedLookup = D.universe_lookup[foundKey];
+      }
     }
   }
 
@@ -3381,6 +3394,175 @@ let boxStart = null;
 let chartOnlyFullscreenMode = false;
 let currentChartDrawingManagerInstance = null;
 
+// Candle normalizer: unifies compact tuples [time, o, h, l, c, v] and legacy objects
+function unpackCandles(raw) {
+  if (!raw || !raw.length) return [];
+  return raw.map(d => {
+    if (Array.isArray(d)) {
+      return {
+        time: d[0],
+        open: Number(d[1]),
+        high: Number(d[2]),
+        low: Number(d[3]),
+        close: Number(d[4]),
+        volume: Number(d[5] || 0),
+      };
+    }
+    return {
+      time: d.time,
+      open: Number(d.open),
+      high: Number(d.high),
+      low: Number(d.low),
+      close: Number(d.close),
+      volume: Number(d.volume || 0),
+      ema10: d.ema10,
+      ema20: d.ema20,
+      sma50: d.sma50,
+      sma200: d.sma200,
+    };
+  });
+}
+
+// Sub-millisecond client-side moving averages calculation
+function computeMovingAverages(candles) {
+  const ema10 = [];
+  const ema20 = [];
+  const sma50 = [];
+  const sma200 = [];
+
+  const k10 = 2 / (10 + 1);
+  const k20 = 2 / (20 + 1);
+  let e10 = null;
+  let e20 = null;
+  let sum50 = 0;
+  let sum200 = 0;
+
+  for (let i = 0; i < candles.length; i++) {
+    const c = candles[i];
+    const px = c.close;
+    if (px === null || px === undefined || isNaN(px)) continue;
+
+    // EMA 10
+    e10 = (e10 === null) ? px : px * k10 + e10 * (1 - k10);
+    ema10.push({ time: c.time, value: Math.round(e10 * 100) / 100 });
+
+    // EMA 20
+    e20 = (e20 === null) ? px : px * k20 + e20 * (1 - k20);
+    ema20.push({ time: c.time, value: Math.round(e20 * 100) / 100 });
+
+    // SMA 50
+    sum50 += px;
+    if (i >= 50) sum50 -= candles[i - 50].close;
+    if (i >= 49) sma50.push({ time: c.time, value: Math.round((sum50 / 50) * 100) / 100 });
+
+    // SMA 200
+    sum200 += px;
+    if (i >= 200) sum200 -= candles[i - 200].close;
+    if (i >= 199) sma200.push({ time: c.time, value: Math.round((sum200 / 200) * 100) / 100 });
+  }
+
+  return { ema10, ema20, sma50, sma200 };
+}
+
+// Cloudflare Edge Extended Historical Tape Cache
+const extendedTapeCache = {};
+
+async function fetchExtendedTape(symbol, chartInstance, cSeries, vSeries) {
+  if (!symbol || !chartInstance) return;
+
+  if (extendedTapeCache[symbol]) {
+    applyExtendedTape(extendedTapeCache[symbol], chartInstance, cSeries, vSeries);
+    return;
+  }
+
+  const urls = [
+    `${CF_DATA_CDN}tapes/${encodeURIComponent(symbol)}.json`,
+    `tapes/${encodeURIComponent(symbol)}.json`,
+    `${CF_WORKER_FALLBACK}/tape?symbol=${encodeURIComponent(symbol)}`,
+  ];
+
+  for (const url of urls) {
+    try {
+      const res = await fetch(url);
+      if (res.ok) {
+        const fullRaw = await res.json();
+        if (Array.isArray(fullRaw) && fullRaw.length > 0) {
+          extendedTapeCache[symbol] = fullRaw;
+          applyExtendedTape(fullRaw, chartInstance, cSeries, vSeries);
+          return;
+        }
+      }
+    } catch (e) {
+      // Offline / file:/// / network fallback
+    }
+  }
+}
+
+function applyExtendedTape(fullRaw, chartInstance, cSeries, vSeries) {
+  if (currentStockChartInstance !== chartInstance) return;
+  const fullNorm = unpackCandles(fullRaw);
+  if (!fullNorm.length) return;
+
+  const fullCandleData = fullNorm.map(d => ({
+    time: d.time,
+    open: d.open,
+    high: d.high,
+    low: d.low,
+    close: d.close,
+  }));
+  const fullVolumeData = fullNorm.map(d => ({
+    time: d.time,
+    value: d.volume,
+    color: d.close >= d.open ? 'rgba(16, 185, 129, 0.45)' : 'rgba(239, 68, 68, 0.45)',
+  }));
+  const fullMAs = computeMovingAverages(fullNorm);
+
+  cSeries.setData(fullCandleData);
+  vSeries.setData(fullVolumeData);
+  if (chartSeriesRefs.ema10) chartSeriesRefs.ema10.setData(fullMAs.ema10);
+  if (chartSeriesRefs.ema20) chartSeriesRefs.ema20.setData(fullMAs.ema20);
+  if (chartSeriesRefs.sma50) chartSeriesRefs.sma50.setData(fullMAs.sma50);
+  if (chartSeriesRefs.sma200) chartSeriesRefs.sma200.setData(fullMAs.sma200);
+
+  const badge = document.getElementById('chartTapeBadge');
+  if (badge) {
+    badge.textContent = `⚡ ${fullNorm.length} BARS (CLOUDFLARE EDGE)`;
+    badge.style.display = 'inline-flex';
+    badge.style.background = 'rgba(56, 189, 248, 0.15)';
+    badge.style.color = '#38bdf8';
+    badge.style.borderColor = 'rgba(56, 189, 248, 0.35)';
+  }
+}
+
+// Background Cloudflare Edge Universe Lookup Loader
+let universeLookupFetchPromise = null;
+async function ensureUniverseLookup() {
+  if (universeLookupFetchPromise) return universeLookupFetchPromise;
+  universeLookupFetchPromise = (async () => {
+    const urls = [
+      `${CF_DATA_CDN}data/universe_lookup.json`,
+      `data/universe_lookup.json`,
+      `${CF_WORKER_FALLBACK}/data?file=universe_lookup`,
+    ];
+    for (const url of urls) {
+      try {
+        const res = await fetch(url);
+        if (res.ok) {
+          const fullUniverse = await res.json();
+          if (fullUniverse && typeof fullUniverse === 'object') {
+            D.universe_lookup = Object.assign({}, fullUniverse, D.universe_lookup || {});
+            return fullUniverse;
+          }
+        }
+      } catch (e) {
+        // Continue
+      }
+    }
+    return null;
+  })();
+  return universeLookupFetchPromise;
+}
+
 function renderStockChart(c) {
   const tvLink = document.getElementById('mTvLink');
   const chartinkLink = document.getElementById('mChartinkLink');
@@ -3419,34 +3601,45 @@ function renderStockChart(c) {
     return;
   }
 
-  const candleData = [];
-  const volumeData = [];
-  const ema10Data = [];
-  const ema20Data = [];
-  const sma50Data = [];
-  const sma200Data = [];
+  const normCandles = unpackCandles(rawCandles);
+  const candleData = normCandles.map(d => ({
+    time: d.time,
+    open: d.open,
+    high: d.high,
+    low: d.low,
+    close: d.close,
+  }));
+  const volumeData = normCandles.map(d => ({
+    time: d.time,
+    value: d.volume,
+    color: d.close >= d.open ? 'rgba(16, 185, 129, 0.45)' : 'rgba(239, 68, 68, 0.45)',
+  }));
 
-  rawCandles.forEach(d => {
-    candleData.push({
-      time: d.time,
-      open: d.open,
-      high: d.high,
-      low: d.low,
-      close: d.close,
+  // Dynamic moving averages with fallback to precomputed if available
+  let ema10Data = [], ema20Data = [], sma50Data = [], sma200Data = [];
+  if (normCandles.some(d => d.ema10 !== undefined && d.ema10 !== null)) {
+    normCandles.forEach(d => {
+      if (d.ema10 != null) ema10Data.push({ time: d.time, value: d.ema10 });
+      if (d.ema20 != null) ema20Data.push({ time: d.time, value: d.ema20 });
+      if (d.sma50 != null) sma50Data.push({ time: d.time, value: d.sma50 });
+      if (d.sma200 != null) sma200Data.push({ time: d.time, value: d.sma200 });
     });
+  } else {
+    const ma = computeMovingAverages(normCandles);
+    ema10Data = ma.ema10;
+    ema20Data = ma.ema20;
+    sma50Data = ma.sma50;
+    sma200Data = ma.sma200;
+  }
 
-    const isUp = d.close >= d.open;
-    volumeData.push({
-      time: d.time,
-      value: d.volume,
-      color: isUp ? 'rgba(16, 185, 129, 0.45)' : 'rgba(239, 68, 68, 0.45)',
-    });
-
-    if (d.ema10 !== null && d.ema10 !== undefined) ema10Data.push({ time: d.time, value: d.ema10 });
-    if (d.ema20 !== null && d.ema20 !== undefined) ema20Data.push({ time: d.time, value: d.ema20 });
-    if (d.sma50 !== null && d.sma50 !== undefined) sma50Data.push({ time: d.time, value: d.sma50 });
-    if (d.sma200 !== null && d.sma200 !== undefined) sma200Data.push({ time: d.time, value: d.sma200 });
-  });
+  const badge = document.getElementById('chartTapeBadge');
+  if (badge) {
+    badge.textContent = `📅 ${normCandles.length} BARS (EMBEDDED)`;
+    badge.style.display = 'inline-flex';
+    badge.style.background = 'rgba(255, 255, 255, 0.06)';
+    badge.style.color = '#cbd5e1';
+    badge.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+  }
 
   const isLight = isChartLightMode;
   if (container) {
@@ -3610,8 +3803,8 @@ function renderStockChart(c) {
 
   // Pine Script Confluence Markers on Candlesticks
   currentChartMarkers = [];
-  if (rawCandles.length > 0) {
-    const lastBar = rawCandles[rawCandles.length - 1];
+  if (normCandles.length > 0) {
+    const lastBar = normCandles[normCandles.length - 1];
     const fwCount = (c.strategies || []).length;
     currentChartMarkers.push({
       time: lastBar.time,
@@ -3684,7 +3877,7 @@ function renderStockChart(c) {
     const txtColor = isChartLightMode ? '#0f172a' : '#f1f5f9';
     const volColor = isChartLightMode ? '#0284c7' : '#22d3ee';
     if (!bar) {
-      const last = rawCandles[rawCandles.length - 1];
+      const last = normCandles[normCandles.length - 1];
       if (last) {
         const chg = last.open ? (((last.close - last.open) / last.open) * 100).toFixed(2) : '0.00';
         const chgColor = last.close >= last.open ? '#10b981' : '#ef4444';
@@ -3718,6 +3911,9 @@ function renderStockChart(c) {
   setLegend(null);
   chart.subscribeCrosshairMove(setLegend);
   chart.timeScale().fitContent();
+
+  // Asynchronously fetch deep multi-year tape from Cloudflare Edge / CDN
+  fetchExtendedTape(c.symbol, chart, candleSeries, volumeSeries);
 
   setTimeout(() => {
     if (chart && container) {
@@ -4958,6 +5154,13 @@ function toggleFwdLog(id, btnId) {
 initSectorTrack();
 initForwardVerifier();
 render();
+
+// Warm up universe lookup cache from Cloudflare edge in background without blocking FCP
+setTimeout(() => {
+  if (typeof ensureUniverseLookup === 'function') {
+    ensureUniverseLookup();
+  }
+}, 1200);
 </script>
 <nav class="mobile-bottom-dock" aria-label="Mobile Bottom Navigation">
   <button class="dock-btn active" onclick="scrollToSection('toolbarSection');">

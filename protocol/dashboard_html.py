@@ -46,8 +46,9 @@ def _make_paper_trading_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
 def get_dashboard_html(payload: dict[str, Any]) -> str:
     """Generate the full HTML document with embedded data payload."""
+    clean_payload = {k: v for k, v in payload.items() if not k.startswith("_")}
     template = TEMPLATE_FILE.read_text(encoding="utf-8")
-    json_data = json.dumps(payload, ensure_ascii=False)
+    json_data = json.dumps(clean_payload, ensure_ascii=False)
     return template.replace("__JSON_PAYLOAD__", json_data)
 
 
