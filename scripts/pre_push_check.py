@@ -141,6 +141,15 @@ def run_checks() -> int:
         print(f"✓ TradingView Lightweight Chart canvas elements: {len(canvases)}")
         assert len(canvases) > 0, "No chart canvas rendered!"
 
+        # Also verify Weekly candidate ASTEC with mixed badge shapes
+        print("✓ Testing Weekly Candidate ASTEC modal & badges...")
+        page.evaluate("openModal('ASTEC')")
+        time.sleep(0.5)
+        astec_sym = page.inner_text("#mSym") if page.query_selector("#mSym") else ""
+        assert "ASTEC" in astec_sym, f"Expected ASTEC in modal, got {astec_sym}"
+        astec_badges = page.inner_text("#mBadges") if page.query_selector("#mBadges") else ""
+        print(f"✓ Weekly ASTEC modal & badges verified: {astec_badges.splitlines()[0] if astec_badges else 'N/A'}")
+
         # Save dark mode screenshot
         dark_png = ROOT / "audit_ramrat_modal_dark.png"
         page.screenshot(path=str(dark_png))

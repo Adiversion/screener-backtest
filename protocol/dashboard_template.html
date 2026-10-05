@@ -2984,12 +2984,22 @@ function render() {
         let shortName = s;
         if (s.includes('Minervini')) { cls = 'minervini'; shortName = 'Minervini'; }
         else if (s.includes('Weinstein')) { cls = 'weinstein'; shortName = 'Weinstein Stage 2'; }
-        else if (s.includes('Relative Strength')) { cls = 'rs'; shortName = 'RS Leader'; }
+        else if (s.includes('Relative Strength') || s.includes('RS leader')) { cls = 'rs'; shortName = 'RS Leader'; }
         else if (s.includes('Qullamaggie')) { cls = 'qullamaggie'; shortName = 'Qullamaggie'; }
         else if (s.includes('CANSLIM')) { cls = 'canslim'; shortName = 'CANSLIM'; }
-        else if (s.includes('PKScreener')) { cls = 'pkscreener'; shortName = 'PKScreener VCP'; }
+        else if (s.includes('PKScreener') || s.includes('VCP')) { cls = 'pkscreener'; shortName = 'VCP Contraction'; }
         else if (s.includes('Turtle')) { cls = 'turtle'; shortName = 'Turtle Trading'; }
         else if (s.includes('Darvas')) { cls = 'darvas'; shortName = 'Darvas Box'; }
+        else if (s.includes('Wyckoff')) { cls = 'wyckoff'; shortName = '🕯️ Wyckoff CR'; }
+        else if (s.includes('Sector Momentum')) { cls = 'sector'; shortName = '🏭 Sector Tail'; }
+        else if (s.includes('Institutional Delivery')) { cls = 'deliv'; shortName = '📦 Demat Deliv'; }
+        else if (s.includes('Connors RSI')) { cls = 'connors'; shortName = '📉 CRSI Dip'; }
+        else if (s.includes('RSI healthy') || s.includes('Weekly RSI')) { cls = 'connors'; shortName = 'Weekly RSI'; }
+        else if (s.includes('Anti-extension') || s.includes('extension')) { cls = 'protocol'; shortName = 'Anti-Extension'; }
+        else if (s.includes('volume confirm') || s.includes('Weekly volume')) { cls = 'deliv'; shortName = 'Weekly Volume'; }
+        else if (s.includes('52-week') || s.includes('52w')) { cls = 'rs'; shortName = '52W High'; }
+        else if (s.includes('trend structure') || s.includes('Trend structure')) { cls = 'weinstein'; shortName = 'Trend Structure'; }
+        else if (s.includes('momentum') || s.includes('Momentum')) { cls = 'turtle'; shortName = '13w Momentum'; }
         else if (s.includes('Protocol')) { shortName = 'Protocol Fortified'; }
         return `<span class="strat-tag ${cls}">${shortName}</span>`;
       }).join('');
@@ -3297,9 +3307,15 @@ function openModal(sym) {
   const fwTier = getFrameworkTier(stratCount);
 
   let bHtml = `<span class="framework-score-banner ${fwTier.cls}" style="margin-right:4px;"><span class="score-icon">${fwTier.icon}</span><span class="score-text"><b>${stratCount}/12</b> FRAMEWORKS ACHIEVED</span></span>`;
-  c.badges.forEach(b => {
-    let cls = (b.includes('CAUTION') || b.includes('SERIES') || b.includes('GSM') || b.includes('EARNINGS') || b.includes('CIRCUIT') || b.includes('CHURN') || b.includes('UPTHRUST')) ? 'warning-be' : (b.includes('52W') ? 'ath' : 'badge-pill');
-    bHtml += `<span class="badge-pill ${cls}">${b}</span>`;
+  (c.badges || []).forEach(b => {
+    if (!b) return;
+    const isObj = typeof b === 'object' && b !== null;
+    const text = isObj ? (b.text || '') : String(b);
+    const customStyle = (isObj && b.style) ? `style="${b.style}"` : '';
+    let cls = (text.includes('CAUTION') || text.includes('SERIES') || text.includes('GSM') || text.includes('EARNINGS') || text.includes('CIRCUIT') || text.includes('CHURN') || text.includes('UPTHRUST'))
+      ? 'warning-be'
+      : (text.includes('52W') ? 'ath' : 'badge-pill');
+    bHtml += `<span class="badge-pill ${cls}" ${customStyle}>${text}</span>`;
   });
   document.getElementById('mBadges').innerHTML = bHtml;
 
@@ -3312,12 +3328,22 @@ function openModal(sym) {
       let shortName = s;
       if (s.includes('Minervini')) { cls = 'minervini'; shortName = 'Minervini'; }
       else if (s.includes('Weinstein')) { cls = 'weinstein'; shortName = 'Weinstein Stage 2'; }
-      else if (s.includes('Relative Strength')) { cls = 'rs'; shortName = 'RS Leader'; }
+      else if (s.includes('Relative Strength') || s.includes('RS leader')) { cls = 'rs'; shortName = 'RS Leader'; }
       else if (s.includes('Qullamaggie')) { cls = 'qullamaggie'; shortName = 'Qullamaggie'; }
       else if (s.includes('CANSLIM')) { cls = 'canslim'; shortName = 'CANSLIM'; }
-      else if (s.includes('PKScreener')) { cls = 'pkscreener'; shortName = 'PKScreener VCP'; }
+      else if (s.includes('PKScreener') || s.includes('VCP')) { cls = 'pkscreener'; shortName = 'VCP Contraction'; }
       else if (s.includes('Turtle')) { cls = 'turtle'; shortName = 'Turtle Trading'; }
       else if (s.includes('Darvas')) { cls = 'darvas'; shortName = 'Darvas Box'; }
+      else if (s.includes('Wyckoff')) { cls = 'wyckoff'; shortName = '🕯️ Wyckoff CR'; }
+      else if (s.includes('Sector Momentum')) { cls = 'sector'; shortName = '🏭 Sector Tail'; }
+      else if (s.includes('Institutional Delivery')) { cls = 'deliv'; shortName = '📦 Demat Deliv'; }
+      else if (s.includes('Connors RSI')) { cls = 'connors'; shortName = '📉 CRSI Dip'; }
+      else if (s.includes('RSI healthy') || s.includes('Weekly RSI')) { cls = 'connors'; shortName = 'Weekly RSI'; }
+      else if (s.includes('Anti-extension') || s.includes('extension')) { cls = 'protocol'; shortName = 'Anti-Extension'; }
+      else if (s.includes('volume confirm') || s.includes('Weekly volume')) { cls = 'deliv'; shortName = 'Weekly Volume'; }
+      else if (s.includes('52-week') || s.includes('52w')) { cls = 'rs'; shortName = '52W High'; }
+      else if (s.includes('trend structure') || s.includes('Trend structure')) { cls = 'weinstein'; shortName = 'Trend Structure'; }
+      else if (s.includes('momentum') || s.includes('Momentum')) { cls = 'turtle'; shortName = '13w Momentum'; }
       else if (s.includes('Protocol')) { shortName = 'Protocol Fortified'; }
       return `<span class="strat-tag ${cls}" style="font-size:0.75rem;padding:3px 8px;">${shortName}</span>`;
     }).join('');
