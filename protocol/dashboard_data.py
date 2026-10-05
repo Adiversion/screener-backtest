@@ -23,6 +23,7 @@ from protocol.sector import (
     get_symbol_industry_momentum
 )
 from protocol.forward_verifier import build_forward_verification_suite
+from protocol.weekly import WEEKLY_GATES
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -45,6 +46,14 @@ def _load_weekly_confluence() -> pd.DataFrame:
             except Exception:
                 pass
     return pd.DataFrame()
+
+
+def _parse_weekly_gates(gates_str: Any) -> list[str]:
+    """Parse comma-separated weekly gate string safely without splitting on internal commas."""
+    if not gates_str or pd.isna(gates_str):
+        return []
+    s = str(gates_str)
+    return [label for _, label in WEEKLY_GATES if label in s]
 
 
 def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp | None = None) -> dict[str, Any]:
@@ -95,7 +104,7 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp | None 
             cand["weekly_gates"] = int(wrow.get("n_gates", 0)) if pd.notna(wrow.get("n_gates")) else 0
             cand["weekly_grade"] = str(wrow.get("w_grade", "")) if pd.notna(wrow.get("w_grade")) else ""
             cand["weekly_strong"] = bool(wrow.get("w_strong", False))
-            cand["weekly_gates_list"] = str(wrow.get("gates", "")).split(", ") if pd.notna(wrow.get("gates")) else []
+            cand["weekly_gates_list"] = _parse_weekly_gates(wrow.get("gates"))
             cand["weekly_rvol13"] = round(float(wrow["w_rvol13"]), 1) if pd.notna(wrow.get("w_rvol13")) else None
             cand["weekly_ext_ma30"] = round(float(wrow["w_ext_ma30"]) * 100, 1) if pd.notna(wrow.get("w_ext_ma30")) else None
             cand["weekly_rsi"] = round(float(wrow["w_rsi14"]), 1) if pd.notna(wrow.get("w_rsi14")) else None
@@ -119,13 +128,13 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp | None 
             if wf is None:
                 continue
             wcand = _build_single_candidate(wf, deliv_map.get(wsym), ind_df=ind_df)
-            gates_list = str(wrow.get("gates", "")).split(", ") if pd.notna(wrow.get("gates")) else []
-            wcand["strategies"] = [f"Weekly: {g.strip()}" for g in gates_list[:3]] if gates_list else ["Weekly Stage 2 Base"]
+            gates_list = _parse_weekly_gates(wrow.get("gates"))
+            wcand["strategies"] = [f"Weekly: {g.strip()}" for g in gates_list] if gates_list else ["Weekly Stage 2 Base"]
             wcand["setup_badge"] = "WEEKLY BASE"
             wcand["setup_desc"] = f"Weekly Stage 2 Base ({wrow['n_gates']}/12 Gates): {wrow.get('w_grade', 'A+')} Grade"
             wcand["weekly_bucket"] = "WEEKLY_ONLY"
             wcand["is_weekly_watchlist"] = True
-            wcand["weekly_gates"] = int(wrow.get("n_gates", 0)) if pd.notna(wrow.get("n_gates")) else 0
+            wcand["weekly_gates"] = int(wrow.get("n_gates", 0)) if pd.notna(wrow.get("n_gates")) else len(gates_list)
             wcand["weekly_grade"] = str(wrow.get("w_grade", "")) if pd.notna(wrow.get("w_grade")) else ""
             wcand["weekly_strong"] = True
             wcand["weekly_gates_list"] = gates_list
