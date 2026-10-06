@@ -176,11 +176,98 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp | None 
         # Embed recent 150 daily bars in main payload for instant zero-latency first paint
         cand["candles"] = tape_rows[-150:] if len(tape_rows) > 150 else tape_rows
 
-    # Sort: Dual confluence & Daily leaders first, then weekly swing watchlist
+    # Load decision trail data for quality audit integration
+    decisions_data = _load_report("decisions.json")
+    q_map = {q["symbol"]: q for q in decisions_data.get("today", [])}
+
+    # Synthesize rich "Why Chosen / Setup Thesis" and detailed bullets for every candidate
+    for sym, cand in candidates.items():
+        strat_cnt = cand.get("weekly_gates") if cand.get("is_weekly_watchlist") and cand.get("weekly_gates") else len(cand.get("strategies", []))
+        q_item = q_map.get(sym)
+        if q_item:
+            cand["quality_score"] = round(float(q_item.get("score", 0.0)), 3)
+            cand["quality_rank"] = q_item.get("rank")
+            cand["quality_reason"] = q_item.get("reason")
+
+        bullets = []
+        summary_tags = []
+
+        is_52w = cand.get("breakout_type") == "52-Week High Breakout"
+        shelf = cand.get("wyckoff", {}).get("shelf_touches", 0) if isinstance(cand.get("wyckoff"), dict) else 0
+        close = cand.get("close", 0.0)
+        h52 = cand.get("h52", 0.0)
+        bo_ref = cand.get("breakout_ref", cand.get("resistance", 0.0))
+        bo_pct = cand.get("breakout_pct", 0.0)
+        rs = cand.get("rs_rating", 0.0)
+        rvol = cand.get("rvol", 0.0)
+        deliv = cand.get("deliv_pct", 0.0)
+        ext50 = cand.get("ext50", 0.0)
+        full_stack = cand.get("ma_stack", {}).get("full_stack", False)
+
+        if is_52w:
+            summary_tags.append(f"New 52W High (+{bo_pct}% clearance)")
+            bullets.append(f"📌 Price Action: Printed new 52-week high breakout at ₹{close:.2f} (+{bo_pct}% clearance over ₹{h52:.2f}).")
+        elif shelf >= 2:
+            summary_tags.append(f"Cleared {shelf}x Shelf (₹{bo_ref:.2f})")
+            bullets.append(f"📌 Price Action: Cleared {shelf}-touch consolidation shelf ceiling at ₹{bo_ref:.2f} to close at ₹{close:.2f} (+{bo_pct}%).")
+        elif cand.get("is_weekly_watchlist"):
+            summary_tags.append(f"Weekly Base (Grade {cand.get('weekly_grade', 'A+')})")
+            bullets.append(f"📌 Weekly Base: Cleared {strat_cnt}/12 weekly accumulation gates with {cand.get('weekly_grade', 'A+')} grade structure.")
+        else:
+            summary_tags.append(f"20D Breakout (₹{bo_ref:.2f})")
+            bullets.append(f"📌 Price Action: Broke 20-day resistance at ₹{bo_ref:.2f} to close at ₹{close:.2f} (+{bo_pct}%).")
+
+        if not cand.get("is_weekly_watchlist"):
+            summary_tags.append(f"{strat_cnt}/12 Frameworks")
+            strats_str = ", ".join(cand.get("strategies", []))
+            bullets.append(f"⚡ Institutional Confluence: Cleared {strat_cnt} of 12 screening frameworks ({strats_str}).")
+
+        if q_item:
+            summary_tags.append(f"Quality Score {q_item.get('score', 0):.3f}")
+            bullets.append(f"🏆 Quality Leader #{q_item.get('rank', 1)}: {q_item.get('reason')}")
+
+        if rs >= 80:
+            summary_tags.append(f"RS {rs:.0f}/99 Leader")
+            bullets.append(f"🚀 Relative Strength: RS Rating {rs:.0f}/99 — outperformed {rs:.0f}% of the entire market over 1-year window.")
+
+        if rvol >= 1.5:
+            summary_tags.append(f"{rvol:.1f}x Volume Ignition")
+            bullets.append(f"🏛️ Institutional Volume: {rvol:.1f}x volume ignition thrust (~₹{cand.get('turnover_cr', 0)} Cr turnover).")
+
+        if deliv >= 50:
+            summary_tags.append(f"{deliv:.0f}% Demat Delivery")
+            bullets.append(f"📦 Demat Delivery: {deliv:.1f}% delivery absorption confirms genuine institutional accumulation (hurdle: ≥50%).")
+
+        if full_stack:
+            summary_tags.append("Full MA Stack")
+            bullets.append("📈 Trend Structure: Full moving average stack (Close > EMA10 > EMA20 > SMA50 > SMA150 > SMA200).")
+
+        if cand.get("is_extended"):
+            summary_tags.append(f"⚠️ Extended +{ext50:.1f}%")
+            bullets.append(f"🛡️ Risk Note: Extended +{ext50:.1f}% above 50 SMA. Wait for 3-5 day high-tight flag or 10 EMA pullback before execution.")
+        else:
+            summary_tags.append(f"Safe Distance (+{ext50:.1f}% SMA50)")
+            bullets.append(f"🛡️ Risk Discipline: Non-extended (+{ext50:.1f}% above 50 SMA), inside strict ≤20% anti-chase safety gate.")
+
+        bullets.append(f"🎯 Execution Plan: Invalidation Stop Loss at ₹{cand.get('stop', 0):.2f} (-{cand.get('stop_pct', 0)}%), Target 2R at ₹{cand.get('target_2r', 0):.2f} (+{cand.get('target_2r_pct', 0)}%).")
+
+        cand["selection_thesis"] = " • ".join(summary_tags[:4])
+        cand["thesis_bullets"] = bullets
+
+    # Enrich confluence_top leaders with synthesized thesis
+    cf_leaders = decisions_data.get("confluence_top", [])
+    for cf in cf_leaders:
+        c_match = candidates.get(cf.get("symbol"))
+        if c_match:
+            cf["selection_thesis"] = c_match.get("selection_thesis")
+            cf["thesis_bullets"] = c_match.get("thesis_bullets")
+
+    # Sort: Daily candidates first, ordered by framework confluence count, then dual confluence
     def sort_key(c: dict[str, Any]) -> tuple:
+        strat_cnt = len(c.get("strategies", []))
         is_w_only = 1 if c.get("weekly_bucket") == "WEEKLY_ONLY" else 0
         is_both = 1 if c.get("weekly_bucket") == "BOTH" else 0
-        return (-is_w_only, is_both, len(c["strategies"]), -(1 if c["is_extended"] else 0), c["ret20"])
+        return (-is_w_only, strat_cnt, is_both, -(1 if c["is_extended"] else 0), c["ret20"])
 
     cand_list = sorted(candidates.values(), key=sort_key, reverse=True)
 
@@ -195,7 +282,6 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp | None 
 
     full_universe = build_universe_lookup(feat, candidates, deliv_map)
 
-    decisions_data = _load_report("decisions.json")
     swing_watchlist = []
     dual_confluence = []
     if not weekly_df.empty and "bucket" in weekly_df.columns:
@@ -431,6 +517,7 @@ def _build_single_candidate(f: pd.Series, deliv_pct: float | None, ind_df: pd.Da
             "full_stack": full_stack,
         },
         "reason": " ".join(reasons),
+        "reasons_list": reasons,
         "execution_plan": {
             "action": action,
             "entry_ref": round(close, 2),

@@ -1200,6 +1200,34 @@
     white-space: nowrap;
   }
 
+  thead th.sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s ease, background 0.15s ease;
+  }
+
+  thead th.sortable:hover {
+    color: #38bdf8;
+    background: #0f172a !important;
+  }
+
+  .sort-indicator {
+    display: inline-block;
+    margin-left: 4px;
+    font-size: 0.65rem;
+    opacity: 0.45;
+    transition: opacity 0.15s ease, color 0.15s ease;
+  }
+
+  thead th.sorted-active {
+    color: #38bdf8;
+  }
+
+  thead th.sorted-active .sort-indicator {
+    opacity: 1;
+    color: #38bdf8;
+  }
+
   tbody tr {
     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     transition: background 0.15s ease;
@@ -1957,21 +1985,32 @@
   <!-- Universal Stock Inspector Card -->
   <div id="stockInspectorCard" style="display:none;margin-bottom:16px;"></div>
 
+  <!-- Institutional Selection Rationale Summary Strip -->
+  <div style="margin-bottom:12px;background:rgba(15,23,42,0.7);border:1px solid rgba(56,189,248,0.22);border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <div style="font-size:0.8rem;color:#cbd5e1;display:flex;align-items:center;gap:8px;">
+      <span style="font-size:1.1rem;">💡</span>
+      <span><strong>Institutional Selection Architecture:</strong> Candidates are prioritized by <strong>12-Framework Confluence count</strong>, not raw price chasing. Every row below displays its audited <strong>Why Chosen Setup Thesis</strong> (52W High clearance, Demat Delivery &ge;50%, Relative Strength rating, and Wyckoff Volume Spread).</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:0.73rem;color:#38bdf8;font-family:'JetBrains Mono',monospace;white-space:nowrap;">
+      <span>Sorted: Multi-Framework Confluence ↓</span>
+    </div>
+  </div>
+
   <!-- Financial Table Card -->
   <div class="table-card" id="tableCard">
     <div class="table-scroll">
       <table>
         <thead>
           <tr>
-            <th style="width:30px;">#</th>
-            <th>Symbol / Company</th>
-            <th>Frameworks</th>
-            <th class="num">Entry / Res (₹)</th>
-            <th class="num">Stop / Support (₹)</th>
-            <th class="num">Target 2R (₹)</th>
-            <th class="num">RVOL / Deliv</th>
-            <th class="num">SMA50 Ext</th>
-            <th class="num">RS / Trend</th>
+            <th style="width:30px;" class="sortable" onclick="handleSort('rank')" title="Click to sort by rank / list order"># <span id="sort_rank" class="sort-indicator">↕</span></th>
+            <th class="sortable" onclick="handleSort('symbol')" title="Click to sort alphabetically by symbol">Symbol / Company <span id="sort_symbol" class="sort-indicator">↕</span></th>
+            <th class="sortable sorted-active" onclick="handleSort('frameworks')" title="Click to sort by number of matched confluence frameworks">Frameworks <span id="sort_frameworks" class="sort-indicator">▼</span></th>
+            <th class="num sortable" onclick="handleSort('close')" title="Click to sort by current price">Entry / Res (₹) <span id="sort_close" class="sort-indicator">↕</span></th>
+            <th class="num sortable" onclick="handleSort('stop')" title="Click to sort by stop loss level">Stop / Support (₹) <span id="sort_stop" class="sort-indicator">↕</span></th>
+            <th class="num sortable" onclick="handleSort('target_2r')" title="Click to sort by 2R profit target">Target 2R (₹) <span id="sort_target_2r" class="sort-indicator">↕</span></th>
+            <th class="num sortable" onclick="handleSort('rvol')" title="Click to sort by Relative Volume (RVOL)">RVOL / Deliv <span id="sort_rvol" class="sort-indicator">↕</span></th>
+            <th class="num sortable" onclick="handleSort('ext50')" title="Click to sort by SMA50 extension %">SMA50 Ext <span id="sort_ext50" class="sort-indicator">↕</span></th>
+            <th class="num sortable" onclick="handleSort('rs')" title="Click to sort by Relative Strength rating">RS / Trend <span id="sort_rs" class="sort-indicator">↕</span></th>
             <th style="text-align:center;">Action</th>
           </tr>
         </thead>
@@ -2668,6 +2707,37 @@ function setTimeframeFilter(tf) {
   render();
 }
 
+let currentSortColumn = 'frameworks';
+let currentSortDirection = 'desc';
+
+function handleSort(col) {
+  if (currentSortColumn === col) {
+    currentSortDirection = (currentSortDirection === 'asc') ? 'desc' : 'asc';
+  } else {
+    currentSortColumn = col;
+    currentSortDirection = (col === 'symbol' || col === 'rank') ? 'asc' : 'desc';
+  }
+  updateSortIndicators();
+  render();
+}
+
+function updateSortIndicators() {
+  const cols = ['rank', 'symbol', 'frameworks', 'close', 'stop', 'target_2r', 'rvol', 'ext50', 'rs'];
+  cols.forEach(c => {
+    const el = document.getElementById('sort_' + c);
+    const th = el ? el.closest('th') : null;
+    if (el) {
+      if (c === currentSortColumn) {
+        el.textContent = currentSortDirection === 'asc' ? '▲' : '▼';
+        if (th) th.classList.add('sorted-active');
+      } else {
+        el.textContent = '↕';
+        if (th) th.classList.remove('sorted-active');
+      }
+    }
+  });
+}
+
 /**
  * Re-render the screener candidate grid from the current filter controls.
  * Applies the free-text (symbol/company/sector), sector, framework and tag
@@ -2727,6 +2797,58 @@ function render() {
       return true;
     });
   }
+
+  // Sort filtered candidates by currentSortColumn & currentSortDirection
+  filtered.sort((a, b) => {
+    const stratA = a.is_weekly_watchlist && a.weekly_gates ? Math.max(a.weekly_gates, (a.strategies || []).length) : (a.strategies || []).length;
+    const stratB = b.is_weekly_watchlist && b.weekly_gates ? Math.max(b.weekly_gates, (b.strategies || []).length) : (b.strategies || []).length;
+
+    let vA, vB;
+    if (currentSortColumn === 'frameworks') {
+      if (stratA !== stratB) {
+        return currentSortDirection === 'desc' ? (stratB - stratA) : (stratA - stratB);
+      }
+      const bothA = a.weekly_bucket === 'BOTH' ? 1 : 0;
+      const bothB = b.weekly_bucket === 'BOTH' ? 1 : 0;
+      if (bothA !== bothB) return currentSortDirection === 'desc' ? (bothB - bothA) : (bothA - bothB);
+      const extA = a.is_extended ? 1 : 0;
+      const extB = b.is_extended ? 1 : 0;
+      if (extA !== extB) return currentSortDirection === 'desc' ? (extA - extB) : (extB - extA);
+      return currentSortDirection === 'desc' ? ((b.ret20 || 0) - (a.ret20 || 0)) : ((a.ret20 || 0) - (b.ret20 || 0));
+    } else if (currentSortColumn === 'symbol') {
+      vA = (a.symbol || '').toLowerCase();
+      vB = (b.symbol || '').toLowerCase();
+      return currentSortDirection === 'asc' ? vA.localeCompare(vB) : vB.localeCompare(vA);
+    } else if (currentSortColumn === 'rank') {
+      vA = (D.candidates || []).indexOf(a);
+      vB = (D.candidates || []).indexOf(b);
+    } else if (currentSortColumn === 'close') {
+      vA = a.close || 0;
+      vB = b.close || 0;
+    } else if (currentSortColumn === 'stop') {
+      vA = a.stop || 0;
+      vB = b.stop || 0;
+    } else if (currentSortColumn === 'target_2r') {
+      vA = a.target_2r || 0;
+      vB = b.target_2r || 0;
+    } else if (currentSortColumn === 'rvol') {
+      vA = a.rvol || 0;
+      vB = b.rvol || 0;
+    } else if (currentSortColumn === 'ext50') {
+      vA = a.ext50 !== undefined ? a.ext50 : -999;
+      vB = b.ext50 !== undefined ? b.ext50 : -999;
+    } else if (currentSortColumn === 'rs') {
+      vA = a.rs_rating || 0;
+      vB = b.rs_rating || 0;
+    } else {
+      vA = stratA;
+      vB = stratB;
+    }
+
+    if (vA < vB) return currentSortDirection === 'asc' ? -1 : 1;
+    if (vA > vB) return currentSortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
 
   // Universal Stock Inspector Check
   const inspectorBox = document.getElementById('stockInspectorCard');
@@ -3024,6 +3146,21 @@ function render() {
             <span class="sector-badge">${c.sector}</span>
             ${alertBadges}
           </div>
+          <!-- Selection Thesis & Why Chosen Box -->
+          <div class="asset-thesis-card" style="margin-top:6px;background:rgba(15,23,42,0.8);border:1px solid rgba(56,189,248,0.25);border-left:3px solid #38bdf8;border-radius:6px;padding:6px 9px;font-size:0.72rem;line-height:1.42;color:#cbd5e1;max-width:340px;">
+            <div style="font-size:0.67rem;font-weight:700;color:#38bdf8;letter-spacing:0.04em;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+              <span style="display:inline-flex;align-items:center;gap:4px;"><span>🎯</span> WHY CHOSEN:</span>
+              <button onclick="toggleThesisDetail('${c.symbol}')" style="background:none;border:none;color:#38bdf8;font-size:0.67rem;cursor:pointer;padding:0;font-weight:600;display:inline-flex;align-items:center;gap:2px;">
+                <span>Details</span> <span id="thIcon_${c.symbol}">▾</span>
+              </button>
+            </div>
+            <div style="color:#f1f5f9;font-weight:500;">
+              ${c.selection_thesis || c.setup_desc || c.reason || 'Confluence setup cleared quantitative gates.'}
+            </div>
+            <div id="thDetail_${c.symbol}" style="display:none;margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.08);color:#94a3b8;font-size:0.70rem;line-height:1.45;">
+              ${(c.thesis_bullets || (c.reasons_list || [])).map(b => `<div style="margin-bottom:3px;">${b}</div>`).join('')}
+            </div>
+          </div>
         </div>
       </td>
       <td>
@@ -3145,6 +3282,16 @@ function render() {
               </div>
             </div>
 
+            <!-- Why Chosen Selection Thesis in Cards View -->
+            <div style="margin:8px 0;background:rgba(15,23,42,0.75);border:1px solid rgba(56,189,248,0.22);border-left:3px solid #38bdf8;border-radius:6px;padding:6px 9px;font-size:0.72rem;line-height:1.42;color:#cbd5e1;">
+              <div style="font-size:0.67rem;font-weight:700;color:#38bdf8;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:3px;display:flex;align-items:center;gap:4px;">
+                <span>🎯</span> WHY CHOSEN:
+              </div>
+              <div style="color:#f8fafc;font-weight:500;">
+                ${c.selection_thesis || c.setup_desc || c.reason || 'Confluence setup cleared quantitative gates.'}
+              </div>
+            </div>
+
             <div style="margin:10px 0 6px 0;">
               <div class="framework-score-banner ${fwTier.cls}" style="margin-bottom:6px;">
                 <span class="score-icon">${fwTier.icon}</span>
@@ -3216,6 +3363,15 @@ function render() {
     if (cardsContainer) cardsContainer.style.display = 'grid';
     if (briefingEl) briefingEl.style.display = 'none';
   }
+}
+
+function toggleThesisDetail(sym) {
+  const el = document.getElementById('thDetail_' + sym);
+  const icon = document.getElementById('thIcon_' + sym);
+  if (!el) return;
+  const isHidden = (el.style.display === 'none' || !el.style.display);
+  el.style.display = isHidden ? 'block' : 'none';
+  if (icon) icon.textContent = isHidden ? '▴' : '▾';
 }
 
 let viewMode = (window.location.pathname.includes('report') || window.location.hash.includes('briefing') || window.location.hash.includes('report'))
@@ -3353,13 +3509,14 @@ function renderExecutiveBriefing() {
               <th class="num">RVOL20</th>
               <th class="num">Delivery %</th>
               <th>Frameworks Triggered</th>
+              <th>Selection Thesis (Why Chosen)</th>
               <th style="width:70px;text-align:center;">Action</th>
             </tr>
           </thead>
           <tbody>
   `;
   if (cfLeaders.length === 0) {
-    html += `<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-muted);">No multi-framework confluence candidates found.</td></tr>`;
+    html += `<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text-muted);">No multi-framework confluence candidates found.</td></tr>`;
   } else {
     cfLeaders.forEach((r, idx) => {
       const fws = Array.isArray(r.frameworks_passed) ? r.frameworks_passed.slice(0, 4).join(', ') + (r.frameworks_passed.length > 4 ? ` (+${r.frameworks_passed.length - 4} more)` : '') : (r.frameworks_passed || '-');
@@ -3373,7 +3530,10 @@ function renderExecutiveBriefing() {
           <td class="num"><strong style="color:#f8fafc;font-family:'JetBrains Mono',monospace;">₹${Number(r.close).toFixed(2)}</strong></td>
           <td class="num" style="font-family:'JetBrains Mono',monospace;">${r.rvol ? Number(r.rvol).toFixed(2) + 'x' : '-'}</td>
           <td class="num" style="font-family:'JetBrains Mono',monospace;color:${Number(r.deliv_pct) >= 50 ? '#34d399' : '#cbd5e1'};">${deliv}</td>
-          <td style="font-size:0.75rem;color:var(--text-secondary);max-width:380px;">${fws}</td>
+          <td style="font-size:0.75rem;color:var(--text-secondary);max-width:240px;">${fws}</td>
+          <td class="briefing-rationale" style="font-size:0.75rem;color:#cbd5e1;line-height:1.42;max-width:320px;">
+            <strong style="color:#38bdf8;">Why Chosen:</strong> ${r.selection_thesis || r.reason || '-'}
+          </td>
           <td style="text-align:center;"><button class="chart-link-pill" onclick="openModal('${r.symbol}')" style="font-size:0.72rem;padding:2px 8px;">Chart ↗</button></td>
         </tr>
       `;
@@ -3815,6 +3975,7 @@ let trendlineStart = null;
 let boxStart = null;
 let chartOnlyFullscreenMode = false;
 let currentChartDrawingManagerInstance = null;
+window.currentChartDrawingManagerInstance = null;
 
 // Candle normalizer: unifies compact tuples [time, o, h, l, c, v] and legacy objects
 function unpackCandles(raw) {
@@ -4000,6 +4161,7 @@ function renderStockChart(c) {
   if (currentChartDrawingManagerInstance) {
     try { currentChartDrawingManagerInstance.destroy(); } catch (e) {}
     currentChartDrawingManagerInstance = null;
+    window.currentChartDrawingManagerInstance = null;
   }
 
   if (currentStockChartInstance) {
@@ -4146,6 +4308,17 @@ function renderStockChart(c) {
   if (typeof LightweightChartsDrawing !== 'undefined' && typeof LightweightChartsDrawing.DrawingManager === 'function') {
     try {
       currentChartDrawingManagerInstance = new LightweightChartsDrawing.DrawingManager(chart, candleSeries);
+      window.currentChartDrawingManagerInstance = currentChartDrawingManagerInstance;
+      currentChartDrawingManagerInstance.on('add', (d) => {
+        const kind = d && d.kind ? d.kind.replace(/-/g, ' ') : 'drawing';
+        showToast(`✓ Anchored ${kind} to chart!`);
+        activateDrawTool(null);
+      });
+      currentChartDrawingManagerInstance.on('tool', (t) => {
+        if (!t && activeDrawTool) {
+          activateDrawTool(null);
+        }
+      });
     } catch (e) {
       console.warn('LightweightChartsDrawing init error:', e);
     }
@@ -4276,6 +4449,7 @@ function renderStockChart(c) {
 
   container.onclick = (e) => {
     if (activeDrawTool !== 'horz' || !chartSeriesRefs.candle) return;
+    if (currentChartDrawingManagerInstance) return; // Handled natively by DrawingManager
     const rect = container.getBoundingClientRect();
     const y = e.clientY - rect.top;
     const price = chartSeriesRefs.candle.coordinateToPrice(y);
@@ -4660,25 +4834,18 @@ function activateDrawTool(tool) {
     }
   }
 
+  if (overlay) overlay.style.pointerEvents = 'none';
+  if (container) container.style.cursor = activeDrawTool ? 'crosshair' : 'default';
+
   if (activeDrawTool === 'trend') {
-    if (overlay) overlay.style.pointerEvents = 'auto';
-    if (container) container.style.cursor = 'crosshair';
-    showToast('Click Point A, then click Point B to draw a Trendline');
+    showToast('Click 2 points on chart to anchor native Trendline');
   } else if (activeDrawTool === 'box') {
-    if (overlay) overlay.style.pointerEvents = 'auto';
-    if (container) container.style.cursor = 'crosshair';
-    showToast('Click 1st corner, then click opposite corner to draw S/R Box');
+    showToast('Click 2 opposite corners to anchor S/R Consolidation Box');
   } else if (activeDrawTool === 'fib') {
-    if (overlay) overlay.style.pointerEvents = 'auto';
-    if (container) container.style.cursor = 'crosshair';
-    showToast('Click Swing Low, then click Swing High for Fibonacci Retracement');
+    showToast('Click Swing Low, then Swing High for native Fibonacci Retracement');
   } else if (activeDrawTool === 'horz') {
-    if (overlay) overlay.style.pointerEvents = 'none';
-    if (container) container.style.cursor = 'crosshair';
-    showToast('Click anywhere on chart to place a Horizontal S/R Line');
+    showToast('Click anywhere on chart to anchor Horizontal S/R Line');
   } else {
-    if (overlay) overlay.style.pointerEvents = 'none';
-    if (container) container.style.cursor = 'default';
     trendlineStart = null;
     boxStart = null;
   }
@@ -4700,11 +4867,12 @@ function clearUserDrawings() {
   boxStart = null;
   const overlay = document.getElementById('chartDrawOverlay');
   if (overlay) {
+    overlay.style.pointerEvents = 'none';
     const ctx = overlay.getContext('2d');
     ctx.clearRect(0, 0, overlay.width, overlay.height);
   }
   activateDrawTool(null);
-  showToast('Cleared all user drawn lines, boxes and Fibonacci.');
+  showToast('Cleared all drawings & Fibonacci levels.');
 }
 
 function resetChartScale() {
@@ -4948,6 +5116,7 @@ function closeModal(id) {
         currentChartDrawingManagerInstance.destroy();
       } catch (e) {}
       currentChartDrawingManagerInstance = null;
+      window.currentChartDrawingManagerInstance = null;
     }
     if (currentStockChartInstance) {
       try {

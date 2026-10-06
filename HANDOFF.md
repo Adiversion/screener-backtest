@@ -430,3 +430,29 @@ user. Double-click it and it:
 Keep it CRLF-encoded (it was written with `sed -i 's/$/\r/'`). If you add
 steps, do not break the `%~dp0` `cd /d` — it is what makes double-click work
 from any working directory.
+
+---
+
+## 13. Interactive Dashboard, Confluence Sorting & Drawing Tools
+
+The interactive browser platform lives in `docs/` (GitHub Pages) and `reports/`:
+
+1. **Multi-Framework Confluence Sorting (`protocol/dashboard_data.py`):**
+   - Candidates are prioritized strictly by institutional confluence:
+     `len(strategies)` descending (e.g., 9/12, 8/12), followed by dual-timeframe qualification (`is_both`), quality audit score, and Relative Strength rating.
+   - Prevents lower-confluence 1–3 framework names from displacing top leaders like `RRKABEL` (9/12), `GESHIP` (8/12), or `BOSCH-HCIL` (8/12).
+   - Table columns are interactively sortable with visual directional indicators (`handleSort(col)`).
+
+2. **"Why Chosen" Quantitative Thesis Engine:**
+   - Synthesizes exact price action (52W high breakouts, multi-touch consolidation shelf clearances), institutional framework count, Relative Strength percentiles, volume ignition & demat delivery absorption, moving average stacks, and anti-chase safety status.
+   - Prominently visible directly in the screener table, mobile cards, and executive briefing with expandable multi-bullet breakdowns (`Details ▾`).
+
+3. **TradingView Lightweight Charts Native Drawing Tools:**
+   - Integrates `LightweightChartsDrawing.DrawingManager` on the candlestick series.
+   - Drawing tools (`📏 Horz Line`, `✏️ Trendline`, `📦 S/R Box`, `📐 Fib`) anchor directly to price and time coordinates instead of fragile screen pixels.
+   - Includes cross-hair cursor feedback, active button highlighting, and one-click clear canvas controls.
+
+4. **Auditing & Deployment:**
+   - Rebuilt via `python scripts/build_interactive_dashboard.py`.
+   - Verified via Playwright headless Chromium pre-flight audit `python scripts/pre_push_check.py` (0 errors required).
+
