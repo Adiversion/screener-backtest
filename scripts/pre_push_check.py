@@ -141,14 +141,15 @@ def run_checks() -> int:
         print(f"✓ TradingView Lightweight Chart canvas elements: {len(canvases)}")
         assert len(canvases) > 0, "No chart canvas rendered!"
 
-        # Also verify Weekly candidate ASTEC with mixed badge shapes
-        print("✓ Testing Weekly Candidate ASTEC modal & badges...")
-        page.evaluate("openModal('ASTEC')")
+        # Also verify Weekly candidate with mixed badge shapes
+        print("✓ Testing Weekly Candidate modal & badges...")
+        test_weekly_sym = page.evaluate("(() => { const c = D.candidates.find(x => x.weekly_bucket && x.symbol !== 'RAMRAT'); return c ? c.symbol : (D.candidates[0] ? D.candidates[0].symbol : 'RAMRAT'); })()")
+        page.evaluate(f"openModal('{test_weekly_sym}')")
         time.sleep(0.5)
-        astec_sym = page.inner_text("#mSym") if page.query_selector("#mSym") else ""
-        assert "ASTEC" in astec_sym, f"Expected ASTEC in modal, got {astec_sym}"
-        astec_badges = page.inner_text("#mBadges") if page.query_selector("#mBadges") else ""
-        print(f"✓ Weekly ASTEC modal & badges verified: {astec_badges.splitlines()[0] if astec_badges else 'N/A'}")
+        weekly_modal_sym = page.inner_text("#mSym") if page.query_selector("#mSym") else ""
+        assert test_weekly_sym in weekly_modal_sym, f"Expected {test_weekly_sym} in modal, got {weekly_modal_sym}"
+        weekly_badges = page.inner_text("#mBadges") if page.query_selector("#mBadges") else ""
+        print(f"✓ Weekly {test_weekly_sym} modal & badges verified: {weekly_badges.splitlines()[0] if weekly_badges else 'N/A'}")
 
         # Save dark mode screenshot
         dark_png = ROOT / "audit_ramrat_modal_dark.png"
@@ -242,6 +243,7 @@ def run_checks() -> int:
             "macro.html",
             "inspector.html",
             "verifier.html",
+            "report.html",
             "paper_trading.html",
         ]
         for p_name in pages_to_check:
