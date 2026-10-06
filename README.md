@@ -51,30 +51,42 @@ python scripts/pra_study.py --start 2026-09-21 --end 2026-09-25   # strict histo
 # PA State A/B/C/D event study
 python scripts/pa_study.py
 
-# rank today's good stocks, with the reason and the evidence behind each
-python scripts/decisions.py --top 10
+# rank today's good stocks (executive decisions + capital infusion)
+python scripts/decisions.py --top 15
+
+# weekly timeframe confluence screen (11 macro structural gates)
+python scripts/screen_weekly.py --include-partial-week
+
+# build the interactive web application (docs/index.html & docs/report.html)
+python scripts/build_interactive_dashboard.py
+
+# pre-push browser check (Playwright E2E audit)
+python scripts/pre_push_check.py
 
 # single-position rotation: one stock, whole account, exit on target or stop
 python scripts/rotate.py --capital 10000
 
 # judge specific stocks by name
-python scripts/judge.py --symbols CUPID,MARINE
+python scripts/judge.py --symbols KINGFA,RRKABEL
 
-# tests
+# tests (181 test suite)
 python -m unittest discover -s tests -v
 ```
 
-## Report bundle
+## Report bundle & Interactive Web App
 
-Every run writes the same story in three formats to `reports/`:
+Every run writes the same story across `reports/` and the live `docs/` site:
 
 | File | Format | For |
 |---|---|---|
-| `REPORT.html` | dynamic, self-contained | humans — KPI cards, sortable/filterable table, expectancy bars, audit block. Just open it in a browser (no server). |
-| `REPORT.md` | Markdown | quick reading / diffs |
-| `report.json` | slim JSON (metrics only, **no** per-trade rows) | AI agents |
-| `comparison.csv` | CSV | spreadsheets |
-| `trades_<strategy>_<cap>.csv` | CSV | per-trade forensics |
+| `docs/index.html` / `docs/report.html` | Interactive Web Application | Full production screener: 12 frameworks, `⚡ Briefing` view, TradingView Lightweight Charts, forward verifier, and allocation engine. |
+| `reports/DECISIONS.md` / `decisions.json` | Markdown / Agent JSON | 5-tiered executive report: market regime, hard-gate leaders, multi-framework confluence, and position sizing. |
+| `reports/WEEKLY_CONFLUENCE.md` / `weekly_confluence.csv` | Markdown / CSV | Dual-timeframe alignment across daily setups and weekly Stage 2 structure. |
+| `reports/REPORT.html` | dynamic, self-contained | Humans — KPI cards, sortable/filterable table, expectancy bars, audit block. Just open it in a browser (no server). |
+| `reports/REPORT.md` | Markdown | Quick reading / diffs |
+| `reports/report.json` | slim JSON (metrics only, **no** per-trade rows) | AI agents |
+| `reports/comparison.csv` | CSV | Spreadsheets |
+| `reports/trades_<strategy>_<cap>.csv` | CSV | Per-trade forensics |
 
 Re-render the bundle from an existing `report.json` without re-running the
 strategies (also strips trade rows):
@@ -90,13 +102,9 @@ primary cloud route — it runs the full pipeline on GitHub's servers and
 publishes the results. You do not need a cloud IDE.
 
 1. **Actions → Update live reports → Run workflow** to run it on demand.
-2. It also runs automatically every day at 19:00 IST.
-3. Reports are published to the `live` branch and uploaded as an artifact.
-4. For a browsable URL, enable Pages once: **Settings → Pages → Source:
-   GitHub Actions**.
-
-To run it yourself without GitHub, `Colab_Backtest.ipynb` runs the whole
-engine in a browser tab (**Runtime → Run all**).
+2. It also runs automatically every day at 17:30 IST (12:00 UTC) right after NSE Bhavcopy release.
+3. Automatically streams `reports/DECISIONS.md` and `reports/WEEKLY_CONFLUENCE.md` into `$GITHUB_STEP_SUMMARY`.
+4. Rebuilds `docs/` and publishes live updates directly to GitHub Pages.
 
 ## Validation milestone — is the signal real?
 

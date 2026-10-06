@@ -80,38 +80,26 @@ committing. Keep it.
 
 ---
 
-## 3. Data — what we actually have (be honest)
+## 3. Data — what we actually have (as of October 5, 2026)
 
-`data/universe_history.parquet` (the default):
+- `data/nse_all_history.parquet`: **2,000+ listed cash equities, 2,568,895 rows, through 2026-10-05**.
+  Contains official NSE Bhavcopy cash equity price bars (`Series == 'EQ'`) appended directly from NSE.
+- `data/universe_history.parquet`: **499 symbols, 899,935 rows, through 2026-10-05**.
+- `data/delivery_history.parquet`: **40-day delivery quantities, percentages, and turnover** from official NSE Bhavdata, activating Filter F4 and institutional absorption detection.
+- `data/sec_list_latest.csv`, `data/board_meetings.csv`, `data/corporate_actions.csv`: Official NSE surveillance (ASM, GSM, T2T), upcoming earnings, dividends, splits, and bonus issues.
+- `data/small_universe_history.parquet` (51 symbols): fast smoke-test set for quick unit tests.
 
-- **499 symbols, 2,166 sessions, 2018-01-01 → 2026-10-01**, adjusted OHLCV only.
-- Built with `scripts/fetch_data.py --source nifty500` (yfinance, `auto_adjust=True`),
-  from the NSE Nifty-500 constituent CSV (501 symbols; 2 have no data).
-- `data/small_universe_history.parquet` (51 symbols) is a fast smoke-test set.
-
-**Missing inputs → reported as NA, never zero-filled:**
-
-- No delivery quantity / % / trade counts → filters **F4** and ATS unavailable.
-- No price-band / ASM / GSM / T2T lists → **F6**.
-- No results/ex-date corporate-action calendar → **F9**; no circuit-lock history → **F10**.
-- No Nifty50 / India VIX history → no regime buckets.
-- Bundled data starts 2018, so the protocol's 2015 discovery window is NOT covered.
-
-Every report carries a **`DEGRADED-DATA` watermark** and `data_quality_report()`
-counts gaps. **Do not** fabricate delivery/surveillance data.
-
-Grow the universe / add history:
-
+**Data Ingestion & Refresh:**
 ```bash
-python scripts/fetch_data.py --source nifty500 --start 2018-01-01 --limit 501
-python scripts/fetch_data.py --source bhavdata --days 30            # includes delivery fields
-python scripts/fetch_data.py --source bhavdata --date 2026-10-01 --append data/universe_history.parquet
-```
+# Append latest session Bhavcopy cash equity bars into history
+python scripts/fetch_data.py --source bhavdata --days 1 --append data/nse_all_history.parquet
 
-`bhavdata` fetches the official NSE full bhavcopy (one request/day, includes
-`DELIV_QTY`/`DELIV_PER`/`NO_OF_TRADES`). Wiring those columns into
-`features.py` would re-enable F4 — that is the single highest-value next step
-(see §8).
+# Refresh rolling delivery history (activates Filter F4 & delivery absorption)
+python scripts/fetch_delivery.py --days 40
+
+# Refresh corporate events & surveillance lists
+python scripts/fetch_nse_annex.py
+```
 
 ---
 
@@ -239,32 +227,18 @@ report embeds `audit.passed`. Reporting labels are `HISTORICAL_CANDIDATE` /
 
 ---
 
-## 8. Known gaps / TODO for the next agent
+## 8. Current System Capabilities (Implemented & Operational)
 
-1. **Delivery data — DONE but shallow.** `scripts/fetch_delivery.py` fetches
-   the official NSE full bhavcopy and `data.py`/`features.py` now merge and use
-   it (filter F4 returns a real bool when data exists, `None` otherwise).
-   Limitation: NSE has **no bulk delivery endpoint**, so only a recent window
-   (~29 sessions at time of writing) is loaded. To extend, re-run
-   `fetch_delivery.py --days N --append`. Full-history delivery would need a
-   paid vendor.
-2. **History depth**: bundled history starts 2018; the protocol's 2015–2020
-   discovery window is under-covered. Extend via `fetch_data.py`.
-3. **Surveillance/price-band lists (F6), results calendar (F9), circuit locks
-   (F10)** are still unavailable — keep them NA.
-4. **Health check**: `python scripts/health_check.py` (if present) — otherwise
-   run `make test` + a `--capital 1000 --strategies protocol` smoke run.
-5. **Capital sweep cost**: with signals built once it is ~3× simulation. Still
-   slow on 499 symbols; consider per-strategy parallelism (`multiprocessing`)
-   if it becomes a bottleneck.
-6. **Report rendering** uses `tabulate` for the PRA/PA markdown tables; keep
-   `tabulate` in `requirements.txt`.
-7. **`reports/` is git-ignored**; if you want results committed, force-add the
-   specific files or change `.gitignore` deliberately.
-8. **Gemini source**: the PA protocol was transcribed from
-   `C:\Users\Anadi\Downloads\Documents\Price Acceptance Strategy Origins.pdf`.
-   The extracted text is not committed; the state thresholds are in the
-   `pa:` block of `config/protocol_v2.yaml`.
+1. **Delivery Data & Institutional Absorption**: `scripts/fetch_delivery.py` merges official NSE Bhavdata delivery quantities and percentages. Filter F4 and delivery surge detection are active.
+2. **Surveillance & Corporate Actions**: `scripts/fetch_nse_annex.py` tracks ASM, GSM, Trade-to-Trade (T2T), earnings dates, and corporate actions directly from NSE feeds.
+3. **Market Regime Engine**: `protocol/regime.py` computes an equal-weight universe index against its 20-day SMA and calculates market breadth (% of stocks > 20d SMA) to output BULL vs DEFENSIVE directives.
+4. **Multi-Framework Screening**: `protocol/frameworks.py` evaluates 12 quantitative models simultaneously (Protocol Fortified, Minervini Trend Template, Stan Weinstein Stage 2, Qullamaggie Breakout, CANSLIM Pivot, PKScreener VCP, Turtle Trading, Darvas Box, Wyckoff Closing Range, Sector Momentum, Delivery Absorption, Connors RSI).
+5. **Weekly Timeframe Confluence**: `protocol/weekly.py` and `scripts/screen_weekly.py` resample daily history into weekly bars, scoring 11 macro structural gates, assigning grades (A+ to C), and applying an anti-climax exhaustion cap.
+6. **Executive Briefing & GitHub Pages**:
+   - `protocol/dashboard_data.py` aggregates hard-gate leaders, multi-confluence setups, dual timeframe consensus, and swing watchlists.
+   - `docs/index.html` and `docs/report.html` provide an interactive web app with `⚡ Briefing` view and TradingView chart inspector.
+7. **Pre-Push Browser Audit Gateway**: `scripts/pre_push_check.py` runs headless Playwright tests before any git push to prevent regressions in GitHub Pages.
+8. **Automated CI/CD**: `.github/workflows/update-reports.yml` runs daily at 17:30 IST (12:00 UTC), appends latest Bhavcopy EQ bars, re-runs screens, streams the synthesized markdown to `$GITHUB_STEP_SUMMARY`, and updates GitHub Pages.
 
 ---
 

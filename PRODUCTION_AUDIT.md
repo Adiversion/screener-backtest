@@ -15,16 +15,16 @@ the production modules. Line numbers are approximate (they move).
 
 | Surface | Trigger | What runs |
 |---|---|---|
-| Daily refresh | `.github/workflows/update-reports.yml`, 19:00 IST | fetch → backtest → validate → decisions → screen → build sites → verdict audit → tests → force-push `live` branch |
+| Daily refresh | `.github/workflows/update-reports.yml`, 17:30 IST (12:00 UTC) | fetch bhavcopy EQ → backtest → validate → decisions → screen → weekly confluence → summary report → build sites → verdict audit → tests → force-push `live` branch |
 | Portfolio guardian | `.github/workflows/guard-portfolio.yml`, every 15 min, market hours | `scripts/track_paper_portfolio.py --once` |
-| Published site | `.github/workflows/pages.yml` on `live` push | GitHub Pages serves the generated dashboard |
-| Local/CI checks | `Makefile`, `package.json` | `run_backtest`, `pra_study`, `pa_study`, `screen_candidates`, `decisions`, `fetch_data`, `pre_push_check`, `build_interactive_dashboard` |
+| Published site | `.github/workflows/pages.yml` on `live` push | GitHub Pages serves the generated dashboard (`index.html`, `report.html`) |
+| Local/CI checks | `Makefile`, `package.json` | `run_backtest`, `pra_study`, `pa_study`, `screen_candidates`, `screen_weekly`, `decisions`, `fetch_data`, `pre_push_check`, `build_interactive_dashboard` |
 
-**Production entry points (15 scripts):**
+**Production entry points (16 scripts):**
 `fetch_data`, `fetch_delivery`, `fetch_nse_annex`, `fetch_universe`,
-`run_backtest`, `validate`, `decisions`, `screen_candidates`, `build_site`,
-`build_interactive_dashboard`, `verdict_audit`, `track_paper_portfolio`,
-`pra_study`, `pa_study`, `pre_push_check`.
+`run_backtest`, `validate`, `decisions`, `screen_candidates`, `screen_weekly`,
+`build_site`, `build_interactive_dashboard`, `verdict_audit`,
+`track_paper_portfolio`, `pra_study`, `pa_study`, `pre_push_check`.
 
 ---
 

@@ -87,10 +87,11 @@ The production web application is located at `docs/index.html`.
    `https://adiversion.github.io/screener-backtest/`
 
 ### Step 2: What You Get on the Live Webpage
+* **5-Tiered Executive Briefing View (`docs/report.html`)**: Market regime directive, hard-gate quality leaders, 12-framework multi-confluence setups, dual timeframe alignment, and swing watchlists.
 * **Live Market Regime Directive**: BULL vs DEFENSIVE cash status with equal-weight breadth.
 * **Interactive Capital Calculator**: Flat ₹100,000 per stock default; dynamic real-time recalculation of shares, rupee allocation, and rupee risk.
 * **Instant Search & Sector Filter**: Filter by Pharma, Textiles, Industrials, etc.
-* **Clickable Rationale Modals**: Expandable technical evidence explaining why each stock qualified.
+* **Clickable Rationale Modals & Chart Inspector**: Expandable technical evidence explaining why each stock qualified, with embedded multi-year TradingView Lightweight Charts.
 
 ---
 
@@ -100,14 +101,14 @@ The production web application is located at `docs/index.html`.
 | :--- | :--- | :--- |
 | **15:30** | Market Close | Regular equity trading ceases. |
 | **15:40 – 16:00** | Post-Market Closing Session | Brokers execute at weighted average closing prices. |
-| **18:00 – 18:30** | **NSE Bhavcopy (`sec_bhavdata_full_*.csv`)** | Official Open, High, Low, Close, Volume, and Trades for all ~2,300 equities. |
-| **18:45 – 19:15** | **Security-Wise Delivery Data (`MTO_*.DAT`)** | Traded volume split into physical delivery vs intraday square-offs. |
+| **16:30 – 17:15** | **NSE Bhavcopy (`sec_bhavdata_full_*.csv`)** | Official Open, High, Low, Close, Volume, and Trades for all ~2,300 equities. |
+| **17:15 – 17:30** | **Security-Wise Delivery Data (`MTO_*.DAT`)** | Traded volume split into physical delivery vs intraday square-offs. |
+| **17:30** | **Automated GitHub Actions Run (`12:00 UTC`)** | Ingests latest Bhavcopy cash equity bars, delivery reports, executes all screens, publishes executive report, and deploys site. |
 | **19:00 – 19:30** | **52-Week High/Low & Index Files** | Market breadth, advances/declines, and index closing numbers. |
-| **19:30 – 20:00** | **F&O Participant Open Interest** | FII, DII, Pro desk, and retail net position contracts. |
 | **20:30+** | **Surveillance Circulars (ASM / GSM)** | Regulatory list of stocks restricted to 5% circuit limits or 100% margin. |
 
-**The Ideal Automated Run Window**: **19:00 – 19:30 IST (13:30 – 14:00 UTC)**.  
-The workflow `.github/workflows/update-reports.yml` is scheduled for `cron: "30 13 * * *"` (19:00 IST), running right after Bhavcopy and Delivery files are published.
+**The Ideal Automated Run Window**: **17:30 IST (12:00 UTC)**.  
+The workflow `.github/workflows/update-reports.yml` is scheduled for `cron: "0 12 * * *"` (17:30 IST / 12:00 UTC), running automatically once the official Bhavcopy and delivery files are released by NSE.
 
 ---
 

@@ -29,22 +29,22 @@ adding features; that is how it got to 39 modules.
 ## 3. What to run
 
 ```bash
-python -m unittest discover -s tests        # 105 tests, ~15s. Run this first.
+python -m unittest discover -s tests        # 181 tests, ~38s. Run this first.
 ```
 
 Then, depending on what you are doing:
 
 | Goal | Command |
 |---|---|
-| Judge one stock | `python scripts/judge.py --data data/nse_all_history.parquet --asof 2026-09-30 --symbols BAJAJ-AUTO` |
-| Rebuild the scored panel (needed by most analysis) | `python scripts/bar_coverage.py` — ~3.5 min, writes `reports/scored_panel.parquet` |
-| One date in, one date out, in rupees | `python scripts/hold_ledger.py --pick 2026-09-01 --mark 2026-10-01 --top 10` |
+| Executive investment briefing | `python scripts/decisions.py --top 15` |
+| Weekly timeframe confluence screen | `python scripts/screen_weekly.py --include-partial-week` |
+| Rebuild interactive web dashboard & reports | `python scripts/build_interactive_dashboard.py` |
+| Pre-push headless browser audit | `python scripts/pre_push_check.py` |
+| Daily candidate tags board | `python scripts/screen_candidates.py` |
+| Judge one stock | `python scripts/judge.py --data data/nse_all_history.parquet --asof 2026-10-05 --symbols KINGFA` |
+| Rebuild the scored panel (needed by most analysis) | `python scripts/bar_coverage.py` — writes `reports/scored_panel.parquet` |
+| One date in, one date out, in rupees | `python scripts/hold_ledger.py --pick 2026-09-01 --mark 2026-10-05 --top 10` |
 | Does the top pick beat the market? | `python scripts/which_to_pick.py` |
-| Do stop-losses help? | `python scripts/entry_rules.py` |
-| Why doesn't the score rank? | `python scripts/rank_diagnosis.py` |
-| Are popular price-action patterns real? | `python scripts/pa_signals.py` |
-| Component sign variants | `python scripts/sign_experiment.py` — slow, ~7 min |
-| Build the public site | `python scripts/build_site.py` |
 | Rotation with real exits | `python scripts/rotate.py --capital 10000 --start 2021-01-01` |
 
 **Two scripts rebuild large caches.** `bar_coverage.py` writes
