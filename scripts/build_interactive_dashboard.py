@@ -96,6 +96,8 @@ def make_404_html() -> str:
         window.location.replace('macro.html' + query + hash);
       } else if (path.includes('verifier')) {
         window.location.replace('verifier.html' + query + hash);
+      } else if (path.includes('report')) {
+        window.location.replace('report.html' + query + hash);
       } else {
         window.location.replace('index.html' + query + hash);
       }
@@ -130,11 +132,12 @@ def build_app(data_path: str, asof_date: str | None = None, outdir: str = "repor
         (Path("macro.html"), screener_html),
         (Path("inspector.html"), screener_html),
         (Path("verifier.html"), screener_html),
+        (Path("report.html"), screener_html),
         (Path("paper_trading.html"), paper_html),
         (Path("404.html"), make_404_html()),
     ]
     # Directory-style clean URL handlers (/screener/, /macro/, ...).
-    for section in ("screener", "macro", "inspector", "verifier", "paper_trading"):
+    for section in ("screener", "macro", "inspector", "verifier", "report", "paper_trading"):
         files.append((Path(section) / "index.html", make_redirect_html(f"{section}.html")))
 
     tapes = app_data.get("_tapes", {})

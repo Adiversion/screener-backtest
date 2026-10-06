@@ -49,10 +49,18 @@ def main() -> int:
             except Exception as exc:  # network / holiday
                 print(f"  {d.date()}: skipped ({exc})")
         df = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+        if not df.empty and "Series" in df.columns:
+            df["Series"] = df["Series"].astype(str).str.strip()
+            df["Symbol"] = df["Symbol"].astype(str).str.strip().str.upper()
+            df = df[df["Series"] == "EQ"].copy()
+            cols = ["Date", "Symbol", "Open", "High", "Low", "Close", "Volume"]
+            df = df[[c for c in cols if c in df.columns]].dropna(subset=["Symbol", "Close"])
 
     out = Path(args.append or args.out)
     if args.append and out.exists():
-        df = pd.concat([pd.read_parquet(out), df], ignore_index=True)
+        existing = pd.read_parquet(out)
+        df = pd.concat([existing, df], ignore_index=True)
+        df = df.drop_duplicates(subset=["Symbol", "Date"], keep="last").sort_values(["Symbol", "Date"])
     df.to_parquet(out, index=False)
     print(f"wrote {len(df)} rows -> {out}")
     return 0

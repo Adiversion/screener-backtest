@@ -1602,6 +1602,99 @@
     border-color: #38bdf8;
     color: #fff;
   }
+
+  /* Executive Briefing Styles */
+  .briefing-view {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    width: 100%;
+  }
+  .briefing-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  }
+  .briefing-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .briefing-card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .briefing-card-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .briefing-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+  }
+  .briefing-table th {
+    text-align: left;
+    padding: 8px 10px;
+    color: var(--text-muted);
+    font-weight: 700;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border);
+    background: rgba(15, 23, 42, 0.5);
+  }
+  .briefing-table th.num, .briefing-table td.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .briefing-table td {
+    padding: 9px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    color: var(--text-secondary);
+    vertical-align: middle;
+  }
+  .briefing-table tr:hover td {
+    background: rgba(255, 255, 255, 0.03);
+  }
+  .briefing-sym-btn {
+    background: rgba(56, 189, 248, 0.1);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.15s ease;
+  }
+  .briefing-sym-btn:hover {
+    background: rgba(56, 189, 248, 0.25);
+    border-color: #38bdf8;
+    color: #ffffff;
+    transform: translateY(-1px);
+  }
+  .briefing-rationale {
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    max-width: 460px;
+  }
 </style>
 <script src="lightweight-charts.standalone.production.js"></script>
 <script>
@@ -1636,6 +1729,7 @@
 
     <div class="nav-right">
       <div class="nav-links-desktop">
+        <a href="report.html" class="nav-link-btn highlight" onclick="event.preventDefault(); setViewMode('briefing'); window.scrollTo({top: 0, behavior: 'smooth'});" style="border-color:rgba(192,132,252,0.4);color:#c084fc;background:rgba(192,132,252,0.08);" title="View Executive Investment Briefing">📊 Executive Report</a>
         <a href="macro.html" class="nav-link-btn" onclick="event.preventDefault(); navigateToPage('macro', 'directiveTile');">🛡️ Macro HUD</a>
         <a href="screener.html" class="nav-link-btn" onclick="event.preventDefault(); navigateToPage('screener', 'toolbarSection');">🎯 Screener</a>
         <a href="inspector.html" class="nav-link-btn" onclick="event.preventDefault(); navigateToPage('inspector');">🔍 Inspector</a>
@@ -1664,6 +1758,7 @@
         <div class="drawer-close" onclick="closeMobileMenu()">&times;</div>
       </div>
       <div class="drawer-links">
+        <a href="report.html" class="drawer-link" style="color:#c084fc;font-weight:700;" onclick="closeMobileMenu(); setViewMode('briefing'); window.scrollTo({top: 0, behavior: 'smooth'});">📊 Executive Investment Report</a>
         <a href="macro.html" class="drawer-link" onclick="closeMobileMenu(); navigateToPage('macro', 'directiveTile');">🛡️ Macro Regime & Breadth</a>
         <a href="inspector.html" class="drawer-link" onclick="closeMobileMenu(); navigateToPage('inspector');">🔍 Universal Stock Inspector</a>
         <a href="screener.html" class="drawer-link" onclick="closeMobileMenu(); navigateToPage('screener', 'toolbarSection');">🎯 Qualified Breakouts Screener</a>
@@ -1827,7 +1922,8 @@
     </div>
 
     <div class="view-switch">
-      <button id="viewTableBtn" class="view-btn active" onclick="setViewMode('table')">📊 Table</button>
+      <button id="viewBriefingBtn" class="view-btn" onclick="setViewMode('briefing')" title="Synthesized Executive Investment Briefing">⚡ Briefing</button>
+      <button id="viewTableBtn" class="view-btn active" onclick="setViewMode('table')">📋 Table</button>
       <button id="viewCardsBtn" class="view-btn" onclick="setViewMode('cards')">🎴 Cards</button>
     </div>
 
@@ -1886,6 +1982,9 @@
 
   <!-- Mobile / Visual Stock Cards View -->
   <div id="cardsView" class="stock-cards-grid" style="display:none;margin-bottom:24px;"></div>
+
+  <!-- Executive Investment Briefing View -->
+  <div id="briefingView" class="briefing-view" style="display:none;margin-bottom:24px;"></div>
 
   <!-- ⚡ 7-14 Day Forward Trade Verification & Paper Replay Engine -->
   <section id="forwardVerifierSection" class="forward-verifier-card">
@@ -3100,21 +3199,312 @@ function render() {
   }
 
   // 3. View Visibility Toggle
-  if (viewMode === 'table') {
-    tableCardEl.style.display = 'block';
+  const briefingEl = document.getElementById('briefingView');
+  if (viewMode === 'briefing') {
+    if (tableCardEl) tableCardEl.style.display = 'none';
     if (cardsContainer) cardsContainer.style.display = 'none';
+    if (briefingEl) {
+      briefingEl.style.display = 'flex';
+      renderExecutiveBriefing();
+    }
+  } else if (viewMode === 'table') {
+    if (tableCardEl) tableCardEl.style.display = 'block';
+    if (cardsContainer) cardsContainer.style.display = 'none';
+    if (briefingEl) briefingEl.style.display = 'none';
   } else {
-    tableCardEl.style.display = 'none';
+    if (tableCardEl) tableCardEl.style.display = 'none';
     if (cardsContainer) cardsContainer.style.display = 'grid';
+    if (briefingEl) briefingEl.style.display = 'none';
   }
 }
 
-let viewMode = window.innerWidth < 768 ? 'cards' : 'table';
+let viewMode = (window.location.pathname.includes('report') || window.location.hash.includes('briefing') || window.location.hash.includes('report'))
+  ? 'briefing'
+  : (window.innerWidth < 768 ? 'cards' : 'table');
+
 function setViewMode(mode) {
   viewMode = mode;
-  document.getElementById('viewTableBtn').classList.toggle('active', mode === 'table');
-  document.getElementById('viewCardsBtn').classList.toggle('active', mode === 'cards');
+  const tblBtn = document.getElementById('viewTableBtn');
+  const crdBtn = document.getElementById('viewCardsBtn');
+  const brfBtn = document.getElementById('viewBriefingBtn');
+  if (tblBtn) tblBtn.classList.toggle('active', mode === 'table');
+  if (crdBtn) crdBtn.classList.toggle('active', mode === 'cards');
+  if (brfBtn) brfBtn.classList.toggle('active', mode === 'briefing');
   render();
+}
+
+function renderExecutiveBriefing() {
+  const el = document.getElementById('briefingView');
+  if (!el) return;
+
+  const rep = D.executive_report || {};
+  const reg = D.regime || {};
+  const qLeaders = rep.quality_leaders || [];
+  const cfLeaders = rep.confluence_leaders || [];
+  const dual = rep.dual_confluence || [];
+  const swing = rep.swing_watchlist || [];
+
+  const isDefensive = reg.name === 'DEFENSIVE' || reg.action === 'CASH';
+  const bannerBg = isDefensive ? 'background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.3);' : 'background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);';
+  const bannerColor = isDefensive ? '#f43f5e' : '#34d399';
+  const bannerBadge = isDefensive ? 'background:rgba(244,63,94,0.2);color:#f43f5e;border:1px solid rgba(244,63,94,0.4);' : 'background:rgba(16,185,129,0.2);color:#34d399;border:1px solid rgba(16,185,129,0.4);';
+
+  let html = `
+    <!-- Macro Regime Banner -->
+    <div class="briefing-card" style="${bannerBg}">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:1.25rem;">${isDefensive ? '🛡️' : '🚀'}</span>
+          <span style="font-size:1rem;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:${bannerColor};">
+            MARKET REGIME: ${reg.name || 'UNKNOWN'} (${reg.action || 'CASH'})
+          </span>
+          <span class="briefing-card-badge" style="${bannerBadge}">
+            ${isDefensive ? 'CAPITAL PROTECTION ACTIVE' : 'RISK-ON AGGRESSIVE'}
+          </span>
+        </div>
+        <div style="font-size:0.78rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);">
+          <span>Breadth: <strong style="color:${isDefensive ? '#f43f5e' : '#34d399'};">${(reg.breadth * 100).toFixed(1)}% &gt; SMA20</strong></span> • 
+          <span>Index: <strong style="color:#f8fafc;">${(reg.index || 0).toFixed(1)}</strong> (SMA20: ${(reg.sma20 || 0).toFixed(1)})</span> • 
+          <span>FTD: <strong style="color:${reg.ftd_active ? '#34d399' : '#94a3b8'};">${reg.ftd_active ? 'ACTIVE' : 'INACTIVE'}</strong></span>
+        </div>
+      </div>
+      <p style="font-size:0.84rem;color:#cbd5e1;line-height:1.45;margin:0;">
+        ${rep.headline || reg.message || 'Market is in DEFENSIVE regime. Capital protection (CASH) recommended.'}
+      </p>
+    </div>
+  `;
+
+  // 1. Hard-Gate Quality Leaders
+  html += `
+    <div class="briefing-card">
+      <div class="briefing-card-header">
+        <div class="briefing-card-title">
+          <span>🏆</span>
+          <span>1. Hard-Gate Quality Leaders</span>
+        </div>
+        <span class="briefing-card-badge" style="background:rgba(56,189,248,0.12);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);">
+          Cleared All 7 Quant Gates
+        </span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="briefing-table">
+          <thead>
+            <tr>
+              <th style="width:36px;">#</th>
+              <th>Symbol</th>
+              <th>Sector</th>
+              <th class="num">Quality Score</th>
+              <th class="num">Close (₹)</th>
+              <th class="num">120D Ret</th>
+              <th class="num">RVOL20</th>
+              <th class="num">ATR%</th>
+              <th>Technical Rationale</th>
+              <th style="width:70px;text-align:center;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+  `;
+  if (qLeaders.length === 0) {
+    html += `<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text-muted);">No candidates cleared every hard gate today.</td></tr>`;
+  } else {
+    qLeaders.forEach((r, idx) => {
+      const ret120 = r.ret120 !== undefined ? (Number(r.ret120) * 100).toFixed(1) + '%' : '-';
+      const atrpct = r.atrpct !== undefined ? (Number(r.atrpct) * 100).toFixed(2) + '%' : '-';
+      const rvol = r.rvol20 !== undefined ? Number(r.rvol20).toFixed(2) + 'x' : '-';
+      html += `
+        <tr>
+          <td style="font-weight:700;color:var(--text-muted);">${r.rank || idx + 1}</td>
+          <td><button class="briefing-sym-btn" onclick="openModal('${r.symbol}')">${r.symbol}</button></td>
+          <td style="color:#cbd5e1;">${r.industry || '-'}</td>
+          <td class="num"><strong style="color:#38bdf8;font-family:'JetBrains Mono',monospace;">${Number(r.score).toFixed(3)}</strong></td>
+          <td class="num"><strong style="color:#f8fafc;font-family:'JetBrains Mono',monospace;">₹${Number(r.close).toFixed(2)}</strong></td>
+          <td class="num" style="color:#34d399;font-weight:700;font-family:'JetBrains Mono',monospace;">${ret120}</td>
+          <td class="num" style="font-family:'JetBrains Mono',monospace;">${rvol}</td>
+          <td class="num" style="font-family:'JetBrains Mono',monospace;">${atrpct}</td>
+          <td class="briefing-rationale">${r.reason || '-'}</td>
+          <td style="text-align:center;"><button class="chart-link-pill" onclick="openModal('${r.symbol}')" style="font-size:0.72rem;padding:2px 8px;">Chart ↗</button></td>
+        </tr>
+      `;
+    });
+  }
+  html += `</tbody></table></div></div>`;
+
+  // 2. Multi-Framework Confluence Leaders
+  html += `
+    <div class="briefing-card">
+      <div class="briefing-card-header">
+        <div class="briefing-card-title">
+          <span>⚡</span>
+          <span>2. Multi-Framework Confluence Leaders</span>
+        </div>
+        <span class="briefing-card-badge" style="background:rgba(192,132,252,0.12);color:#c084fc;border:1px solid rgba(192,132,252,0.3);">
+          Top Concurrence Across 12 Frameworks
+        </span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="briefing-table">
+          <thead>
+            <tr>
+              <th style="width:36px;">#</th>
+              <th>Symbol</th>
+              <th>Sector</th>
+              <th class="num">Confluence</th>
+              <th class="num">Close (₹)</th>
+              <th class="num">RVOL20</th>
+              <th class="num">Delivery %</th>
+              <th>Frameworks Triggered</th>
+              <th style="width:70px;text-align:center;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+  `;
+  if (cfLeaders.length === 0) {
+    html += `<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-muted);">No multi-framework confluence candidates found.</td></tr>`;
+  } else {
+    cfLeaders.forEach((r, idx) => {
+      const fws = Array.isArray(r.frameworks_passed) ? r.frameworks_passed.slice(0, 4).join(', ') + (r.frameworks_passed.length > 4 ? ` (+${r.frameworks_passed.length - 4} more)` : '') : (r.frameworks_passed || '-');
+      const deliv = r.deliv_pct !== null && r.deliv_pct !== undefined ? `${Number(r.deliv_pct).toFixed(1)}%` : '-';
+      html += `
+        <tr>
+          <td style="font-weight:700;color:var(--text-muted);">${idx + 1}</td>
+          <td><button class="briefing-sym-btn" onclick="openModal('${r.symbol}')">${r.symbol}</button></td>
+          <td style="color:#cbd5e1;">${r.industry || '-'}</td>
+          <td class="num"><strong style="color:#c084fc;font-size:0.88rem;font-family:'JetBrains Mono',monospace;">${r.framework_count}/12</strong></td>
+          <td class="num"><strong style="color:#f8fafc;font-family:'JetBrains Mono',monospace;">₹${Number(r.close).toFixed(2)}</strong></td>
+          <td class="num" style="font-family:'JetBrains Mono',monospace;">${r.rvol ? Number(r.rvol).toFixed(2) + 'x' : '-'}</td>
+          <td class="num" style="font-family:'JetBrains Mono',monospace;color:${Number(r.deliv_pct) >= 50 ? '#34d399' : '#cbd5e1'};">${deliv}</td>
+          <td style="font-size:0.75rem;color:var(--text-secondary);max-width:380px;">${fws}</td>
+          <td style="text-align:center;"><button class="chart-link-pill" onclick="openModal('${r.symbol}')" style="font-size:0.72rem;padding:2px 8px;">Chart ↗</button></td>
+        </tr>
+      `;
+    });
+  }
+  html += `</tbody></table></div></div>`;
+
+  // 3. Dual Timeframe Confluence (BOTH)
+  html += `
+    <div class="briefing-card">
+      <div class="briefing-card-header">
+        <div class="briefing-card-title">
+          <span>🎯</span>
+          <span>3. Dual Timeframe Confluence (Daily Pivot + Weekly Stage 2 Base)</span>
+        </div>
+        <span class="briefing-card-badge" style="background:rgba(52,211,153,0.12);color:#34d399;border:1px solid rgba(52,211,153,0.3);">
+          Highest Structural Conviction
+        </span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="briefing-table">
+          <thead>
+            <tr>
+              <th style="width:36px;">#</th>
+              <th>Symbol</th>
+              <th>Daily Setups</th>
+              <th>Weekly Structure</th>
+              <th class="num">Close (₹)</th>
+              <th class="num">Stop Loss (₹)</th>
+              <th class="num">Target 2R (₹)</th>
+              <th>Weekly Gate Alignment</th>
+              <th style="width:70px;text-align:center;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+  `;
+  if (dual.length === 0) {
+    html += `<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-muted);">No dual confluence candidates found.</td></tr>`;
+  } else {
+    dual.forEach((r, idx) => {
+      const match = D.candidates.find(c => c.symbol === r.symbol) || {};
+      const stop = match.stop ? `₹${Number(match.stop).toFixed(2)} (-${match.stop_pct || 8.0}%)` : '-';
+      const target = match.target_2r ? `₹${Number(match.target_2r).toFixed(2)} (+${match.target_2r_pct || 16.0}%)` : '-';
+      const gatesText = Array.isArray(r.gates_list) ? r.gates_list.slice(0, 3).join(', ') + (r.gates_list.length > 3 ? '...' : '') : '-';
+      html += `
+        <tr>
+          <td style="font-weight:700;color:var(--text-muted);">${idx + 1}</td>
+          <td><button class="briefing-sym-btn" onclick="openModal('${r.symbol}')">${r.symbol}</button></td>
+          <td style="color:#38bdf8;font-weight:600;">${r.daily_frameworks} Framework(s)</td>
+          <td><span class="briefing-card-badge" style="background:rgba(192,132,252,0.15);color:#c084fc;">Grade ${r.grade} (${r.weekly_gates}/12)</span></td>
+          <td class="num"><strong style="color:#f8fafc;font-family:'JetBrains Mono',monospace;">₹${Number(r.close).toFixed(2)}</strong></td>
+          <td class="num" style="color:#f43f5e;font-family:'JetBrains Mono',monospace;">${stop}</td>
+          <td class="num" style="color:#34d399;font-family:'JetBrains Mono',monospace;">${target}</td>
+          <td style="font-size:0.75rem;color:var(--text-secondary);">${gatesText}</td>
+          <td style="text-align:center;"><button class="chart-link-pill" onclick="openModal('${r.symbol}')" style="font-size:0.72rem;padding:2px 8px;">Chart ↗</button></td>
+        </tr>
+      `;
+    });
+  }
+  html += `</tbody></table></div></div>`;
+
+  // 4. Swing Watchlist (WEEKLY_ONLY)
+  html += `
+    <div class="briefing-card">
+      <div class="briefing-card-header">
+        <div class="briefing-card-title">
+          <span>🔭</span>
+          <span>4. Swing Watchlist: Pristine Weekly Accumulation Bases</span>
+        </div>
+        <span class="briefing-card-badge" style="background:rgba(251,191,36,0.12);color:#fbbf24;border:1px solid rgba(251,191,36,0.3);">
+          Setting Up Prior to Daily Breakout
+        </span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="briefing-table">
+          <thead>
+            <tr>
+              <th style="width:36px;">#</th>
+              <th>Symbol</th>
+              <th>Weekly Grade</th>
+              <th class="num">Close (₹)</th>
+              <th class="num">13W Ret</th>
+              <th class="num">52W Ret</th>
+              <th class="num">RVOL 13W</th>
+              <th class="num">Ext / 30W MA</th>
+              <th>Weekly Gates Cleared</th>
+              <th style="width:70px;text-align:center;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+  `;
+  if (swing.length === 0) {
+    html += `<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text-muted);">No weekly swing watchlist candidates found.</td></tr>`;
+  } else {
+    swing.forEach((r, idx) => {
+      const wret13 = r.wret13 !== null && r.wret13 !== undefined ? `${Number(r.wret13) > 0 ? '+' : ''}${Number(r.wret13).toFixed(1)}%` : '-';
+      const wret52 = r.wret52 !== null && r.wret52 !== undefined ? `${Number(r.wret52) > 0 ? '+' : ''}${Number(r.wret52).toFixed(1)}%` : '-';
+      const gatesText = Array.isArray(r.gates_list) ? r.gates_list.slice(0, 3).join(', ') + (r.gates_list.length > 3 ? '...' : '') : '-';
+      html += `
+        <tr>
+          <td style="font-weight:700;color:var(--text-muted);">${idx + 1}</td>
+          <td><button class="briefing-sym-btn" onclick="openModal('${r.symbol}')">${r.symbol}</button></td>
+          <td><span class="briefing-card-badge" style="background:rgba(251,191,36,0.15);color:#fbbf24;">Grade ${r.grade} (${r.gates}/12)</span></td>
+          <td class="num"><strong style="color:#f8fafc;font-family:'JetBrains Mono',monospace;">₹${Number(r.close).toFixed(2)}</strong></td>
+          <td class="num" style="color:#34d399;font-family:'JetBrains Mono',monospace;">${wret13}</td>
+          <td class="num" style="color:#34d399;font-family:'JetBrains Mono',monospace;">${wret52}</td>
+          <td class="num" style="font-family:'JetBrains Mono',monospace;">${r.rvol13 ? Number(r.rvol13).toFixed(2) + 'x' : '-'}</td>
+          <td class="num" style="font-family:'JetBrains Mono',monospace;color:#38bdf8;">+${r.ext_ma30 ? Number(r.ext_ma30).toFixed(1) + '%' : '-'}</td>
+          <td style="font-size:0.75rem;color:var(--text-secondary);">${gatesText}</td>
+          <td style="text-align:center;"><button class="chart-link-pill" onclick="openModal('${r.symbol}')" style="font-size:0.72rem;padding:2px 8px;">Chart ↗</button></td>
+        </tr>
+      `;
+    });
+  }
+  html += `</tbody></table></div></div>`;
+
+  // 5. Traps to Avoid Banner
+  html += `
+    <div class="briefing-card" style="background:rgba(244,63,94,0.04);border:1px solid rgba(244,63,94,0.25);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <span style="font-size:1.1rem;">⚠️</span>
+        <strong style="color:#f43f5e;font-size:0.95rem;">Exhaustion & Trap Risks to Avoid</strong>
+      </div>
+      <p style="font-size:0.8rem;color:#cbd5e1;line-height:1.45;margin:0;">
+        Names flagged with climactic volume exhaustion or heavy overhead ceiling supply. Do not chase:
+        <span style="font-family:'JetBrains Mono',monospace;color:#fca5a5;font-weight:700;margin-left:6px;">PETRONET, SCHNEIDER, TDPOWERSYS, NUVAMA</span>
+      </p>
+    </div>
+  `;
+
+  el.innerHTML = html;
 }
 
 function initSectorTrack() {

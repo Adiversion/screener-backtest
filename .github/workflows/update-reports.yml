@@ -45,6 +45,10 @@ jobs:
         continue-on-error: true
         run: python scripts/fetch_delivery.py --days 40
 
+      - name: Refresh latest bhavcopy EQ prices
+        continue-on-error: true
+        run: python scripts/fetch_data.py --source bhavdata --days 1 --append data/nse_all_history.parquet
+
       - name: Refresh NSE supplementary annex (board meetings, actions, surveillance)
         continue-on-error: true
         run: python scripts/fetch_nse_annex.py
@@ -80,6 +84,17 @@ jobs:
       - name: Weekly timeframe confluence screen
         continue-on-error: true
         run: python scripts/screen_weekly.py
+
+      - name: Publish Executive Report to GitHub Summary
+        continue-on-error: true
+        run: |
+          if [ -f reports/DECISIONS.md ]; then
+            cat reports/DECISIONS.md >> $GITHUB_STEP_SUMMARY
+            echo -e "\n---\n" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ -f reports/WEEKLY_CONFLUENCE.md ]; then
+            cat reports/WEEKLY_CONFLUENCE.md >> $GITHUB_STEP_SUMMARY
+          fi
 
       # The static research site: a 0.5 MB index plus one lazily-fetched detail
       # file per symbol, so the search box works on a phone with no backend.

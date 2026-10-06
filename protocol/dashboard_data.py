@@ -195,6 +195,35 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp | None 
 
     full_universe = build_universe_lookup(feat, candidates, deliv_map)
 
+    decisions_data = _load_report("decisions.json")
+    swing_watchlist = []
+    dual_confluence = []
+    if not weekly_df.empty and "bucket" in weekly_df.columns:
+        w_only = weekly_df[weekly_df["bucket"] == "WEEKLY_ONLY"].sort_values(by="n_gates", ascending=False)
+        for _, r in w_only.head(15).iterrows():
+            swing_watchlist.append({
+                "symbol": str(r["Symbol"]),
+                "gates": int(r["n_gates"]) if pd.notna(r.get("n_gates")) else 0,
+                "grade": str(r.get("w_grade", "")),
+                "close": round(float(r["weekly_close"]), 2) if pd.notna(r.get("weekly_close")) else None,
+                "wret13": round(float(r["wret13"]) * 100, 1) if pd.notna(r.get("wret13")) else None,
+                "wret52": round(float(r["wret52"]) * 100, 1) if pd.notna(r.get("wret52")) else None,
+                "rvol13": round(float(r["w_rvol13"]), 2) if pd.notna(r.get("w_rvol13")) else None,
+                "ext_ma30": round(float(r["w_ext_ma30"]) * 100, 1) if pd.notna(r.get("w_ext_ma30")) else None,
+                "gates_list": _parse_weekly_gates(r.get("gates")),
+            })
+        both_df = weekly_df[weekly_df["bucket"] == "BOTH"].sort_values(by=["n_frameworks", "n_gates"], ascending=False)
+        for _, r in both_df.head(15).iterrows():
+            dual_confluence.append({
+                "symbol": str(r["Symbol"]),
+                "daily_frameworks": int(r["n_frameworks"]) if pd.notna(r.get("n_frameworks")) else 0,
+                "weekly_gates": int(r["n_gates"]) if pd.notna(r.get("n_gates")) else 0,
+                "grade": str(r.get("w_grade", "")),
+                "close": round(float(r["daily_close"]), 2) if pd.notna(r.get("daily_close")) else None,
+                "frameworks_str": str(r.get("frameworks", "")),
+                "gates_list": _parse_weekly_gates(r.get("gates")),
+            })
+
     return {
         "asof": str(asof.date()),
         "regime": {
@@ -226,6 +255,13 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp | None 
             "both_count": both_cnt,
             "weekly_only_count": weekly_only_cnt,
             "daily_only_count": daily_only_cnt,
+        },
+        "executive_report": {
+            "headline": decisions_data.get("headline", ""),
+            "quality_leaders": decisions_data.get("today", []),
+            "confluence_leaders": decisions_data.get("confluence_top", []),
+            "dual_confluence": dual_confluence,
+            "swing_watchlist": swing_watchlist,
         },
         "candidates": cand_list,
         "universe_lookup": {s: full_universe[s] for s in cand_symbols if s in full_universe},
