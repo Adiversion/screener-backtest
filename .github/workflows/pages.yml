@@ -8,9 +8,6 @@ on:
   push:
     branches:
       - live
-  workflow_run:
-    workflows: ["Update live reports"]
-    types: [completed]
 
 permissions:
   contents: read

@@ -404,8 +404,10 @@ def screen_sector_momentum_leader(
         return []
 
     passed["industry"] = passed["Symbol"].map(lambda s: sector_of.get(str(s), ""))
-    passed["ind_rank"] = passed["industry"].map(lambda i: ind_rank_map.get(i, 50.0))
-    passed = passed[passed["ind_rank"] >= 60.0]  # Sector outside the top 40%
+    is_known_ind = passed["industry"].isin(ind_rank_map.keys()) & ~passed["industry"].isin(["", "Unknown"])
+    passed["ind_rank"] = np.where(is_known_ind, passed["industry"].map(lambda i: ind_rank_map.get(i, 50.0)), passed["rs_rating"])
+    # Sector RS >= 60th percentile, or for unmapped symbols, stock RS >= 70th percentile
+    passed = passed[(is_known_ind & (passed["ind_rank"] >= 60.0)) | (~is_known_ind & (passed["rs_rating"] >= 70.0))]
     if passed.empty:
         return []
 

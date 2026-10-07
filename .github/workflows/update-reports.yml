@@ -1,11 +1,14 @@
 name: Update live reports
 
 # Runs the whole engine on GitHub's servers - no PC needed.
-#  - every day at 17:30 IST (12:00 UTC)
+#  - Mon-Fri at 17:05 IST (11:35 UTC) right after market close & Bhavcopy publication
+#  - Mon-Fri catch-up at 18:05 IST (12:35 UTC) in case NSE published late
+#  - Note: off-minute (:35) bypasses GitHub Actions top-of-hour queue delay
 #  - or on demand from the Actions tab / the API ("Run workflow")
 on:
   schedule:
-    - cron: "0 12 * * *"
+    - cron: "35 11 * * 1-5"
+    - cron: "35 12 * * 1-5"
   workflow_dispatch:
     inputs:
       full_backtest:
@@ -47,7 +50,9 @@ jobs:
 
       - name: Refresh latest bhavcopy EQ prices
         continue-on-error: true
-        run: python scripts/fetch_data.py --source bhavdata --days 1 --append data/nse_all_history.parquet
+        run: |
+          python scripts/fetch_data.py --source bhavdata --days 1 --append data/nse_all_history.parquet
+          python scripts/fetch_data.py --source bhavdata --days 1 --append data/universe_history.parquet
 
       - name: Refresh NSE supplementary annex (board meetings, actions, surveillance)
         continue-on-error: true
