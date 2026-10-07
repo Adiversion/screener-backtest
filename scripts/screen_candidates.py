@@ -107,7 +107,7 @@ const CO = {ORGANIC:'#1a7f37',PENDING:'#9a6700',TRAP_RISK:'#b42318',REJECTED:'#8
 const f = v => (v===null||v===undefined) ? '-' : v;
 const formatDMY = d => {
   if (!d) return '-';
-  const m = String(d).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const m = String(d).match(/^(\\d{4})-(\\d{2})-(\\d{2})/);
   return m ? `${m[3]}/${m[2]}/${m[1]}` : d;
 };
 document.getElementById('sub').textContent = 'Session ' + formatDMY(D.asof) + ' | ' +
