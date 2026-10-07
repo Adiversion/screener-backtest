@@ -4,6 +4,7 @@
   "description": "NSE Quantitative Screener & Forward Trade Verification Engine",
   "scripts": {
     "check": "python scripts/pre_push_check.py",
+    "design": "python scripts/design_audit.py",
     "test": "python scripts/pre_push_check.py",
     "build": "python scripts/build_interactive_dashboard.py --data data/nse_all_history.parquet --asof 2026-10-01"
   },

@@ -8,33 +8,151 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script>
+  /* Theme is chosen before the stylesheet paints, so the page never flashes
+     the wrong colours. Order: saved choice, then the operating system. */
+  (function () {
+    var KEY = 'astra-theme';
+    var saved = null;
+    try { saved = localStorage.getItem(KEY); } catch (e) { saved = null; }
+    var system = 'dark';
+    try {
+      system = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    } catch (e) { system = 'dark'; }
+    var theme = (saved === 'light' || saved === 'dark') ? saved : system;
+    document.documentElement.setAttribute('data-theme', theme);
+  })();
+</script>
   <style>
+    /* ==================================================================
+       DESIGN TOKENS — dark default, `html[data-theme="light"]` overrides.
+       ================================================================== */
     :root {
       color-scheme: dark;
+
+      --sky-rgb: 56, 189, 248;
+      --emerald-rgb: 16, 185, 129;
+      --emerald2-rgb: 52, 211, 153;
+      --purple-rgb: 192, 132, 252;
+      --purple2-rgb: 168, 85, 247;
+      --amber-rgb: 251, 191, 36;
+      --amber2-rgb: 245, 158, 11;
+      --rose2-rgb: 244, 63, 94;
+      --rose-soft-rgb: 248, 113, 113;
+      --red-rgb: 239, 68, 68;
+
+      --flip-rgb: 255, 255, 255;
+      --card-rgb: 13, 19, 31;
+      --tint-rgb: 15, 23, 42;
+      --toast-ok-rgb: 6, 32, 22;
+      --toast-bad-rgb: 38, 7, 16;
+      --toast-info-rgb: 7, 24, 43;
+
       --bg-base: #030712;
       --bg-surface: #0b1120;
       --bg-card: rgba(15, 23, 42, 0.75);
-      --bg-card-hover: rgba(30, 41, 59, 0.85);
+      --surface-2: #0f172a;
+      --surface-hover: #1e293b;
+      --nav-bg: rgba(11, 17, 32, 0.8);
+      --input-bg: rgba(255, 255, 255, 0.05);
+      --table-head-bg: #090d16;
+      --body-bg: radial-gradient(circle at top right, #0d1527 0%, #030712 100%);
+
       --border: rgba(255, 255, 255, 0.08);
-      --border-accent: rgba(56, 189, 248, 0.25);
+      --row-border: rgba(255, 255, 255, 0.04);
+      --row-hover: rgba(255, 255, 255, 0.025);
+      --overlay: rgba(3, 7, 18, 0.85);
+      --track: rgba(255, 255, 255, 0.08);
+
       --text-main: #f8fafc;
-      --text-secondary: #94a3b8;
-      --text-muted: #64748b;
-      --emerald: #10b981;
-      --emerald-glow: rgba(16, 185, 129, 0.15);
-      --cyan: #38bdf8;
-      --cyan-glow: rgba(56, 189, 248, 0.15);
-      --amber: #f59e0b;
-      --amber-glow: rgba(245, 158, 11, 0.15);
-      --rose: #f43f5e;
-      --rose-glow: rgba(244, 63, 94, 0.15);
-      --purple: #a855f7;
+      --text-strong: #ffffff;
+      --text-primary: #f1f5f9;
+      --text-body: #cbd5e1;
+      --text-secondary: #a2b0c4;
+      --text-muted: #8b98ad;
+
+      --emerald: rgb(16, 185, 129);
+      --cyan: rgb(56, 189, 248);
+      --rose: rgb(244, 63, 94);
+      --accent: rgb(56, 189, 248);
+      --on-accent: #ffffff;
+
+      --logo-mark-bg: linear-gradient(135deg, #10b981 0%, #38bdf8 100%);
+      --btn-primary-bg: linear-gradient(135deg, #059669 0%, #10b981 100%);
+      --btn-primary-bg-hover: linear-gradient(135deg, #047857 0%, #059669 100%);
+      --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+      --shadow-pop: 0 20px 40px rgba(0, 0, 0, 0.6);
+      --shadow-toast: 0 10px 25px rgba(0, 0, 0, 0.5);
+
+      --r-sm: 6px;
+      --r-pill: 20px;
+    }
+
+    /* ==================================================================
+       LIGHT THEME
+       ================================================================== */
+    html[data-theme="light"] {
+      color-scheme: light;
+
+      --sky-rgb: 7, 89, 133;
+      --emerald-rgb: 4, 120, 87;
+      --emerald2-rgb: 4, 108, 77;
+      --purple-rgb: 126, 34, 206;
+      --purple2-rgb: 126, 34, 206;
+      --amber-rgb: 146, 64, 14;
+      --amber2-rgb: 146, 64, 14;
+      --rose2-rgb: 190, 18, 60;
+      --rose-soft-rgb: 185, 28, 28;
+      --red-rgb: 185, 28, 28;
+
+      --flip-rgb: 15, 23, 42;
+      --card-rgb: 255, 255, 255;
+      --tint-rgb: 241, 245, 249;
+      --toast-ok-rgb: 236, 253, 245;
+      --toast-bad-rgb: 255, 241, 242;
+      --toast-info-rgb: 239, 246, 255;
+
+      --bg-base: #f4f6fa;
+      --bg-surface: #ffffff;
+      --bg-card: rgba(255, 255, 255, 0.94);
+      --surface-2: #f1f5f9;
+      --surface-hover: #eef2f7;
+      --nav-bg: rgba(255, 255, 255, 0.88);
+      --input-bg: #ffffff;
+      --table-head-bg: #f1f5f9;
+      --body-bg: radial-gradient(1200px circle at 100% 0%, rgba(56, 189, 248, 0.1), transparent 55%), var(--bg-base);
+
+      --border: rgba(15, 23, 42, 0.12);
+      --row-border: #e8edf3;
+      --row-hover: #f6f8fb;
+      --overlay: rgba(15, 23, 42, 0.45);
+      --track: rgba(15, 23, 42, 0.1);
+
+      --text-main: #0b1220;
+      --text-strong: #050a12;
+      --text-primary: #0b1220;
+      --text-body: #334155;
+      --text-secondary: #4a5a70;
+      --text-muted: #4a586a;
+
+      --emerald: rgb(4, 120, 87);
+      --cyan: rgb(3, 105, 161);
+      --rose: rgb(190, 18, 60);
+      --accent: rgb(3, 105, 161);
+      --on-accent: #ffffff;
+
+      --shadow-card: 0 8px 20px -10px rgba(15, 23, 42, 0.2);
+      --shadow-pop: 0 20px 40px -18px rgba(15, 23, 42, 0.3);
+      --shadow-toast: 0 10px 25px -10px rgba(15, 23, 42, 0.3);
+
+      --logo-mark-bg: linear-gradient(135deg, #047857 0%, #0369a1 100%);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      background: radial-gradient(circle at top right, #0d1527 0%, #030712 100%);
+      background: var(--body-bg);
       color: var(--text-main);
       min-height: 100vh;
       min-height: 100dvh;
@@ -50,11 +168,11 @@
 
     /* Flash Animations */
     @keyframes flashGreen {
-      0% { background-color: rgba(16, 185, 129, 0.35); }
+      0% { background-color: rgba(var(--emerald-rgb),0.35); }
       100% { background-color: transparent; }
     }
     @keyframes flashRed {
-      0% { background-color: rgba(244, 63, 94, 0.35); }
+      0% { background-color: rgba(var(--rose2-rgb),0.35); }
       100% { background-color: transparent; }
     }
     .flash-up { animation: flashGreen 0.8s ease-out; }
@@ -67,7 +185,7 @@
       align-items: center;
       padding: 16px 24px;
       border-bottom: 1px solid var(--border);
-      background: rgba(11, 17, 32, 0.8);
+      background: var(--nav-bg);
       backdrop-filter: blur(16px);
     }
     .brand-wrap {
@@ -78,21 +196,21 @@
     .brand-logo-mark {
       width: 36px;
       height: 36px;
-      background: linear-gradient(135deg, #10b981 0%, #38bdf8 100%);
+      background: var(--logo-mark-bg);
       border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 1.1rem;
       font-weight: 900;
-      color: #030712;
-      box-shadow: 0 0 16px rgba(16, 185, 129, 0.3);
+      color: var(--on-accent);
+      box-shadow: 0 0 16px rgba(var(--emerald-rgb),0.3);
     }
     .brand-title {
       font-size: 1.15rem;
       font-weight: 800;
       letter-spacing: -0.02em;
-      color: #ffffff;
+      color: var(--text-strong);
     }
     .brand-sub {
       font-size: 0.75rem;
@@ -110,7 +228,7 @@
       border-radius: 6px;
       cursor: pointer;
       border: 1px solid var(--border);
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(var(--flip-rgb),0.05);
       color: var(--text-main);
       transition: all 0.2s;
       display: inline-flex;
@@ -119,25 +237,25 @@
       text-decoration: none;
     }
     .btn:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: rgba(255, 255, 255, 0.2);
+      background: rgba(var(--flip-rgb),0.1);
+      border-color: rgba(var(--flip-rgb),0.2);
     }
     .btn-primary {
-      background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-      color: #ffffff;
+      background: var(--btn-primary-bg);
+      color: var(--on-accent);
       border: none;
-      box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+      box-shadow: 0 0 12px rgba(var(--emerald-rgb),0.3);
     }
     .btn-primary:hover {
-      background: linear-gradient(135deg, #047857 0%, #059669 100%);
+      background: var(--btn-primary-bg-hover);
     }
     .btn-amber {
-      background: rgba(245, 158, 11, 0.15);
-      color: #fbbf24;
-      border-color: rgba(245, 158, 11, 0.35);
+      background: rgba(var(--amber2-rgb),0.15);
+      color: rgb(var(--amber-rgb));
+      border-color: rgba(var(--amber2-rgb),0.35);
     }
     .btn-amber:hover {
-      background: rgba(245, 158, 11, 0.25);
+      background: rgba(var(--amber2-rgb),0.25);
     }
 
     /* Main Container - Full Screen Edge-to-Edge Workstation Layout */
@@ -215,16 +333,16 @@
       font-weight: 700;
       padding: 4px 10px;
       border-radius: 20px;
-      background: rgba(16, 185, 129, 0.12);
-      color: #34d399;
-      border: 1px solid rgba(16, 185, 129, 0.3);
+      background: rgba(var(--emerald-rgb),0.12);
+      color: rgb(var(--emerald2-rgb));
+      border: 1px solid rgba(var(--emerald-rgb),0.3);
     }
     .pulse-dot {
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      background: #10b981;
-      box-shadow: 0 0 8px #10b981;
+      background: rgb(var(--emerald-rgb));
+      box-shadow: 0 0 8px rgb(var(--emerald-rgb));
       animation: pulse 1.5s infinite;
     }
     @keyframes pulse {
@@ -249,20 +367,20 @@
       pointer-events: auto;
       padding: 12px 16px;
       border-radius: 8px;
-      background: rgba(15, 23, 42, 0.95);
+      background: rgba(var(--tint-rgb),0.95);
       border: 1px solid var(--border);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      box-shadow: var(--shadow-toast);
       font-size: 0.82rem;
       line-height: 1.4;
-      color: #f8fafc;
+      color: var(--text-strong);
       animation: slideInRight 0.3s ease;
       display: flex;
       align-items: flex-start;
       gap: 10px;
     }
-    .toast.success { border-color: rgba(16,185,129,0.4); background: rgba(6, 32, 22, 0.95); }
-    .toast.error { border-color: rgba(244,63,94,0.4); background: rgba(38, 7, 16, 0.95); }
-    .toast.info { border-color: rgba(56,189,248,0.4); background: rgba(7, 24, 43, 0.95); }
+    .toast.success { border-color: rgba(var(--emerald-rgb),0.4); background: rgba(var(--toast-ok-rgb),0.95); }
+    .toast.error { border-color: rgba(var(--rose2-rgb),0.4); background: rgba(var(--toast-bad-rgb),0.95); }
+    .toast.info { border-color: rgba(var(--sky-rgb),0.4); background: rgba(var(--toast-info-rgb),0.95); }
     @keyframes slideInRight {
       from { transform: translateX(100%); opacity: 0; }
       to { transform: translateX(0); opacity: 1; }
@@ -272,7 +390,7 @@
     .section-title {
       font-size: 1.05rem;
       font-weight: 700;
-      color: #f1f5f9;
+      color: var(--text-primary);
       margin-bottom: 12px;
       display: flex;
       align-items: center;
@@ -284,7 +402,7 @@
       border-radius: 10px;
       overflow: hidden;
       margin-bottom: 28px;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+      box-shadow: var(--shadow-card);
     }
     .table-scroll {
       overflow-x: auto;
@@ -297,8 +415,8 @@
       text-align: left;
     }
     thead th {
-      background: #090d16;
-      color: var(--text-muted);
+      background: var(--table-head-bg);
+      color: var(--text-secondary);
       font-weight: 700;
       font-size: 0.72rem;
       text-transform: uppercase;
@@ -311,11 +429,11 @@
     }
     thead th.num, tbody td.num { text-align: right; }
     tbody tr {
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      border-bottom: 1px solid var(--row-border);
       transition: background 0.15s ease;
     }
     tbody tr:hover {
-      background: rgba(255, 255, 255, 0.025);
+      background: var(--row-hover);
     }
     tbody td {
       padding: 12px 14px;
@@ -330,7 +448,7 @@
       border-radius: 4px;
       display: inline-block;
     }
-    .pos-standard { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); }
+    .pos-standard { background: rgba(var(--sky-rgb),0.15); color: rgb(var(--sky-rgb)); border: 1px solid rgba(var(--sky-rgb),0.35); }
 
     .btn-action-sm {
       padding: 4px 8px;
@@ -339,19 +457,19 @@
       border-radius: 4px;
       cursor: pointer;
       border: 1px solid var(--border);
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(var(--flip-rgb),0.05);
       color: var(--text-main);
       transition: all 0.15s;
     }
-    .btn-action-sm:hover { background: rgba(255, 255, 255, 0.12); }
-    .btn-lock { color: #34d399; border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.08); }
-    .btn-close { color: #f87171; border-color: rgba(244, 63, 94, 0.4); background: rgba(244, 63, 94, 0.08); }
+    .btn-action-sm:hover { background: rgba(var(--flip-rgb),0.12); }
+    .btn-lock { color: rgb(var(--emerald2-rgb)); border-color: rgba(var(--emerald-rgb),0.4); background: rgba(var(--emerald-rgb),0.08); }
+    .btn-close { color: rgb(var(--rose-soft-rgb)); border-color: rgba(var(--rose2-rgb),0.4); background: rgba(var(--rose2-rgb),0.08); }
 
     /* Target Progress Bar */
     .progress-track {
       width: 90px;
       height: 6px;
-      background: rgba(255, 255, 255, 0.08);
+      background: var(--track);
       border-radius: 3px;
       overflow: hidden;
       display: inline-block;
@@ -369,7 +487,7 @@
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(3, 7, 18, 0.85);
+      background: var(--overlay);
       backdrop-filter: blur(8px);
       display: none;
       align-items: center;
@@ -379,7 +497,7 @@
     }
     .modal-overlay.open { display: flex; }
     .modal-card {
-      background: #0b1120;
+      background: var(--bg-surface);
       border: 1px solid var(--border);
       border-radius: 12px;
       width: 100%;
@@ -387,7 +505,7 @@
       max-height: 88vh;
       overflow-y: auto;
       padding: 24px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      box-shadow: var(--shadow-pop);
     }
     .modal-header {
       display: flex;
@@ -402,7 +520,7 @@
       cursor: pointer;
       color: var(--text-muted);
     }
-    .close-icon:hover { color: #ffffff; }
+    .close-icon:hover { color: var(--text-strong); }
 
     /* Form Inputs */
     .form-group {
@@ -418,10 +536,10 @@
     .form-input {
       width: 100%;
       padding: 8px 12px;
-      background: rgba(255, 255, 255, 0.05);
+      background: var(--input-bg);
       border: 1px solid var(--border);
       border-radius: 6px;
-      color: #ffffff;
+      color: var(--text-main);
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.85rem;
     }
@@ -469,7 +587,7 @@
         right: 0;
         height: calc(58px + env(safe-area-inset-bottom, 0px));
         padding-bottom: env(safe-area-inset-bottom, 0px);
-        background: rgba(11, 17, 32, 0.95);
+        background: rgba(var(--card-rgb),0.95);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border-top: 1px solid var(--border);
@@ -510,7 +628,238 @@
         line-height: 1;
       }
     }
-  </style>
+
+  /* ==================================================================
+     THEME TOGGLE — one control, three placements (nav, drawer, dock).
+     ================================================================== */
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 11px;
+    min-height: 34px;
+    border-radius: var(--r-pill);
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 0.74rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+  }
+
+  .theme-toggle:hover {
+    color: var(--text-primary);
+    border-color: var(--accent);
+    background: var(--surface-hover);
+  }
+
+  .theme-toggle:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .theme-toggle .theme-icon { font-size: 0.95rem; line-height: 1; }
+
+  /* The dock shows the icon only. */
+  .dock-btn .theme-icon { font-size: 1.15rem; line-height: 1; }
+
+  /* Light theme: soften the two decorative glows, which are tuned for a
+     dark page and read as haze on white. */
+  html[data-theme="light"] .hero-banner::before { opacity: 0.35; }
+  html[data-theme="light"] .pulse-dot { box-shadow: none; }
+  html[data-theme="light"] .bento-tile:hover,
+  html[data-theme="light"] .stock-card:hover { transform: none; }
+
+    /* ================================================================
+       POLISH
+       ================================================================ */
+    html { background: var(--bg-base); }
+
+    .mono, td.num, th.num, .hud-val { font-variant-numeric: tabular-nums; }
+
+    a:focus-visible,
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    [tabindex]:focus-visible {
+      outline: 2px solid var(--cyan);
+      outline-offset: 2px;
+      border-radius: var(--r-sm);
+    }
+
+    body, .app-header, .hud-card, .table-card, .action-bar, .modal-card,
+    .mobile-bottom-dock, .btn, .theme-toggle {
+      transition: background-color 0.25s ease, border-color 0.25s ease,
+                  color 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  /* ===== RESTYLE v2 BEGIN ===== */
+    /* ==================================================================
+       RESTYLE v2 — the dashboard layer, adapted to the class names and
+       tokens of THIS template (it has no --blue-rgb; the accent is sky).
+       Delete between the BEGIN and END marks to return to the earlier look.
+       ================================================================== */
+
+    :root {
+      --fs-2xs: 0.68rem;
+      --fs-xs: 0.72rem;
+      --fs-sm: 0.78rem;
+      --fs-md: 0.84rem;
+      --fs-lg: 0.95rem;
+      --fs-xl: clamp(1.08rem, 0.94rem + 0.55vw, 1.42rem);
+      --fs-2xl: clamp(1.3rem, 1rem + 1.05vw, 1.85rem);
+      --fs-num: clamp(1.45rem, 1.15rem + 0.9vw, 1.9rem);
+
+      --sp-1: 4px;
+      --sp-2: 8px;
+      --sp-3: 12px;
+      --sp-4: 16px;
+      --sp-5: 20px;
+      --sp-6: 24px;
+      --sp-8: 32px;
+      --sp-10: 40px;
+
+      --r-xs: 6px;
+      --r-md: 12px;
+      --r-lg: 16px;
+      --r-xl: 20px;
+
+      --e-1: 0 1px 2px rgba(0, 0, 0, 0.18), 0 2px 8px -2px rgba(0, 0, 0, 0.22);
+      --e-2: 0 2px 4px rgba(0, 0, 0, 0.16), 0 12px 28px -12px rgba(0, 0, 0, 0.38);
+      --e-3: 0 10px 44px -14px rgba(0, 0, 0, 0.6);
+      --hair: inset 0 1px 0 0 rgba(var(--flip-rgb), 0.05);
+    }
+
+    html[data-theme="light"] {
+      --e-1: 0 1px 2px rgba(15, 23, 42, 0.06), 0 2px 8px -3px rgba(15, 23, 42, 0.12);
+      --e-2: 0 2px 4px rgba(15, 23, 42, 0.06), 0 12px 28px -14px rgba(15, 23, 42, 0.2);
+      --e-3: 0 16px 46px -18px rgba(15, 23, 42, 0.28);
+      --hair: inset 0 1px 0 0 rgba(255, 255, 255, 0.9);
+    }
+
+    body { font-size: var(--fs-lg); line-height: 1.55; letter-spacing: -0.005em; }
+
+    ::selection { background: rgba(var(--sky-rgb), 0.3); }
+
+    [id] { scroll-margin-top: 88px; }
+
+    /* ---------- app bar ---------- */
+    .app-header { position: relative; padding: 12px 22px; box-shadow: var(--e-1); }
+    .app-header::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -1px;
+      height: 1px;
+      pointer-events: none;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(var(--emerald-rgb), 0.5) 22%,
+        rgba(var(--sky-rgb), 0.45) 60%,
+        transparent 100%);
+    }
+
+    .brand-logo-mark { width: 34px; height: 34px; border-radius: var(--r-md); }
+    .brand-title { font-size: var(--fs-xl); letter-spacing: -0.035em; }
+    .brand-sub { font-size: var(--fs-sm); }
+    .header-actions { gap: var(--sp-3); }
+
+    .btn { border-radius: 999px; padding: 8px 15px; font-size: var(--fs-sm); }
+    .btn-primary, .btn-amber { border-radius: 999px; }
+    .theme-toggle { border-radius: 999px; }
+    .live-status-pill { border-radius: 999px; font-size: var(--fs-sm); }
+
+    /* ---------- account HUD ---------- */
+    .hud-grid { gap: var(--sp-4); margin-bottom: var(--sp-6); }
+    .hud-card {
+      border-radius: var(--r-lg);
+      padding: 18px;
+      box-shadow: var(--e-1), var(--hair);
+    }
+    .hud-label { font-size: var(--fs-2xs); letter-spacing: 0.09em; color: var(--text-secondary); }
+    .hud-val { font-size: var(--fs-num); font-weight: 700; letter-spacing: -0.035em; line-height: 1.1; }
+    .hud-sub { font-size: var(--fs-xs); }
+
+    /* ---------- action bar ---------- */
+    .action-bar {
+      border-radius: var(--r-lg);
+      padding: 14px 18px;
+      margin-bottom: var(--sp-5);
+      box-shadow: var(--e-1), var(--hair);
+    }
+
+    /* ---------- tables ---------- */
+    .section-title { font-size: var(--fs-xl); letter-spacing: -0.03em; margin-bottom: var(--sp-3); }
+    .table-card { border-radius: var(--r-xl); box-shadow: var(--e-2); margin-bottom: var(--sp-8); }
+    .table-scroll { max-height: 68vh; }
+    table { font-size: var(--fs-md); }
+    thead th {
+      padding: 12px 14px;
+      font-size: var(--fs-2xs);
+      letter-spacing: 0.09em;
+      border-bottom: 1px solid var(--border) !important;
+    }
+    tbody td { padding: 12px 14px; }
+    tbody tr:nth-child(even) { background: rgba(var(--flip-rgb), 0.015); }
+    tbody tr:hover { background: var(--surface-hover); }
+
+    /* ---------- badges and buttons ---------- */
+    .pos-tag, .pos-standard { border-radius: 999px; }
+    .btn-action-sm { border-radius: 999px; padding: 5px 11px; font-size: var(--fs-xs); }
+
+    /* ---------- modal and form ---------- */
+    .modal-card { border-radius: var(--r-xl); box-shadow: var(--e-3); }
+    .close-icon {
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--r-md);
+      background: rgba(var(--flip-rgb), 0.05);
+      border: 1px solid var(--border);
+      font-size: 1.1rem;
+      line-height: 1;
+    }
+    .form-input { min-height: 40px; border-radius: var(--r-md); font-size: var(--fs-md); }
+    .toast { border-radius: var(--r-md); box-shadow: var(--e-3); }
+
+    .progress-track, .progress-fill { border-radius: 999px; }
+
+    /* ---------- mobile dock ---------- */
+    .mobile-bottom-dock { box-shadow: 0 -8px 30px -12px rgba(0, 0, 0, 0.5); }
+    .dock-btn { position: relative; }
+    .dock-btn.active::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 22px;
+      height: 2px;
+      border-radius: 999px;
+      background: rgb(var(--sky-rgb));
+    }
+
+    @media (max-width: 767px) {
+      .section-title { font-size: 1.05rem; }
+      .hud-card { padding: 14px; }
+      .table-card { border-radius: var(--r-lg); }
+      .app-header { padding: 12px 16px; }
+    }
+/* ===== RESTYLE v2 END ===== */
+</style>
 </head>
 <body>
 
@@ -524,7 +873,12 @@
       </div>
     </div>
     <div class="header-actions">
-      <a href="verifier.html" class="btn btn-amber" style="border-color:rgba(56,189,248,0.4);color:#38bdf8;background:rgba(56,189,248,0.1);">⚡ 7-14D Forward Verifier</a>
+      <button id="themeToggleBtn" class="btn theme-toggle" onclick="toggleTheme()"
+              title="Switch between light and dark theme" aria-label="Switch between light and dark theme">
+        <span class="theme-icon" data-theme-icon>☀️</span>
+        <span data-theme-label>Light</span>
+      </button>
+      <a href="verifier.html" class="btn btn-amber" style="border-color:rgba(var(--sky-rgb),0.4);color:rgb(var(--sky-rgb));background:rgba(var(--sky-rgb),0.1);">⚡ 7-14D Forward Verifier</a>
       <a href="screener.html" class="btn">🎯 Back to Screener</a>
       <button class="btn btn-primary" onclick="openOrderModal()">➕ New Paper Order</button>
     </div>
@@ -536,7 +890,7 @@
     <div class="hud-grid">
       <div class="hud-card">
         <div class="hud-label">Total Account Value</div>
-        <div class="hud-val mono" id="hudTotalVal" style="color:#ffffff;">₹10,00,000</div>
+        <div class="hud-val mono" id="hudTotalVal" style="color:var(--text-strong);">₹10,00,000</div>
         <div class="hud-sub">Initial Capital: <span class="mono">₹10,00,000</span></div>
       </div>
       <div class="hud-card">
@@ -551,12 +905,12 @@
       </div>
       <div class="hud-card">
         <div class="hud-label">Available Cash (Margin)</div>
-        <div class="hud-val mono" id="hudCashVal" style="color:#38bdf8;">₹10,00,000</div>
+        <div class="hud-val mono" id="hudCashVal" style="color:rgb(var(--sky-rgb));">₹10,00,000</div>
         <div class="hud-sub" id="hudInvestedVal">Invested: ₹0</div>
       </div>
       <div class="hud-card">
         <div class="hud-label">Paper Win Rate</div>
-        <div class="hud-val mono" id="hudWinRate" style="color:#fbbf24;">--%</div>
+        <div class="hud-val mono" id="hudWinRate" style="color:rgb(var(--amber-rgb));">--%</div>
         <div class="hud-sub" id="hudProfitFactor">Profit Factor: --</div>
       </div>
     </div>
@@ -570,10 +924,10 @@
         </button>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <button id="autoTradeBtn" class="btn" onclick="toggleAutoTrade()" style="color:#10b981;border-color:rgba(16,185,129,0.4);background:rgba(16,185,129,0.12);font-weight:700;" title="Automatic Stop-Loss & 1.5R Profit Taking Engine">
+        <button id="autoTradeBtn" class="btn" onclick="toggleAutoTrade()" style="color:rgb(var(--emerald-rgb));border-color:rgba(var(--emerald-rgb),0.4);background:rgba(var(--emerald-rgb),0.12);font-weight:700;" title="Automatic Stop-Loss & 1.5R Profit Taking Engine">
           <span>🤖</span> Auto-Pilot: ON
         </button>
-        <button id="cloudSyncBtn" class="btn" onclick="triggerManualCloudSync()" style="color:#38bdf8;border-color:rgba(56,189,248,0.3);background:rgba(56,189,248,0.08);font-size:0.78rem;" title="Cloudflare KV Edge Memory (Instant access on Phone & Home PC)">
+        <button id="cloudSyncBtn" class="btn" onclick="triggerManualCloudSync()" style="color:rgb(var(--sky-rgb));border-color:rgba(var(--sky-rgb),0.3);background:rgba(var(--sky-rgb),0.08);font-size:0.78rem;" title="Cloudflare KV Edge Memory (Instant access on Phone & Home PC)">
           <span id="cloudSyncIcon">☁️</span> <span id="cloudSyncText">Edge Synced</span>
         </button>
         <button class="btn" onclick="openOptionsModal()" style="color:var(--text-secondary);font-size:0.78rem;" title="Backup, quotes, and account settings">
@@ -652,7 +1006,7 @@
         <span style="font-size:0.72rem;font-weight:400;color:var(--text-muted);">• Complete Audit Trail of All Autonomous & Manual Executions</span>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <span class="pos-tag" style="background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.4);font-size:0.72rem;">
+        <span class="pos-tag" style="background:rgba(var(--emerald-rgb),0.15);color:rgb(var(--emerald2-rgb));border:1px solid rgba(var(--emerald-rgb),0.4);font-size:0.72rem;">
           🤖 100% Autonomous Risk Guard Active
         </span>
         <button class="btn btn-action-sm" onclick="exportClosedTradesCsv()" title="Download CSV report of all closed trades">
@@ -662,26 +1016,26 @@
     </div>
 
     <!-- Ledger Performance Stats Card -->
-    <div id="ledgerStatsCard" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));gap:12px;margin-bottom:14px;background:rgba(15,23,42,0.65);border:1px solid var(--border);border-radius:10px;padding:14px 18px;">
+    <div id="ledgerStatsCard" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));gap:12px;margin-bottom:14px;background:rgba(var(--tint-rgb),0.65);border:1px solid var(--border);border-radius:10px;padding:14px 18px;">
       <div>
         <div style="font-size:0.68rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;letter-spacing:0.04em;">Total Realized Net P&L</div>
-        <div id="ledgerNetPnl" class="mono" style="font-size:1.25rem;font-weight:800;color:#34d399;margin-top:2px;">₹0</div>
+        <div id="ledgerNetPnl" class="mono" style="font-size:1.25rem;font-weight:800;color:rgb(var(--emerald2-rgb));margin-top:2px;">₹0</div>
       </div>
       <div>
         <div style="font-size:0.68rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;letter-spacing:0.04em;">Win / Loss Record</div>
-        <div id="ledgerRecord" class="mono" style="font-size:1.25rem;font-weight:800;color:#ffffff;margin-top:2px;">0W - 0L (0.0%)</div>
+        <div id="ledgerRecord" class="mono" style="font-size:1.25rem;font-weight:800;color:var(--text-strong);margin-top:2px;">0W - 0L (0.0%)</div>
       </div>
       <div>
         <div style="font-size:0.68rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;letter-spacing:0.04em;">Profit Factor</div>
-        <div id="ledgerProfitFactor" class="mono" style="font-size:1.25rem;font-weight:800;color:#fbbf24;margin-top:2px;">--</div>
+        <div id="ledgerProfitFactor" class="mono" style="font-size:1.25rem;font-weight:800;color:rgb(var(--amber-rgb));margin-top:2px;">--</div>
       </div>
       <div>
         <div style="font-size:0.68rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;letter-spacing:0.04em;">Avg Win / Avg Loss</div>
-        <div id="ledgerAvgWinLoss" class="mono" style="font-size:1.05rem;font-weight:700;color:#cbd5e1;margin-top:4px;">₹0 / ₹0</div>
+        <div id="ledgerAvgWinLoss" class="mono" style="font-size:1.05rem;font-weight:700;color:var(--text-body);margin-top:4px;">₹0 / ₹0</div>
       </div>
       <div>
         <div style="font-size:0.68rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;letter-spacing:0.04em;">Auto-Execution Ratio</div>
-        <div id="ledgerAutoRatio" class="mono" style="font-size:1.05rem;font-weight:700;color:#38bdf8;margin-top:4px;">100% Autonomous</div>
+        <div id="ledgerAutoRatio" class="mono" style="font-size:1.05rem;font-weight:700;color:rgb(var(--sky-rgb));margin-top:4px;">100% Autonomous</div>
       </div>
     </div>
 
@@ -711,7 +1065,7 @@
         <span>🔬</span> Strategy Framework Performance & Edge Scorecard
         <span style="font-size:0.72rem;font-weight:400;color:var(--text-muted);">• Auditing Realized Alpha Across Screener Trading Models (Backed by Cloudflare KV Edge)</span>
       </div>
-      <span class="pos-tag" style="background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);font-size:0.72rem;">
+      <span class="pos-tag" style="background:rgba(var(--sky-rgb),0.15);color:rgb(var(--sky-rgb));border:1px solid rgba(var(--sky-rgb),0.4);font-size:0.72rem;">
         ☁️ Edge Memory Audit Active
       </span>
     </div>
@@ -743,7 +1097,7 @@
   <div id="orderModal" class="modal-overlay" onclick="if(event.target===this)closeOrderModal()">
     <div class="modal-card">
       <div class="modal-header">
-        <h3 style="color:#38bdf8;font-size:1.1rem;font-weight:700;">➕ New Paper Trade Order</h3>
+        <h3 style="color:rgb(var(--sky-rgb));font-size:1.1rem;font-weight:700;">➕ New Paper Trade Order</h3>
         <div class="close-icon" onclick="closeOrderModal()">&times;</div>
       </div>
       <div class="form-group">
@@ -777,29 +1131,29 @@
   <div id="optionsModal" class="modal-overlay" onclick="if(event.target===this)closeOptionsModal()">
     <div class="modal-card" style="max-width:480px;">
       <div class="modal-header">
-        <h3 style="color:#ffffff;font-size:1.05rem;font-weight:700;">⚙️ Account & Portfolio Options</h3>
+        <h3 style="color:var(--text-strong);font-size:1.05rem;font-weight:700;">⚙️ Account & Portfolio Options</h3>
         <div class="close-icon" onclick="closeOptionsModal()">&times;</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:12px;margin-top:6px;">
-        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:12px;">
-          <div style="font-weight:700;color:#38bdf8;font-size:0.85rem;margin-bottom:2px;">Force Real-Time Quote Refresh</div>
+        <div style="background:rgba(var(--flip-rgb),0.03);border:1px solid var(--border);border-radius:8px;padding:12px;">
+          <div style="font-weight:700;color:rgb(var(--sky-rgb));font-size:0.85rem;margin-bottom:2px;">Force Real-Time Quote Refresh</div>
           <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px;">Poll REST APIs to forcefully refresh LTP for all open positions.</div>
-          <button id="refreshQuotesBtn" class="btn btn-action-sm" onclick="refreshAllLiveQuotes(); closeOptionsModal();" style="color:#38bdf8;border-color:rgba(56,189,248,0.3);background:rgba(56,189,248,0.08);">
+          <button id="refreshQuotesBtn" class="btn btn-action-sm" onclick="refreshAllLiveQuotes(); closeOptionsModal();" style="color:rgb(var(--sky-rgb));border-color:rgba(var(--sky-rgb),0.3);background:rgba(var(--sky-rgb),0.08);">
             ⚡ Refresh Quotes Now
           </button>
         </div>
-        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:12px;">
-          <div style="font-weight:700;color:#34d399;font-size:0.85rem;margin-bottom:2px;">Offline JSON Backup</div>
+        <div style="background:rgba(var(--flip-rgb),0.03);border:1px solid var(--border);border-radius:8px;padding:12px;">
+          <div style="font-weight:700;color:rgb(var(--emerald2-rgb));font-size:0.85rem;margin-bottom:2px;">Offline JSON Backup</div>
           <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px;">Save an offline JSON file to your disk or restore a previous backup.</div>
           <div style="display:flex;gap:8px;">
             <button class="btn btn-action-sm" onclick="exportPortfolioJson()" style="font-size:0.75rem;">💾 Download JSON</button>
             <button class="btn btn-action-sm" onclick="document.getElementById('importFileInput').click()" style="font-size:0.75rem;">📥 Restore JSON</button>
           </div>
         </div>
-        <div style="background:rgba(244,63,94,0.06);border:1px solid rgba(244,63,94,0.25);border-radius:8px;padding:12px;">
-          <div style="font-weight:700;color:#f87171;font-size:0.85rem;margin-bottom:2px;">Reset Account Balance</div>
+        <div style="background:rgba(var(--rose2-rgb),0.06);border:1px solid rgba(var(--rose2-rgb),0.25);border-radius:8px;padding:12px;">
+          <div style="font-weight:700;color:rgb(var(--rose-soft-rgb));font-size:0.85rem;margin-bottom:2px;">Reset Account Balance</div>
           <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px;">Wipe all open positions and reset starting cash to ₹10,00,000.</div>
-          <button class="btn btn-action-sm" onclick="resetAccount(); closeOptionsModal();" style="color:#f87171;border-color:rgba(244,63,94,0.4);background:rgba(244,63,94,0.12);font-size:0.75rem;">
+          <button class="btn btn-action-sm" onclick="resetAccount(); closeOptionsModal();" style="color:rgb(var(--rose-soft-rgb));border-color:rgba(var(--rose2-rgb),0.4);background:rgba(var(--rose2-rgb),0.12);font-size:0.75rem;">
             ⚠️ Reset Account to ₹10L Cash
           </button>
         </div>
@@ -811,37 +1165,37 @@
   <div id="dataSourceModal" class="modal-overlay" onclick="if(event.target===this)closeDataSourceModal()">
     <div class="modal-card" style="max-width:760px;">
       <div class="modal-header">
-        <h3 style="color:#f59e0b;font-size:1.15rem;font-weight:700;">📡 Real-Time NSE Ticker Architecture (Zero-Cost & Keyless)</h3>
+        <h3 style="color:rgb(var(--amber2-rgb));font-size:1.15rem;font-weight:700;">📡 Real-Time NSE Ticker Architecture (Zero-Cost & Keyless)</h3>
         <div class="close-icon" onclick="closeDataSourceModal()">&times;</div>
       </div>
-      <div style="font-size:0.85rem;line-height:1.7;color:#cbd5e1;">
+      <div style="font-size:0.85rem;line-height:1.7;color:var(--text-body);">
         <p style="margin-bottom:12px;">
           This paper trading station utilizes <b>real zero-cost market feeds with zero synthetic simulation</b>, powered by open-source GitHub architecture:
         </p>
         
-        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;margin-bottom:12px;">
-          <b style="color:#38bdf8;">1. Finance-Query Live WebSocket Streamer (GitHub: <code>Verdenroz/finance-query</code>)</b>
+        <div style="background:rgba(var(--flip-rgb),0.03);border:1px solid rgba(var(--flip-rgb),0.08);border-radius:8px;padding:12px;margin-bottom:12px;">
+          <b style="color:rgb(var(--sky-rgb));">1. Finance-Query Live WebSocket Streamer (GitHub: <code>Verdenroz/finance-query</code>)</b>
           <p style="margin-top:4px;">
-            Endpoint: <code>wss://finance-query.com/v2/stream</code> & REST: <code>https://finance-query.com/v2/quote/{SYMBOL}.NS</code>. Clean, high-throughput Rust-backed streaming engine (<a href="https://verdenroz.github.io/finance-query/library/streaming/" target="_blank" style="color:#38bdf8;text-decoration:underline;">Documentation</a>). Delivers real-time JSON tick updates for NSE stocks without delays or complex binary decoders.
+            Endpoint: <code>wss://finance-query.com/v2/stream</code> & REST: <code>https://finance-query.com/v2/quote/{SYMBOL}.NS</code>. Clean, high-throughput Rust-backed streaming engine (<a href="https://verdenroz.github.io/finance-query/library/streaming/" target="_blank" style="color:rgb(var(--sky-rgb));text-decoration:underline;">Documentation</a>). Delivers real-time JSON tick updates for NSE stocks without delays or complex binary decoders.
           </p>
         </div>
 
-        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;margin-bottom:12px;">
-          <b style="color:#34d399;">2. Direct Yahoo Finance Streamer + Zero-Dependency Protobuf Decoder</b>
+        <div style="background:rgba(var(--flip-rgb),0.03);border:1px solid rgba(var(--flip-rgb),0.08);border-radius:8px;padding:12px;margin-bottom:12px;">
+          <b style="color:rgb(var(--emerald2-rgb));">2. Direct Yahoo Finance Streamer + Zero-Dependency Protobuf Decoder</b>
           <p style="margin-top:4px;">
             Endpoint: <code>wss://streamer.finance.yahoo.com/</code>. Standby fallback streaming WebSocket decoded client-side using pure JavaScript bit-shifting extracted from <code>D:\GSheetScreener\nse-momentum-engine</code>.
           </p>
         </div>
 
-        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;margin-bottom:12px;">
-          <b style="color:#fbbf24;">3. Keyless Cloudflare Edge Worker Proxy</b>
+        <div style="background:rgba(var(--flip-rgb),0.03);border:1px solid rgba(var(--flip-rgb),0.08);border-radius:8px;padding:12px;margin-bottom:12px;">
+          <b style="color:rgb(var(--amber-rgb));">3. Keyless Cloudflare Edge Worker Proxy</b>
           <p style="margin-top:4px;">
             Endpoint: <code>https://nse-quote.audittool-api.workers.dev/?symbol={SYMBOL}.NS</code>. Keyless Cloudflare Edge Worker providing CORS-free quote verification during market off-hours.
           </p>
         </div>
 
-        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;">
-          <b style="color:#a855f7;">4. Shoonya / Finvasia API (GitHub: <code>Shoonya-API/NorenRestApiPy</code>)</b>
+        <div style="background:rgba(var(--flip-rgb),0.03);border:1px solid rgba(var(--flip-rgb),0.08);border-radius:8px;padding:12px;">
+          <b style="color:rgb(var(--purple2-rgb));">4. Shoonya / Finvasia API (GitHub: <code>Shoonya-API/NorenRestApiPy</code>)</b>
           <p style="margin-top:4px;">
             100% free lifetime trading account with 0 brokerage and 0 API charges for broker-direct execution.
           </p>
@@ -851,6 +1205,33 @@
   </div>
 
   <script>
+
+/* ==================================================================
+   THEME RUNTIME
+   ================================================================== */
+function applyTheme(theme, persist) {
+  var next = theme === 'light' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  if (persist) {
+    try { localStorage.setItem('astra-theme', next); } catch (e) { /* private mode */ }
+  }
+  var label = next === 'light' ? 'Dark' : 'Light';
+  document.querySelectorAll('[data-theme-label]').forEach(function (n) {
+    n.textContent = label;
+  });
+  document.querySelectorAll('[data-theme-icon]').forEach(function (n) {
+    n.textContent = next === 'light' ? '🌙' : '☀️';
+  });
+  window.dispatchEvent(new CustomEvent('astra:themechange', { detail: { theme: next } }));
+}
+
+function toggleTheme() {
+  applyTheme(currentTheme() === 'light' ? 'dark' : 'light', true);
+}
+
+function currentTheme() {
+  return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+}
     // Embedded Candidate Data Payload from Screener
     const D = __JSON_PAYLOAD__;
 
@@ -925,19 +1306,19 @@
 
       if (status === 'syncing') {
         textEl.textContent = 'Cloud: Syncing...';
-        btn.style.borderColor = 'rgba(56,189,248,0.6)';
-        btn.style.color = '#38bdf8';
+        btn.style.borderColor = 'rgba(var(--sky-rgb),0.6)';
+        btn.style.color = 'rgb(var(--sky-rgb))';
         if (iconEl) iconEl.textContent = '🔄';
       } else if (status === 'synced') {
         const timeStr = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
         textEl.textContent = text || `Cloud: Synced (${timeStr})`;
-        btn.style.borderColor = 'rgba(16,185,129,0.4)';
-        btn.style.color = '#34d399';
+        btn.style.borderColor = 'rgba(var(--emerald-rgb),0.4)';
+        btn.style.color = 'rgb(var(--emerald2-rgb))';
         if (iconEl) iconEl.textContent = '☁️';
       } else if (status === 'error') {
         textEl.textContent = text || 'Cloud: Offline';
-        btn.style.borderColor = 'rgba(239,68,68,0.4)';
-        btn.style.color = '#f87171';
+        btn.style.borderColor = 'rgba(var(--red-rgb),0.4)';
+        btn.style.color = 'rgb(var(--rose-soft-rgb))';
         if (iconEl) iconEl.textContent = '⚠️';
       }
     }
@@ -1199,16 +1580,16 @@
 
       if (streamState === 'LIVE_TICK') {
         textEl.textContent = `⚡ LIVE STREAM ACTIVE • ${ms.istTimeString}`;
-        if (dot) dot.style.background = '#10b981';
+        if (dot) dot.style.background = 'rgb(var(--emerald-rgb))';
       } else if (streamState === 'WS_CONNECTED') {
         textEl.textContent = ms.isOpen ? `🟢 YAHOO STREAMER CONNECTED • STREAMING REAL TICKS` : `${ms.statusLabel} • YAHOO STREAMER READY`;
-        if (dot) dot.style.background = ms.isOpen ? '#10b981' : '#f59e0b';
+        if (dot) dot.style.background = ms.isOpen ? 'rgb(var(--emerald-rgb))' : 'rgb(var(--amber2-rgb))';
       } else if (!ms.isOpen) {
         textEl.textContent = `🔴 ${ms.statusLabel} • REAL LTP / AUDITED CLOSE (ZERO SIMULATION)`;
-        if (dot) dot.style.background = '#f59e0b';
+        if (dot) dot.style.background = 'rgb(var(--amber2-rgb))';
       } else {
         textEl.textContent = `🟡 CONNECTING TO LIVE STREAMER • ${ms.istTimeString}`;
-        if (dot) dot.style.background = '#38bdf8';
+        if (dot) dot.style.background = 'rgb(var(--sky-rgb))';
       }
     }
 
@@ -1493,15 +1874,15 @@
       if (btn) {
         if (autoTradeEnabled) {
           btn.innerHTML = '<span>🤖</span> Auto-Pilot: ON';
-          btn.style.color = '#10b981';
-          btn.style.borderColor = 'rgba(16,185,129,0.4)';
-          btn.style.background = 'rgba(16,185,129,0.12)';
+          btn.style.color = 'rgb(var(--emerald-rgb))';
+          btn.style.borderColor = 'rgba(var(--emerald-rgb),0.4)';
+          btn.style.background = 'rgba(var(--emerald-rgb),0.12)';
           showToastNotification('🤖 USIC Auto-Pilot Active: Stop-Loss and +1.5R Take-Profit will execute automatically.', 'info');
         } else {
           btn.innerHTML = '<span>⏸️</span> Auto-Pilot: OFF';
-          btn.style.color = '#94a3b8';
-          btn.style.borderColor = 'rgba(255,255,255,0.2)';
-          btn.style.background = 'rgba(255,255,255,0.05)';
+          btn.style.color = 'var(--text-secondary)';
+          btn.style.borderColor = 'rgba(var(--flip-rgb),0.2)';
+          btn.style.background = 'rgba(var(--flip-rgb),0.05)';
           showToastNotification('⏸️ USIC Auto-Pilot Paused: Positions are in manual mode.', 'info');
         }
       }
@@ -1749,7 +2130,7 @@
       if (elUnrealized) {
         const sign = unrealized >= 0 ? '+' : '';
         elUnrealized.textContent = `₹${sign}${Math.round(unrealized).toLocaleString('en-IN')} (${sign}${unrealizedRoi.toFixed(2)}%)`;
-        elUnrealized.style.color = unrealized >= 0 ? '#34d399' : '#f87171';
+        elUnrealized.style.color = unrealized >= 0 ? 'rgb(var(--emerald2-rgb))' : 'rgb(var(--rose-soft-rgb))';
       }
 
       const elPositionsCount = document.getElementById('hudPositionsCount');
@@ -1762,7 +2143,7 @@
       if (elRealized) {
         const sign = realized >= 0 ? '+' : '';
         elRealized.textContent = `₹${sign}${Math.round(realized).toLocaleString('en-IN')}`;
-        elRealized.style.color = realized >= 0 ? '#34d399' : '#f87171';
+        elRealized.style.color = realized >= 0 ? 'rgb(var(--emerald2-rgb))' : 'rgb(var(--rose-soft-rgb))';
       }
 
       const elClosedCount = document.getElementById('hudClosedCount');
@@ -1810,38 +2191,38 @@
         const isTrailing = p.stopPrice > p.buyPrice;
         const isBreakeven = p.stopPrice >= p.buyPrice;
         const stopHtml = isTrailing
-          ? `<span class="pos-tag" style="background:rgba(16,185,129,0.2);color:#34d399;border:1px solid rgba(16,185,129,0.4);" title="Trailing Stop Locking Profit">🛡️ TRAIL ₹${p.stopPrice.toFixed(2)}</span>`
+          ? `<span class="pos-tag" style="background:rgba(var(--emerald-rgb),0.2);color:rgb(var(--emerald2-rgb));border:1px solid rgba(var(--emerald-rgb),0.4);" title="Trailing Stop Locking Profit">🛡️ TRAIL ₹${p.stopPrice.toFixed(2)}</span>`
           : (isBreakeven 
-            ? `<span class="pos-tag" style="background:rgba(16,185,129,0.18);color:#34d399;border:1px solid rgba(16,185,129,0.4);" title="Trade is 100% Risk-Free (Breakeven Shield)">🛡️ BE ₹${p.stopPrice.toFixed(2)}</span>`
-            : `<span class="mono" style="color:#f87171;font-weight:600;">₹${p.stopPrice.toFixed(2)}</span>`);
+            ? `<span class="pos-tag" style="background:rgba(var(--emerald-rgb),0.18);color:rgb(var(--emerald2-rgb));border:1px solid rgba(var(--emerald-rgb),0.4);" title="Trade is 100% Risk-Free (Breakeven Shield)">🛡️ BE ₹${p.stopPrice.toFixed(2)}</span>`
+            : `<span class="mono" style="color:rgb(var(--rose-soft-rgb));font-weight:600;">₹${p.stopPrice.toFixed(2)}</span>`);
 
         const target1Html = p.scaledOut
-          ? `<span class="pos-tag" style="background:rgba(56,189,248,0.18);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);" title="50% Profit Booked into Cash Margin">✅ 50% LOCKED</span>`
-          : `<span class="mono" style="color:#34d399;font-weight:600;">₹${target1.toFixed(2)}</span>`;
+          ? `<span class="pos-tag" style="background:rgba(var(--sky-rgb),0.18);color:rgb(var(--sky-rgb));border:1px solid rgba(var(--sky-rgb),0.4);" title="50% Profit Booked into Cash Margin">✅ 50% LOCKED</span>`
+          : `<span class="mono" style="color:rgb(var(--emerald2-rgb));font-weight:600;">₹${target1.toFixed(2)}</span>`;
 
-        let guardBadge = `<span class="pos-tag" id="guardStatus_${p.symbol}" style="background:rgba(16,185,129,0.10);color:#10b981;border:1px solid rgba(16,185,129,0.3);font-size:0.68rem;" title="Autonomous surveillance: Auto-Breakeven at +2%, Auto-Bank 50% at 1.5R, Auto-Trailing">🤖 Autonomous Guard</span>`;
+        let guardBadge = `<span class="pos-tag" id="guardStatus_${p.symbol}" style="background:rgba(var(--emerald-rgb),0.10);color:rgb(var(--emerald-rgb));border:1px solid rgba(var(--emerald-rgb),0.3);font-size:0.68rem;" title="Autonomous surveillance: Auto-Breakeven at +2%, Auto-Bank 50% at 1.5R, Auto-Trailing">🤖 Autonomous Guard</span>`;
         if (p.scaledOut) {
-          guardBadge = `<span class="pos-tag" id="guardStatus_${p.symbol}" style="background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);font-size:0.68rem;" title="50% Profit Banked. Runner trailing automatically.">🤖 50% Banked • Runner</span>`;
+          guardBadge = `<span class="pos-tag" id="guardStatus_${p.symbol}" style="background:rgba(var(--sky-rgb),0.15);color:rgb(var(--sky-rgb));border:1px solid rgba(var(--sky-rgb),0.4);font-size:0.68rem;" title="50% Profit Banked. Runner trailing automatically.">🤖 50% Banked • Runner</span>`;
         } else if (isTrailing) {
-          guardBadge = `<span class="pos-tag" id="guardStatus_${p.symbol}" style="background:rgba(16,185,129,0.18);color:#34d399;border:1px solid rgba(16,185,129,0.4);font-size:0.68rem;" title="Stop is trailing peak gains automatically">🛡️ Auto Trail: ₹${p.stopPrice.toFixed(2)}</span>`;
+          guardBadge = `<span class="pos-tag" id="guardStatus_${p.symbol}" style="background:rgba(var(--emerald-rgb),0.18);color:rgb(var(--emerald2-rgb));border:1px solid rgba(var(--emerald-rgb),0.4);font-size:0.68rem;" title="Stop is trailing peak gains automatically">🛡️ Auto Trail: ₹${p.stopPrice.toFixed(2)}</span>`;
         } else if (isBreakeven) {
-          guardBadge = `<span class="pos-tag" id="guardStatus_${p.symbol}" style="background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.4);font-size:0.68rem;" title="Breakeven Shield Active - Trade is 100% Zero-Risk">🛡️ Breakeven Shield</span>`;
+          guardBadge = `<span class="pos-tag" id="guardStatus_${p.symbol}" style="background:rgba(var(--emerald-rgb),0.15);color:rgb(var(--emerald2-rgb));border:1px solid rgba(var(--emerald-rgb),0.4);font-size:0.68rem;" title="Breakeven Shield Active - Trade is 100% Zero-Risk">🛡️ Breakeven Shield</span>`;
         }
 
         return `
           <tr>
             <td>
-              <div style="font-weight:700;color:#38bdf8;font-size:0.92rem;">${p.symbol}</div>
+              <div style="font-weight:700;color:rgb(var(--sky-rgb));font-size:0.92rem;">${p.symbol}</div>
               <div style="display:flex;gap:4px;margin-top:2px;">
                 <span class="pos-tag pos-standard">${p.setupType || 'Breakout'}</span>
-                ${p.scaledOut ? '<span class="pos-tag" style="background:rgba(56,189,248,0.12);color:#38bdf8;">RUNNER 50%</span>' : ''}
+                ${p.scaledOut ? '<span class="pos-tag" style="background:rgba(var(--sky-rgb),0.12);color:rgb(var(--sky-rgb));">RUNNER 50%</span>' : ''}
               </div>
             </td>
             <td class="num mono" style="font-weight:700;">${p.shares}</td>
             <td class="num mono">₹${p.buyPrice.toFixed(2)}</td>
             <td class="num mono">₹${Math.round(invested).toLocaleString('en-IN')}</td>
             <td class="num mono" id="livePrice_${p.symbol}">₹${cur.toFixed(2)}</td>
-            <td class="num mono" id="pnlCell_${p.symbol}" style="font-weight:700;color:${isUp ? '#10b981' : '#f43f5e'};">
+            <td class="num mono" id="pnlCell_${p.symbol}" style="font-weight:700;color:${isUp ? 'rgb(var(--emerald-rgb))' : 'rgb(var(--rose2-rgb))'};">
               ${isUp ? '+' : ''}₹${Math.round(pnl).toLocaleString('en-IN')} (${roi >= 0 ? '+' : ''}${roi.toFixed(1)}%)
             </td>
             <td class="num mono" id="stopCell_${p.symbol}">${stopHtml}</td>
@@ -1876,25 +2257,25 @@
 
         const elPnl = document.getElementById('pnlCell_' + p.symbol);
         if (elPnl) {
-          elPnl.style.color = isUp ? '#10b981' : '#f43f5e';
+          elPnl.style.color = isUp ? 'rgb(var(--emerald-rgb))' : 'rgb(var(--rose2-rgb))';
           elPnl.textContent = `${isUp ? '+' : ''}₹${Math.round(pnl).toLocaleString('en-IN')} (${roi >= 0 ? '+' : ''}${roi.toFixed(1)}%)`;
         }
 
         const isTrailing = p.stopPrice > p.buyPrice;
         const isBreakeven = p.stopPrice >= p.buyPrice;
         const stopHtml = isTrailing
-          ? `<span class="pos-tag" style="background:rgba(16,185,129,0.2);color:#34d399;border:1px solid rgba(16,185,129,0.4);" title="Trailing Stop Locking Profit">🛡️ TRAIL ₹${p.stopPrice.toFixed(2)}</span>`
+          ? `<span class="pos-tag" style="background:rgba(var(--emerald-rgb),0.2);color:rgb(var(--emerald2-rgb));border:1px solid rgba(var(--emerald-rgb),0.4);" title="Trailing Stop Locking Profit">🛡️ TRAIL ₹${p.stopPrice.toFixed(2)}</span>`
           : (isBreakeven 
-            ? `<span class="pos-tag" style="background:rgba(16,185,129,0.18);color:#34d399;border:1px solid rgba(16,185,129,0.4);" title="Trade is 100% Risk-Free (Breakeven Shield)">🛡️ BE ₹${p.stopPrice.toFixed(2)}</span>`
-            : `<span class="mono" style="color:#f87171;font-weight:600;">₹${p.stopPrice.toFixed(2)}</span>`);
+            ? `<span class="pos-tag" style="background:rgba(var(--emerald-rgb),0.18);color:rgb(var(--emerald2-rgb));border:1px solid rgba(var(--emerald-rgb),0.4);" title="Trade is 100% Risk-Free (Breakeven Shield)">🛡️ BE ₹${p.stopPrice.toFixed(2)}</span>`
+            : `<span class="mono" style="color:rgb(var(--rose-soft-rgb));font-weight:600;">₹${p.stopPrice.toFixed(2)}</span>`);
         const elStop = document.getElementById('stopCell_' + p.symbol);
         if (elStop) elStop.innerHTML = stopHtml;
 
         const riskPerShare = Math.max(0.1, p.buyPrice - (p.initialStopPrice || p.stopPrice));
         const target1 = p.target1Price || p.targetPrice || +(p.buyPrice + 1.5 * riskPerShare).toFixed(2);
         const target1Html = p.scaledOut
-          ? `<span class="pos-tag" style="background:rgba(56,189,248,0.18);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);" title="50% Profit Booked into Cash Margin">✅ 50% LOCKED</span>`
-          : `<span class="mono" style="color:#34d399;font-weight:600;">₹${target1.toFixed(2)}</span>`;
+          ? `<span class="pos-tag" style="background:rgba(var(--sky-rgb),0.18);color:rgb(var(--sky-rgb));border:1px solid rgba(var(--sky-rgb),0.4);" title="50% Profit Booked into Cash Margin">✅ 50% LOCKED</span>`
+          : `<span class="mono" style="color:rgb(var(--emerald2-rgb));font-weight:600;">₹${target1.toFixed(2)}</span>`;
         const elTarget = document.getElementById('targetCell_' + p.symbol);
         if (elTarget) elTarget.innerHTML = target1Html;
 
@@ -1911,24 +2292,24 @@
         if (elGuard) {
           if (p.scaledOut) {
             elGuard.textContent = '🤖 50% Banked • Runner';
-            elGuard.style.background = 'rgba(56,189,248,0.15)';
-            elGuard.style.color = '#38bdf8';
-            elGuard.style.borderColor = 'rgba(56,189,248,0.4)';
+            elGuard.style.background = 'rgba(var(--sky-rgb),0.15)';
+            elGuard.style.color = 'rgb(var(--sky-rgb))';
+            elGuard.style.borderColor = 'rgba(var(--sky-rgb),0.4)';
           } else if (isTrailing) {
             elGuard.textContent = `🛡️ Auto Trail: ₹${p.stopPrice.toFixed(2)}`;
-            elGuard.style.background = 'rgba(16,185,129,0.18)';
-            elGuard.style.color = '#34d399';
-            elGuard.style.borderColor = 'rgba(16,185,129,0.4)';
+            elGuard.style.background = 'rgba(var(--emerald-rgb),0.18)';
+            elGuard.style.color = 'rgb(var(--emerald2-rgb))';
+            elGuard.style.borderColor = 'rgba(var(--emerald-rgb),0.4)';
           } else if (isBreakeven) {
             elGuard.textContent = '🛡️ Breakeven Shield';
-            elGuard.style.background = 'rgba(16,185,129,0.15)';
-            elGuard.style.color = '#34d399';
-            elGuard.style.borderColor = 'rgba(16,185,129,0.4)';
+            elGuard.style.background = 'rgba(var(--emerald-rgb),0.15)';
+            elGuard.style.color = 'rgb(var(--emerald2-rgb))';
+            elGuard.style.borderColor = 'rgba(var(--emerald-rgb),0.4)';
           } else {
             elGuard.textContent = '🤖 Autonomous Guard';
-            elGuard.style.background = 'rgba(16,185,129,0.10)';
-            elGuard.style.color = '#10b981';
-            elGuard.style.borderColor = 'rgba(16,185,129,0.3)';
+            elGuard.style.background = 'rgba(var(--emerald-rgb),0.10)';
+            elGuard.style.color = 'rgb(var(--emerald-rgb))';
+            elGuard.style.borderColor = 'rgba(var(--emerald-rgb),0.3)';
           }
         }
       });
@@ -1946,20 +2327,20 @@
         return `
           <tr>
             <td>
-              <b style="color:#38bdf8;">${c.symbol}</b>
+              <b style="color:rgb(var(--sky-rgb));">${c.symbol}</b>
             </td>
             <td>
-              <div style="font-size:0.78rem;color:#f1f5f9;">${c.company || c.symbol}</div>
+              <div style="font-size:0.78rem;color:var(--text-primary);">${c.company || c.symbol}</div>
               <div style="font-size:0.7rem;color:var(--text-muted);">${c.sector}</div>
             </td>
             <td class="num mono">₹${c.close.toFixed(2)}</td>
-            <td class="num mono" style="color:#f87171;">₹${c.stop.toFixed(2)}</td>
-            <td class="num mono" style="color:#34d399;">₹${c.target_2r.toFixed(2)}</td>
+            <td class="num mono" style="color:rgb(var(--rose-soft-rgb));">₹${c.stop.toFixed(2)}</td>
+            <td class="num mono" style="color:rgb(var(--emerald2-rgb));">₹${c.target_2r.toFixed(2)}</td>
             <td class="num mono">${c.rvol}x</td>
-            <td class="num mono" style="color:#c084fc;font-weight:700;">${c.rs_rating}</td>
+            <td class="num mono" style="color:rgb(var(--purple-rgb));font-weight:700;">${c.rs_rating}</td>
             <td>
               <div style="display:flex;flex-direction:column;gap:3px;">
-                <span class="mono" style="font-size:0.7rem;font-weight:700;color:#38bdf8;">${c.strategies.length}/10 FRAMEWORKS</span>
+                <span class="mono" style="font-size:0.7rem;font-weight:700;color:rgb(var(--sky-rgb));">${c.strategies.length}/10 FRAMEWORKS</span>
                 <span class="pos-tag pos-standard" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;" title="${c.strategies.join(', ')}">${c.strategies[0]}</span>
               </div>
             </td>
@@ -2002,7 +2383,7 @@
       if (elNet) {
         const sign = totalRealized >= 0 ? '+' : '';
         elNet.textContent = `₹${sign}${Math.round(totalRealized).toLocaleString('en-IN')}`;
-        elNet.style.color = totalRealized >= 0 ? '#34d399' : '#f87171';
+        elNet.style.color = totalRealized >= 0 ? 'rgb(var(--emerald2-rgb))' : 'rgb(var(--rose-soft-rgb))';
       }
       const elRec = document.getElementById('ledgerRecord');
       if (elRec) elRec.textContent = `${winCount}W - ${lossCount}L (${winRate}%)`;
@@ -2029,41 +2410,41 @@
       tb.innerHTML = trades.map(t => {
         const isWin = (t.pnl || 0) > 0;
         const reason = String(t.exitReason || '');
-        let badgeStyle = 'background:rgba(255,255,255,0.06);color:#cbd5e1;border:1px solid rgba(255,255,255,0.15);';
+        let badgeStyle = 'background:rgba(var(--flip-rgb),0.06);color:var(--text-body);border:1px solid rgba(var(--flip-rgb),0.15);';
         let badgeLabel = '⚡ Manual Exit';
 
         if (reason.includes('1.5R') || reason.includes('Scale-Out')) {
-          badgeStyle = 'background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);';
+          badgeStyle = 'background:rgba(var(--sky-rgb),0.15);color:rgb(var(--sky-rgb));border:1px solid rgba(var(--sky-rgb),0.4);';
           badgeLabel = '🎯 Auto 1.5R Banked (50%)';
         } else if (reason.includes('Trailing')) {
-          badgeStyle = 'background:rgba(16,185,129,0.18);color:#34d399;border:1px solid rgba(16,185,129,0.45);';
+          badgeStyle = 'background:rgba(var(--emerald-rgb),0.18);color:rgb(var(--emerald2-rgb));border:1px solid rgba(var(--emerald-rgb),0.45);';
           badgeLabel = '🛡️ Auto Trailing Stop';
         } else if (reason.includes('Breakeven')) {
-          badgeStyle = 'background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.4);';
+          badgeStyle = 'background:rgba(var(--emerald-rgb),0.15);color:rgb(var(--emerald2-rgb));border:1px solid rgba(var(--emerald-rgb),0.4);';
           badgeLabel = '🛡️ Auto Breakeven Shield';
         } else if (reason.includes('2.5R') || reason.includes('Runner')) {
-          badgeStyle = 'background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.4);';
+          badgeStyle = 'background:rgba(var(--amber2-rgb),0.15);color:rgb(var(--amber-rgb));border:1px solid rgba(var(--amber2-rgb),0.4);';
           badgeLabel = '🏆 Auto 2.5R Runner Locked';
         } else if (reason.includes('Stop-Loss') || reason.includes('Stop Triggered')) {
-          badgeStyle = 'background:rgba(244,63,94,0.15);color:#f87171;border:1px solid rgba(244,63,94,0.4);';
+          badgeStyle = 'background:rgba(var(--rose2-rgb),0.15);color:rgb(var(--rose-soft-rgb));border:1px solid rgba(var(--rose2-rgb),0.4);';
           badgeLabel = '🛑 Auto Stop-Loss';
         }
 
         return `
           <tr>
             <td>
-              <div style="font-weight:700;color:#38bdf8;font-size:0.9rem;">${t.symbol}</div>
+              <div style="font-weight:700;color:rgb(var(--sky-rgb));font-size:0.9rem;">${t.symbol}</div>
               <div style="font-size:0.7rem;color:var(--text-muted);">${t.setupType || 'Breakout Model'}</div>
             </td>
             <td class="mono" style="font-size:0.75rem;">${formatDDMMYYYY(t.entryDate)}</td>
-            <td class="mono" style="font-size:0.75rem;color:#cbd5e1;">${formatDDMMYYYY(t.exitDate)}</td>
+            <td class="mono" style="font-size:0.75rem;color:var(--text-body);">${formatDDMMYYYY(t.exitDate)}</td>
             <td class="num mono" style="font-weight:600;">${t.shares}</td>
             <td class="num mono">₹${parseFloat(t.buyPrice).toFixed(2)}</td>
             <td class="num mono">₹${parseFloat(t.exitPrice).toFixed(2)}</td>
-            <td class="num mono" style="font-weight:700;color:${isWin ? '#10b981' : '#f43f5e'};">
+            <td class="num mono" style="font-weight:700;color:${isWin ? 'rgb(var(--emerald-rgb))' : 'rgb(var(--rose2-rgb))'};">
               ${isWin ? '+' : ''}₹${Math.round(t.pnl).toLocaleString('en-IN')}
             </td>
-            <td class="num mono" style="font-weight:700;color:${isWin ? '#10b981' : '#f43f5e'};">
+            <td class="num mono" style="font-weight:700;color:${isWin ? 'rgb(var(--emerald-rgb))' : 'rgb(var(--rose2-rgb))'};">
               ${isWin ? '+' : ''}${parseFloat(t.roi).toFixed(2)}%
             </td>
             <td>
@@ -2153,26 +2534,26 @@
         const pf = s.lossSum > 0 ? (s.winSum / s.lossSum).toFixed(2) : (s.winSum > 0 ? '∞' : '--');
         const isUp = s.pnl >= 0;
 
-        let verdict = `<span class="pos-tag" style="background:rgba(56,189,248,0.12);color:#38bdf8;">🟡 ${s.openCount} Open Active</span>`;
+        let verdict = `<span class="pos-tag" style="background:rgba(var(--sky-rgb),0.12);color:rgb(var(--sky-rgb));">🟡 ${s.openCount} Open Active</span>`;
         if (s.count >= 2) {
           if (s.pnl > 0 && parseFloat(winRate) >= 55) {
-            verdict = `<span class="pos-tag" style="background:rgba(16,185,129,0.18);color:#34d399;border:1px solid rgba(16,185,129,0.4);">🟢 High Edge (${winRate} WR)</span>`;
+            verdict = `<span class="pos-tag" style="background:rgba(var(--emerald-rgb),0.18);color:rgb(var(--emerald2-rgb));border:1px solid rgba(var(--emerald-rgb),0.4);">🟢 High Edge (${winRate} WR)</span>`;
           } else if (s.pnl > 0) {
-            verdict = `<span class="pos-tag" style="background:rgba(16,185,129,0.12);color:#10b981;">🟢 Net Profitable</span>`;
+            verdict = `<span class="pos-tag" style="background:rgba(var(--emerald-rgb),0.12);color:rgb(var(--emerald-rgb));">🟢 Net Profitable</span>`;
           } else {
-            verdict = `<span class="pos-tag" style="background:rgba(244,63,94,0.15);color:#f87171;">🔴 Under Review</span>`;
+            verdict = `<span class="pos-tag" style="background:rgba(var(--rose2-rgb),0.15);color:rgb(var(--rose-soft-rgb));">🔴 Under Review</span>`;
           }
         }
 
         return `
           <tr>
             <td>
-              <b style="color:#f8fafc;">${fw}</b>
-              ${s.openCount > 0 ? `<span class="pos-tag" style="background:rgba(56,189,248,0.15);color:#38bdf8;margin-left:6px;font-size:0.68rem;">${s.openCount} Active</span>` : ''}
+              <b style="color:var(--text-strong);">${fw}</b>
+              ${s.openCount > 0 ? `<span class="pos-tag" style="background:rgba(var(--sky-rgb),0.15);color:rgb(var(--sky-rgb));margin-left:6px;font-size:0.68rem;">${s.openCount} Active</span>` : ''}
             </td>
             <td class="num mono">${s.count} closed</td>
-            <td class="num mono" style="font-weight:700;color:${parseFloat(winRate) >= 50 ? '#10b981' : (s.count > 0 ? '#f43f5e' : 'inherit')};">${winRate}</td>
-            <td class="num mono" style="font-weight:700;color:${isUp ? '#10b981' : '#f43f5e'};">
+            <td class="num mono" style="font-weight:700;color:${parseFloat(winRate) >= 50 ? 'rgb(var(--emerald-rgb))' : (s.count > 0 ? 'rgb(var(--rose2-rgb))' : 'inherit')};">${winRate}</td>
+            <td class="num mono" style="font-weight:700;color:${isUp ? 'rgb(var(--emerald-rgb))' : 'rgb(var(--rose2-rgb))'};">
               ${isUp ? '+' : ''}₹${Math.round(s.pnl).toLocaleString('en-IN')}
             </td>
             <td class="num mono">${avgRoi}</td>
@@ -2455,6 +2836,10 @@
   <button class="dock-btn" onclick="document.getElementById('closedCard').scrollIntoView({behavior:'smooth'});">
     <span class="dock-icon">📜</span>
     <span class="dock-label">Trade Log</span>
+  </button>
+  <button class="dock-btn" onclick="toggleTheme();">
+    <span class="dock-icon theme-icon" data-theme-icon>☀️</span>
+    <span class="dock-label">Theme</span>
   </button>
   <button class="dock-btn" onclick="syncPortfolioCloud();">
     <span class="dock-icon">🔄</span>
