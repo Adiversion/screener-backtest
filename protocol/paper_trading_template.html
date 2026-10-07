@@ -1558,6 +1558,8 @@
       const nowStr = new Date().toISOString().split('T')[0];
       const timeStr = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
+      let modified = false;
+
       // 1. AUTO BREAKEVEN SHIELD:
       // If stock reaches +2.0% profit (or +0.5R) and stop is still below buyPrice:
       // Automatically raise stop to buyPrice (Breakeven)! Principal is 100% protected.
@@ -1565,7 +1567,7 @@
         pos.stopPrice = pos.buyPrice;
         pos.stopReason = 'Auto Breakeven Shield (+2% Gain Hit)';
         showToastNotification(`🛡️ Auto Breakeven Shield: ${pos.symbol} in profit (+${roi.toFixed(1)}%). Stop automatically raised to ₹${pos.buyPrice.toFixed(2)} (Trade is now 100% Zero-Risk)!`, 'success');
-        return 'MODIFIED';
+        modified = true;
       }
 
       // 2. AUTO DYNAMIC TRAILING STOP:
@@ -1577,7 +1579,7 @@
         if (computedTrail > pos.stopPrice) {
           pos.stopPrice = computedTrail;
           pos.stopReason = `Auto Trailing Stop (${pos.peakRoi.toFixed(1)}% Peak)`;
-          return 'MODIFIED';
+          modified = true;
         }
       }
 
@@ -1644,6 +1646,12 @@
           pos.stopPrice = +(Math.max(pos.stopPrice, pos.buyPrice * 1.005)).toFixed(2);
           showToastNotification(`🎯 Target 1.5R Reached! ${pos.symbol}: 50% profit banked (+₹${Math.round(pnlHalf).toLocaleString('en-IN')}). Stop raised to ₹${pos.stopPrice.toFixed(2)}!`, 'success');
           return 'MODIFIED';
+        } else if (pos.shares === 1) {
+          // Single-share allocation: Cannot split in half. Protect at Breakeven + 0.5% and let runner continue to Target 2
+          pos.scaledOut = true;
+          pos.stopPrice = +(Math.max(pos.stopPrice, pos.buyPrice * 1.005)).toFixed(2);
+          showToastNotification(`🎯 Target 1.5R Reached! ${pos.symbol} (1 share): Stop raised to ₹${pos.stopPrice.toFixed(2)} (Breakeven + 0.5%). Runner active towards Target 2!`, 'success');
+          return 'MODIFIED';
         }
       }
 
@@ -1673,6 +1681,7 @@
         return 'REMOVED';
       }
 
+      if (modified) return 'MODIFIED';
       return false;
     }
 
@@ -2329,8 +2338,9 @@
     function submitManualOrder() {
       const sym = document.getElementById('orderSym').value.trim().toUpperCase();
       const price = parseFloat(document.getElementById('orderPrice').value);
-      const stop = parseFloat(document.getElementById('orderStop').value) || price * 0.95;
-      const target = parseFloat(document.getElementById('orderTarget').value) || price * 1.10;
+      let stop = parseFloat(document.getElementById('orderStop').value) || +(price * 0.95).toFixed(2);
+      if (stop >= price) stop = +(price * 0.95).toFixed(2);
+      const target = parseFloat(document.getElementById('orderTarget').value) || +(price * 1.10).toFixed(2);
       const cap = parseFloat(document.getElementById('orderCap').value) || 100000;
 
       if (!sym || !price || price <= 0) {
