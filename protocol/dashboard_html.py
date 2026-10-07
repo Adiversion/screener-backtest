@@ -8,6 +8,7 @@ from __future__ import annotations
 import copy
 import json
 from pathlib import Path
+import re
 from typing import Any
 
 TEMPLATE_FILE = Path(__file__).resolve().parent / "dashboard_template.html"
@@ -50,7 +51,9 @@ def get_dashboard_html(payload: dict[str, Any]) -> str:
     template = TEMPLATE_FILE.read_text(encoding="utf-8")
     asof = str(clean_payload.get("asof", ""))
     if asof:
-        template = template.replace('id="asofDate">2026-10-01<', f'id="asofDate">{asof}<')
+        parts = asof.split("-")
+        asof_dmy = f"{parts[2]}/{parts[1]}/{parts[0]}" if len(parts) == 3 else asof
+        template = re.sub(r'id="asofDate">[^<]*<', f'id="asofDate">{asof_dmy}<', template)
     json_data = json.dumps(clean_payload, ensure_ascii=False)
     return template.replace("__JSON_PAYLOAD__", json_data)
 

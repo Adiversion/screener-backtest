@@ -24,6 +24,9 @@ from protocol.site_js import JS
 def render(payload: dict[str, Any]) -> str:
     """One self-contained HTML file. No CDN, no build step, no server."""
     meta = payload.get("universe", {})
+    asof_raw = str(payload.get("asof", "—"))
+    parts = asof_raw.split("-")
+    asof_val = f"{parts[2]}/{parts[1]}/{parts[0]}" if len(parts) == 3 else asof_raw
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -58,7 +61,7 @@ def render(payload: dict[str, Any]) -> str:
 </main>
 <footer class="wrap">
   <div><b>{meta.get('symbols', '—')} symbols</b> · session
-  <b>{payload.get('asof', '—')}</b> · <b>{payload.get('stats', {}).get('cleared', '—')}</b>
+  <b>{asof_val}</b> · <b>{payload.get('stats', {}).get('cleared', '—')}</b>
   clear every hard gate · config <code>{payload.get('config_hash', '')[:12]}</code></div>
   <div style="margin-top:6px">Every verdict on this page is a <b>RESEARCH_CANDIDATE</b>
   or a documented rejection. Nothing here is investment advice, and no participant

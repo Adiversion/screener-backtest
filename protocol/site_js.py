@@ -13,10 +13,16 @@ JS = r"""
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
 let DATA=null, TAPE=null;
 
+function dmy(d){
+  if(!d) return '—';
+  const m=String(d).match(/^(\d{4})-(\d{2})-(\d{2})(.*)$/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}${m[4]}` : d;
+}
+
 async function boot(){
   DATA=await (await fetch('stocks.json?v='+Date.now())).json();
-  $('#asof').textContent='session '+DATA.asof+' · '+DATA.universe.symbols+' symbols · '
-    +DATA.universe.from+' → '+DATA.universe.to;
+  $('#asof').textContent='session '+dmy(DATA.asof)+' · '+DATA.universe.symbols+' symbols · '
+    +dmy(DATA.universe.from)+' → '+dmy(DATA.universe.to);
   const cl=$('#cleared'); if(cl) cl.textContent=DATA.stats.cleared;
   renderList(DATA.clearing);
   renderComponents();
@@ -138,7 +144,7 @@ async function loadStock(sym){
 
   +'<h3>What the score is made of</h3>'
     +'<p class="sub">Each component is a cross-sectional percentile against the whole '
-    +'universe on '+DATA.asof+' — not an absolute level.</p>'
+    +'universe on '+dmy(DATA.asof)+' — not an absolute level.</p>'
     +'<table><tr><th>Component</th><th>Raw</th><th>Percentile</th><th>Weight</th>'
     +'<th>Evidence</th></tr>'+comps+'</table>'
     +'<p class="note">The weights were fitted to 5-day forward returns. They were '
@@ -147,7 +153,7 @@ async function loadStock(sym){
 
   +'<h3>Recent sessions</h3><table><tr><th>Date</th><th>Close</th><th>RVOL20</th>'
     +'<th>ATR%</th><th>20d return</th></tr>'+(v.tape||[]).slice().reverse().map(r=>
-    '<tr><td class="muted">'+r.date+'</td><td>₹'+fmt(r.close)+'</td><td>'
+    '<tr><td class="muted">'+dmy(r.date)+'</td><td>₹'+fmt(r.close)+'</td><td>'
     +fmt(r.rvol20,2)+'</td><td>'+cr(r.atrpct)+'</td><td>'+cr(r.ret20)+'</td></tr>'
     ).join('')+'</table>';
 }

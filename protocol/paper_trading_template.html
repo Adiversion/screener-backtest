@@ -854,6 +854,41 @@
     // Embedded Candidate Data Payload from Screener
     const D = __JSON_PAYLOAD__;
 
+    // Universal DD/MM/YYYY date formatting engine
+    function formatDDMMYYYY(d) {
+      if (!d) return '--';
+      if (typeof d === 'object') {
+        if (d instanceof Date && !isNaN(d)) {
+          const day = String(d.getDate()).padStart(2, '0');
+          const mon = String(d.getMonth() + 1).padStart(2, '0');
+          return `${day}/${mon}/${d.getFullYear()}`;
+        }
+        if (d.year && d.month && d.day) {
+          const day = String(d.day).padStart(2, '0');
+          const mon = String(d.month).padStart(2, '0');
+          return `${day}/${mon}/${d.year}`;
+        }
+      }
+      const str = String(d).trim();
+      const m = str.match(/^(\d{4})-(\d{2})-(\d{2})(.*)$/);
+      if (m) {
+        return `${m[3]}/${m[2]}/${m[1]}${m[4]}`;
+      }
+      if (/^\d{10,13}$/.test(str)) {
+        const dt = new Date(Number(str) * (str.length === 10 ? 1000 : 1));
+        const day = String(dt.getDate()).padStart(2, '0');
+        const mon = String(dt.getMonth() + 1).padStart(2, '0');
+        const yr = dt.getFullYear();
+        return `${day}/${mon}/${yr}`;
+      }
+      return str;
+    }
+
+    function formatDDMMYYYYInText(text) {
+      if (!text) return '';
+      return String(text).replace(/\b(\d{4})-(\d{2})-(\d{2})\b/g, '$3/$2/$1');
+    }
+
     // Local Storage & Cloudflare KV Edge State
     const STORAGE_KEY = 'astra_quant_paper_portfolio_v1';
     const CLOUD_SYNC_ENDPOINT = 'https://nse-quote.audittool-api.workers.dev/portfolio';
@@ -2011,8 +2046,8 @@
               <div style="font-weight:700;color:#38bdf8;font-size:0.9rem;">${t.symbol}</div>
               <div style="font-size:0.7rem;color:var(--text-muted);">${t.setupType || 'Breakout Model'}</div>
             </td>
-            <td class="mono" style="font-size:0.75rem;">${t.entryDate || '--'}</td>
-            <td class="mono" style="font-size:0.75rem;color:#cbd5e1;">${t.exitDate || '--'}</td>
+            <td class="mono" style="font-size:0.75rem;">${formatDDMMYYYY(t.entryDate)}</td>
+            <td class="mono" style="font-size:0.75rem;color:#cbd5e1;">${formatDDMMYYYY(t.exitDate)}</td>
             <td class="num mono" style="font-weight:600;">${t.shares}</td>
             <td class="num mono">₹${parseFloat(t.buyPrice).toFixed(2)}</td>
             <td class="num mono">₹${parseFloat(t.exitPrice).toFixed(2)}</td>

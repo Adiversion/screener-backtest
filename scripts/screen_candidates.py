@@ -105,7 +105,12 @@ _HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 const D = __DATA__;
 const CO = {ORGANIC:'#1a7f37',PENDING:'#9a6700',TRAP_RISK:'#b42318',REJECTED:'#8250df',NO_SETUP:'#57606a',ILLIQUID:'#8c959f'};
 const f = v => (v===null||v===undefined) ? '-' : v;
-document.getElementById('sub').textContent = 'Session ' + f(D.asof) + ' | ' +
+const formatDMY = d => {
+  if (!d) return '-';
+  const m = String(d).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : d;
+};
+document.getElementById('sub').textContent = 'Session ' + formatDMY(D.asof) + ' | ' +
   (D.picks.length ? 'top candidate ' + D.picks[0].symbol : 'no candidate today');
 document.getElementById('call').innerHTML = D.story.map(s=>'<div>'+s+'</div>').join('');
 const tags = [...new Set(D.rows.map(r=>r.tag))];
@@ -134,7 +139,10 @@ document.querySelector('#strat tbody').innerHTML = D.strategies.map(s=>`<tr>
 def main() -> int:
     ap = argparse.ArgumentParser(description="End-of-day candidate screen")
     ap.add_argument("--config", default=None)
-    ap.add_argument("--data", default=str(ROOT / "data" / "universe_history.parquet"))
+    wide = ROOT / "data" / "nse_all_history.parquet"
+    core = ROOT / "data" / "universe_history.parquet"
+    default_data = str(wide if wide.exists() else core)
+    ap.add_argument("--data", default=default_data)
     ap.add_argument("--asof", default=None)
     ap.add_argument("--lookback", type=int, default=320)
     ap.add_argument("--top", type=int, default=5)
