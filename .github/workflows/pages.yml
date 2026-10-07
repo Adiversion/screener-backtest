@@ -5,6 +5,10 @@ name: Deploy reports to GitHub Pages
 #   Repo -> Settings -> Pages -> Build and deployment -> Source: "GitHub Actions"
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Update live reports"]
+    types:
+      - completed
   push:
     branches:
       - live
