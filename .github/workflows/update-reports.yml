@@ -18,6 +18,10 @@ on:
         description: "Run all 29 strategies (slower, ~15 min) instead of the protocol set"
         type: boolean
         default: false
+      refresh_universe:
+        description: "Re-fetch 2-year prices via yfinance for full universe (slow / rate-limited)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -45,13 +49,21 @@ jobs:
       - name: Install dependencies
         run: python -m pip install --upgrade pip && pip install -r requirements.txt
 
+      # The full 2-year yfinance scrape is slow and hits Yahoo Finance rate limits
+      # on GitHub Actions runners. It is gated to explicit manual dispatch only.
+      # Official Bhavcopy EQ append runs afterwards so same-day prices are never lost.
+      - name: Refresh the full NSE equity universe (manual dispatch only)
+        if: ${{ inputs.refresh_universe == true }}
+        continue-on-error: true
+        run: python scripts/fetch_universe.py --years 2 --prices-only
+
       - name: Refresh Nifty-500 price data
         continue-on-error: true
         run: python scripts/fetch_data.py --source nifty500 --start 2018-01-01 --limit 501
 
       - name: Refresh delivery data (activates filter F4)
         continue-on-error: true
-        run: python scripts/fetch_delivery.py --days 40
+        run: python scripts/fetch_delivery.py --days 40 --append
 
       - name: Refresh latest bhavcopy EQ prices
         continue-on-error: true
@@ -62,15 +74,6 @@ jobs:
       - name: Refresh NSE supplementary annex (board meetings, actions, surveillance)
         continue-on-error: true
         run: python scripts/fetch_nse_annex.py
-
-      # The site scores EVERY listed NSE cash equity, so it needs the wide file,
-      # not the 499-name Nifty-500 one. yfinance is the single price source on
-      # purpose: NSE bhavcopy prices are RAW, and appending raw bars onto an
-      # adjusted series corrupts every price factor. bhavcopy contributes
-      # delivery columns only -- see scripts/fetch_universe.py.
-      - name: Refresh the full NSE equity universe
-        continue-on-error: true
-        run: python scripts/fetch_universe.py --years 2 --prices-only
 
       - name: Backtest
         run: |
