@@ -2356,6 +2356,7 @@
     <div class="nav-right">
       <div class="nav-links-desktop">
         <a href="report.html" class="nav-link-btn highlight" onclick="event.preventDefault(); setViewMode('briefing'); window.scrollTo({top: 0, behavior: 'smooth'});" style="border-color:rgba(var(--purple-rgb),0.4);color:rgb(var(--purple-rgb));background:rgba(var(--purple-rgb),0.08);" title="View Executive Investment Briefing">📊 Executive Report</a>
+        <a href="dashboard.html" class="nav-link-btn highlight" onclick="event.preventDefault(); setViewMode('price_action'); window.scrollTo({top: 0, behavior: 'smooth'});" style="border-color:rgba(var(--amber-rgb),0.5);color:rgb(var(--amber-rgb));background:rgba(var(--amber-rgb),0.08);" title="Daily Price Action Breakout Board (DEEPAKFERT, KOTAKBANK, etc.)">⚡ Price Action</a>
         <a href="macro.html" class="nav-link-btn" onclick="event.preventDefault(); navigateToPage('macro', 'directiveTile');">🛡️ Macro HUD</a>
         <a href="screener.html" class="nav-link-btn" onclick="event.preventDefault(); navigateToPage('screener', 'toolbarSection');">🎯 Screener</a>
         <a href="inspector.html" class="nav-link-btn" onclick="event.preventDefault(); navigateToPage('inspector');">🔍 Inspector</a>
@@ -2390,11 +2391,12 @@
       </div>
       <div class="drawer-links">
         <a href="report.html" class="drawer-link" style="color:rgb(var(--purple-rgb));font-weight:700;" onclick="closeMobileMenu(); setViewMode('briefing'); window.scrollTo({top: 0, behavior: 'smooth'});">📊 Executive Investment Report</a>
+        <a href="dashboard.html" class="drawer-link" style="color:rgb(var(--amber-rgb));font-weight:700;" onclick="closeMobileMenu(); setViewMode('price_action'); window.scrollTo({top: 0, behavior: 'smooth'});">⚡ Daily Price Action Board</a>
         <a href="macro.html" class="drawer-link" onclick="closeMobileMenu(); navigateToPage('macro', 'directiveTile');">🛡️ Macro Regime & Breadth</a>
         <a href="inspector.html" class="drawer-link" onclick="closeMobileMenu(); navigateToPage('inspector');">🔍 Universal Stock Inspector</a>
         <a href="screener.html" class="drawer-link" onclick="closeMobileMenu(); navigateToPage('screener', 'toolbarSection');">🎯 Qualified Breakouts Screener</a>
         <a href="verifier.html" class="drawer-link" style="color:rgb(var(--sky-rgb));font-weight:700;" onclick="closeMobileMenu(); navigateToPage('verifier', 'forwardVerifierSection');">⚡ 7-14 Day Forward Trade Verifier</a>
-        <a href="paper_trading.html" class="drawer-link" style="color:rgb(var(--sky-rgb));font-weight:700;">💼 Live Paper Trading Station</a>
+        <a href="paper_trading.html" class="drawer-link" style="color:rgb(var(--emerald2-rgb));font-weight:700;">💼 Live Paper Trading Station</a>
         <a href="javascript:void(0)" class="drawer-link" style="color:rgb(var(--amber-rgb));" onclick="closeMobileMenu();openUsicModal();">🏆 USIC Champions Playbook (+1,499%)</a>
         <a href="javascript:void(0)" class="drawer-link" style="color:rgb(var(--emerald2-rgb));" onclick="closeMobileMenu();openWalkForwardModal();">🛡️ Walk-Forward OOS Validation (61,007 Trades)</a>
         <button class="drawer-link theme-toggle-drawer" onclick="toggleTheme()" style="cursor:pointer;font-family:inherit;text-align:left;"><span data-theme-icon>☀️</span> <span>Theme:</span> <span data-theme-label>Light</span></button>
@@ -2555,6 +2557,7 @@
 
     <div class="view-switch">
       <button id="viewBriefingBtn" class="view-btn" onclick="setViewMode('briefing')" title="Synthesized Executive Investment Briefing">⚡ Briefing</button>
+      <button id="viewPriceActionBtn" class="view-btn" onclick="setViewMode('price_action')" title="Daily Price Action Breakout Shortlist (Raw Session Screen)">⚡ Price Action</button>
       <button id="viewTableBtn" class="view-btn active" onclick="setViewMode('table')">📋 Table</button>
       <button id="viewCardsBtn" class="view-btn" onclick="setViewMode('cards')">🎴 Cards</button>
     </div>
@@ -2580,6 +2583,7 @@
       <button id="tfBtnBoth" class="chart-link-pill" onclick="setTimeframeFilter('both')" style="font-size:0.72rem;padding:3px 10px;cursor:pointer;font-weight:700;color:rgb(var(--purple-rgb));border-color:rgba(var(--purple-rgb),0.4);" title="Stocks clearing BOTH daily breakout AND weekly Stage 2 structure">🏆 Dual Confluence (<span id="cntBoth">0</span>)</button>
       <button id="tfBtnWeekly" class="chart-link-pill" onclick="setTimeframeFilter('weekly')" style="font-size:0.72rem;padding:3px 10px;cursor:pointer;font-weight:700;color:rgb(var(--sky-rgb));border-color:rgba(var(--sky-rgb),0.4);" title="Weekly Stage 2 strong bases setting up before daily pivot (Swing Watchlist)">📅 Weekly Strong Watchlist (<span id="cntWeekly">0</span>)</button>
       <button id="tfBtnDaily" class="chart-link-pill" onclick="setTimeframeFilter('daily')" style="font-size:0.72rem;padding:3px 10px;cursor:pointer;font-weight:600;color:var(--text-secondary);border-color:rgba(var(--flip-rgb),0.1);" title="Daily breakout candidates">⚡ Daily Only (<span id="cntDaily">0</span>)</button>
+      <button id="tfBtnPriceAction" class="chart-link-pill" onclick="setViewMode('price_action')" style="font-size:0.72rem;padding:3px 10px;cursor:pointer;font-weight:700;color:rgb(var(--amber-rgb));border-color:rgba(var(--amber-rgb),0.4);" title="Daily Price Action Breakout Shortlist (DEEPAKFERT, KOTAKBANK, etc.)">⚡ Price Action (<span id="cntPriceAction">0</span>)</button>
     </div>
     <div style="font-size:0.72rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">
       <span>Weinstein 30W • Darvas Box • Minervini SEPA</span>
@@ -2628,6 +2632,9 @@
 
   <!-- Executive Investment Briefing View -->
   <div id="briefingView" class="briefing-view" style="display:none;margin-bottom:24px;"></div>
+
+  <!-- Daily Price Action Breakout Board View -->
+  <div id="priceActionView" class="briefing-view" style="display:none;margin-bottom:24px;"></div>
 
   <!-- ⚡ 7-14 Day Forward Trade Verification & Paper Replay Engine -->
   <section id="forwardVerifierSection" class="forward-verifier-card">
@@ -3395,10 +3402,12 @@ function render() {
   const cntBoth = document.getElementById('cntBoth');
   const cntWeekly = document.getElementById('cntWeekly');
   const cntDaily = document.getElementById('cntDaily');
+  const cntPriceAction = document.getElementById('cntPriceAction');
   if (cntAll) cntAll.textContent = D.candidates.length;
   if (cntBoth) cntBoth.textContent = (D.weekly_kpis && D.weekly_kpis.both_count !== undefined) ? D.weekly_kpis.both_count : D.candidates.filter(c => c.weekly_bucket === 'BOTH').length;
   if (cntWeekly) cntWeekly.textContent = (D.weekly_kpis && D.weekly_kpis.weekly_only_count !== undefined) ? D.weekly_kpis.weekly_only_count : D.candidates.filter(c => c.weekly_bucket === 'WEEKLY_ONLY').length;
   if (cntDaily) cntDaily.textContent = (D.weekly_kpis && D.weekly_kpis.daily_only_count !== undefined) ? D.weekly_kpis.daily_only_count : D.candidates.filter(c => c.weekly_bucket === 'DAILY_ONLY').length;
+  if (cntPriceAction) cntPriceAction.textContent = (D.price_action_board && D.price_action_board.picks) ? D.price_action_board.picks.length : 0;
 
   let filtered = D.candidates.filter(c => {
     if (currentActiveTimeframeFilter === 'both' && c.weekly_bucket !== 'BOTH') return false;
@@ -3986,21 +3995,33 @@ function render() {
 
   // 3. View Visibility Toggle
   const briefingEl = document.getElementById('briefingView');
+  const paEl = document.getElementById('priceActionView');
   if (viewMode === 'briefing') {
     if (tableCardEl) tableCardEl.style.display = 'none';
     if (cardsContainer) cardsContainer.style.display = 'none';
+    if (paEl) paEl.style.display = 'none';
     if (briefingEl) {
       briefingEl.style.display = 'flex';
       renderExecutiveBriefing();
+    }
+  } else if (viewMode === 'price_action') {
+    if (tableCardEl) tableCardEl.style.display = 'none';
+    if (cardsContainer) cardsContainer.style.display = 'none';
+    if (briefingEl) briefingEl.style.display = 'none';
+    if (paEl) {
+      paEl.style.display = 'flex';
+      renderPriceActionBoard();
     }
   } else if (viewMode === 'table') {
     if (tableCardEl) tableCardEl.style.display = 'block';
     if (cardsContainer) cardsContainer.style.display = 'none';
     if (briefingEl) briefingEl.style.display = 'none';
+    if (paEl) paEl.style.display = 'none';
   } else {
     if (tableCardEl) tableCardEl.style.display = 'none';
     if (cardsContainer) cardsContainer.style.display = 'grid';
     if (briefingEl) briefingEl.style.display = 'none';
+    if (paEl) paEl.style.display = 'none';
   }
 }
 
@@ -4015,16 +4036,20 @@ function toggleThesisDetail(sym) {
 
 let viewMode = (window.location.pathname.includes('report') || window.location.hash.includes('briefing') || window.location.hash.includes('report'))
   ? 'briefing'
-  : (window.innerWidth < 768 ? 'cards' : 'table');
+  : ((window.location.hash.includes('price_action') || window.location.pathname.includes('price_action'))
+    ? 'price_action'
+    : (window.innerWidth < 768 ? 'cards' : 'table'));
 
 function setViewMode(mode) {
   viewMode = mode;
   const tblBtn = document.getElementById('viewTableBtn');
   const crdBtn = document.getElementById('viewCardsBtn');
   const brfBtn = document.getElementById('viewBriefingBtn');
+  const paBtn = document.getElementById('viewPriceActionBtn');
   if (tblBtn) tblBtn.classList.toggle('active', mode === 'table');
   if (crdBtn) crdBtn.classList.toggle('active', mode === 'cards');
   if (brfBtn) brfBtn.classList.toggle('active', mode === 'briefing');
+  if (paBtn) paBtn.classList.toggle('active', mode === 'price_action');
   render();
 }
 
@@ -4289,7 +4314,84 @@ function renderExecutiveBriefing() {
   }
   html += `</tbody></table></div></div>`;
 
-  // 5. Traps to Avoid Banner
+  // 5. Daily Price Action Breakout Shortlist (Raw Session Screen)
+  const pa = D.price_action_board || {};
+  const paPicks = pa.picks || [];
+  const trapRiskSymbols = (pa.rows || []).filter(r => r.tag === 'TRAP_RISK').map(r => r.symbol);
+  const trapStr = trapRiskSymbols.length > 0 ? trapRiskSymbols.slice(0, 10).join(', ') : 'PETRONET, SCHNEIDER, TDPOWERSYS, NUVAMA';
+
+  html += `
+    <div class="briefing-card">
+      <div class="briefing-card-header">
+        <div class="briefing-card-title">
+          <span>⚡</span>
+          <span>5. Daily Price Action Breakout Shortlist (Raw Session Screen)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="chart-link-pill" onclick="setViewMode('price_action')" style="font-size:0.75rem;padding:3px 10px;color:rgb(var(--amber-rgb));border-color:rgba(var(--amber-rgb),0.4);font-weight:700;cursor:pointer;">
+            Full Price Action Board ⚡
+          </button>
+          <span class="briefing-card-badge" style="background:rgba(var(--amber-rgb),0.12);color:rgb(var(--amber-rgb));border:1px solid rgba(var(--amber-rgb),0.3);">
+            ORGANIC Volume Expansion
+          </span>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="briefing-table">
+          <thead>
+            <tr>
+              <th style="width:36px;">#</th>
+              <th>Symbol</th>
+              <th>Tag</th>
+              <th class="num">Close (₹)</th>
+              <th class="num">Ref / Pivot (₹)</th>
+              <th class="num">RVOL20</th>
+              <th class="num">Retention</th>
+              <th class="num">Penetration</th>
+              <th class="num">Risk-to-Ref</th>
+              <th class="num">Close Range</th>
+              <th style="width:110px;text-align:center;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+  `;
+
+  if (paPicks.length === 0) {
+    html += `<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--text-muted);">No organic price-action breakout candidates qualified today.</td></tr>`;
+  } else {
+    paPicks.forEach((r, idx) => {
+      const retentionPct = r.retention !== null && r.retention !== undefined ? (Number(r.retention) * 100).toFixed(1) + '%' : '-';
+      const penetrPct = r.penetration !== null && r.penetration !== undefined ? (Number(r.penetration) * 100).toFixed(1) + '%' : '-';
+      const riskPct = r.stop_proxy !== null && r.stop_proxy !== undefined ? (Number(r.stop_proxy) * 100).toFixed(2) + '%' : '-';
+      const crPct = r.closing_range !== null && r.closing_range !== undefined ? (Number(r.closing_range) * 100).toFixed(1) + '%' : '-';
+      const rvol = r.rvol20 !== null && r.rvol20 !== undefined ? Number(r.rvol20).toFixed(2) + 'x' : '-';
+
+      html += `
+        <tr>
+          <td style="font-weight:700;color:var(--text-muted);">${r.rank || idx + 1}</td>
+          <td><button class="briefing-sym-btn" onclick="openModal('${r.symbol}')">${r.symbol}</button></td>
+          <td><span class="briefing-card-badge" style="background:rgba(16,185,129,0.15);color:#10b981;border-color:rgba(16,185,129,0.4);font-weight:700;">${r.tag}</span></td>
+          <td class="num"><strong style="color:var(--text-strong);font-family:'JetBrains Mono',monospace;">₹${Number(r.close).toFixed(2)}</strong></td>
+          <td class="num" style="font-family:'JetBrains Mono',monospace;">₹${Number(r.reference).toFixed(2)}</td>
+          <td class="num" style="font-family:'JetBrains Mono',monospace;color:rgb(var(--sky-rgb));font-weight:700;">${rvol}</td>
+          <td class="num" style="color:rgb(var(--emerald2-rgb));font-weight:700;font-family:'JetBrains Mono',monospace;">${retentionPct}</td>
+          <td class="num" style="font-family:'JetBrains Mono',monospace;">${penetrPct}</td>
+          <td class="num" style="color:rgb(var(--rose2-rgb));font-family:'JetBrains Mono',monospace;">${riskPct}</td>
+          <td class="num" style="font-family:'JetBrains Mono',monospace;">${crPct}</td>
+          <td style="text-align:center;">
+            <div style="display:flex;gap:4px;justify-content:center;">
+              <button class="chart-link-pill" onclick="openModal('${r.symbol}')" style="font-size:0.72rem;padding:2px 6px;">Chart ↗</button>
+              <a href="paper_trading.html?symbol=${r.symbol}" class="chart-link-pill" style="font-size:0.72rem;padding:2px 6px;text-decoration:none;color:rgb(var(--emerald2-rgb));border-color:rgba(var(--emerald2-rgb),0.4);">Trade 💼</a>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+  }
+
+  html += `</tbody></table></div></div>`;
+
+  // 6. Traps to Avoid Banner
   html += `
     <div class="briefing-card" style="background:rgba(var(--rose2-rgb),0.04);border:1px solid rgba(var(--rose2-rgb),0.25);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
@@ -4297,13 +4399,305 @@ function renderExecutiveBriefing() {
         <strong style="color:rgb(var(--rose2-rgb));font-size:0.95rem;">Exhaustion & Trap Risks to Avoid</strong>
       </div>
       <p style="font-size:0.8rem;color:var(--text-body);line-height:1.45;margin:0;">
-        Names flagged with climactic volume exhaustion or heavy overhead ceiling supply. Do not chase:
-        <span style="font-family:'JetBrains Mono',monospace;color:#fca5a5;font-weight:700;margin-left:6px;">PETRONET, SCHNEIDER, TDPOWERSYS, NUVAMA</span>
+        Names flagged with climactic volume exhaustion or failed breakout acceptance (TRAP_RISK). Do not chase:
+        <span style="font-family:'JetBrains Mono',monospace;color:#fca5a5;font-weight:700;margin-left:6px;">${trapStr}</span>
       </p>
     </div>
   `;
 
   el.innerHTML = html;
+}
+
+let paFilterQuery = '';
+let paSelectedTag = '';
+
+function formatDMY(d) {
+  if (!d) return '-';
+  const m = String(d).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : d;
+}
+
+function renderPriceActionBoard() {
+  const el = document.getElementById('priceActionView');
+  if (!el) return;
+
+  const pa = D.price_action_board || {};
+  const picks = pa.picks || [];
+  const rows = pa.rows || [];
+  const story = pa.story || [];
+  const strats = pa.strategies || [];
+  const asof = pa.asof || D.asof;
+
+  const CO = {
+    ORGANIC: '#10b981',
+    PENDING: '#f59e0b',
+    TRAP_RISK: '#f43f5e',
+    REJECTED: '#a855f7',
+    NO_SETUP: '#64748b',
+    ILLIQUID: '#94a3b8'
+  };
+
+  const tagCounts = {};
+  rows.forEach(r => {
+    const t = r.tag || 'NO_SETUP';
+    tagCounts[t] = (tagCounts[t] || 0) + 1;
+  });
+
+  const reg = D.regime || {};
+  const isDefensive = reg.name === 'DEFENSIVE' || reg.action === 'CASH';
+  const bannerBg = isDefensive ? 'background:rgba(var(--rose2-rgb),0.08);border:1px solid rgba(var(--rose2-rgb),0.3);' : 'background:rgba(var(--emerald-rgb),0.08);border:1px solid rgba(var(--emerald-rgb),0.3);';
+  const bannerColor = isDefensive ? 'rgb(var(--rose2-rgb))' : 'rgb(var(--emerald2-rgb))';
+
+  let html = `
+    <!-- 1. Header Banner -->
+    <div class="briefing-card" style="${bannerBg}">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:1.4rem;">⚡</span>
+          <div>
+            <div style="font-size:1.05rem;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:${bannerColor};">
+              DAILY PRICE ACTION BREAKOUT BOARD
+            </div>
+            <div style="font-size:0.75rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">
+              Session ${formatDMY(asof)} • Raw EOD Expansion & Volume Penetration Screen
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <a href="dashboard.html" target="_blank" class="chart-link-pill" style="font-size:0.78rem;padding:4px 12px;background:rgba(var(--amber-rgb),0.15);color:rgb(var(--amber-rgb));border-color:rgba(var(--amber-rgb),0.4);font-weight:700;text-decoration:none;">
+            Open Standalone Page ↗
+          </a>
+        </div>
+      </div>
+
+      <!-- Story Narrative Callout -->
+      <div style="margin-top:10px;padding:10px 14px;background:rgba(0,0,0,0.25);border-radius:8px;border:1px solid rgba(var(--flip-rgb),0.06);font-size:0.82rem;line-height:1.55;color:var(--text-body);">
+        ${story.length > 0 ? story.map(s => `<div style="margin-bottom:4px;">• ${s}</div>`).join('') : `<div>Session scanned: ${formatDMY(asof)} over ${rows.length} symbols.</div>`}
+      </div>
+
+      <!-- Tag Summary Badges -->
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;">
+        <span style="font-size:0.74rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Filter By Tag:</span>
+        <button class="chart-link-pill" onclick="setPaTagFilter('')" style="font-size:0.72rem;padding:2px 8px;cursor:pointer;background:${paSelectedTag === '' ? 'rgba(var(--sky-rgb),0.25)' : 'rgba(var(--flip-rgb),0.06)'};color:${paSelectedTag === '' ? 'rgb(var(--sky-rgb))' : 'var(--text-secondary)'};border-color:${paSelectedTag === '' ? 'rgb(var(--sky-rgb))' : 'var(--border)'};">
+          ALL: <strong>${rows.length}</strong>
+        </button>
+        ${Object.entries(tagCounts).map(([tag, count]) => `
+          <button class="chart-link-pill" onclick="setPaTagFilter('${tag}')" style="font-size:0.72rem;padding:2px 8px;cursor:pointer;background:${paSelectedTag === tag ? (CO[tag] + '33') : (CO[tag] + '12')};color:${CO[tag] || '#94a3b8'};border-color:${CO[tag] || '#94a3b8'};font-weight:${paSelectedTag === tag ? '800' : '500'};">
+            ${tag}: <strong>${count}</strong>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- 2. Daily Price Action Shortlist -->
+    <div class="briefing-card">
+      <div class="briefing-card-header">
+        <div class="briefing-card-title">
+          <span>🏆</span>
+          <span>1. Today's Qualified Breakout Shortlist</span>
+        </div>
+        <span class="briefing-card-badge" style="background:rgba(var(--emerald2-rgb),0.12);color:rgb(var(--emerald2-rgb));border:1px solid rgba(var(--emerald2-rgb),0.3);">
+          ORGANIC • State A Accepted Expansion
+        </span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="briefing-table">
+          <thead>
+            <tr>
+              <th style="width:36px;">#</th>
+              <th>Symbol</th>
+              <th>Tag</th>
+              <th class="num">Close (₹)</th>
+              <th class="num">Ref / Pivot (₹)</th>
+              <th class="num">RVOL20</th>
+              <th class="num">Retention</th>
+              <th class="num">Penetration</th>
+              <th class="num">Risk-to-Ref</th>
+              <th class="num">Close Range</th>
+              <th style="width:110px;text-align:center;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+  `;
+
+  if (picks.length === 0) {
+    html += `<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--text-muted);">No organic breakout candidates qualified in this session.</td></tr>`;
+  } else {
+    picks.forEach((r, idx) => {
+      const retentionPct = r.retention !== null && r.retention !== undefined ? (Number(r.retention) * 100).toFixed(1) + '%' : '-';
+      const penetrPct = r.penetration !== null && r.penetration !== undefined ? (Number(r.penetration) * 100).toFixed(1) + '%' : '-';
+      const riskPct = r.stop_proxy !== null && r.stop_proxy !== undefined ? (Number(r.stop_proxy) * 100).toFixed(2) + '%' : '-';
+      const crPct = r.closing_range !== null && r.closing_range !== undefined ? (Number(r.closing_range) * 100).toFixed(1) + '%' : '-';
+      const rvol = r.rvol20 !== null && r.rvol20 !== undefined ? Number(r.rvol20).toFixed(2) + 'x' : '-';
+
+      html += `
+        <tr>
+          <td style="font-weight:700;color:var(--text-muted);">${r.rank || idx + 1}</td>
+          <td><button class="briefing-sym-btn" onclick="openModal('${r.symbol}')">${r.symbol}</button></td>
+          <td><span class="briefing-card-badge" style="background:rgba(16,185,129,0.15);color:#10b981;border-color:rgba(16,185,129,0.4);font-weight:700;">${r.tag}</span></td>
+          <td class="num"><strong style="color:var(--text-strong);font-family:'JetBrains Mono',monospace;">₹${Number(r.close).toFixed(2)}</strong></td>
+          <td class="num" style="font-family:'JetBrains Mono',monospace;">₹${Number(r.reference).toFixed(2)}</td>
+          <td class="num" style="font-family:'JetBrains Mono',monospace;color:rgb(var(--sky-rgb));font-weight:700;">${rvol}</td>
+          <td class="num" style="color:rgb(var(--emerald2-rgb));font-weight:700;font-family:'JetBrains Mono',monospace;">${retentionPct}</td>
+          <td class="num" style="font-family:'JetBrains Mono',monospace;">${penetrPct}</td>
+          <td class="num" style="color:rgb(var(--rose2-rgb));font-family:'JetBrains Mono',monospace;">${riskPct}</td>
+          <td class="num" style="font-family:'JetBrains Mono',monospace;">${crPct}</td>
+          <td style="text-align:center;">
+            <div style="display:flex;gap:4px;justify-content:center;">
+              <button class="chart-link-pill" onclick="openModal('${r.symbol}')" style="font-size:0.72rem;padding:2px 6px;">Chart ↗</button>
+              <a href="paper_trading.html?symbol=${r.symbol}" class="chart-link-pill" style="font-size:0.72rem;padding:2px 6px;text-decoration:none;color:rgb(var(--emerald2-rgb));border-color:rgba(var(--emerald2-rgb),0.4);">Trade 💼</a>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+  }
+
+  html += `</tbody></table></div></div>`;
+
+  // 3. Filterable Candidate Explorer Table
+  const uniqueTags = [...new Set(rows.map(r => r.tag).filter(Boolean))];
+  html += `
+    <div class="briefing-card">
+      <div class="briefing-card-header">
+        <div class="briefing-card-title">
+          <span>🔍</span>
+          <span>2. Session Candidate Explorer (${rows.length} Scanned)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <input id="paSearchInput" type="text" placeholder="Filter symbol (e.g. KOTAK, DEEPAK)..." value="${paFilterQuery}" oninput="onPaSearchInput(this.value)" style="background:var(--card);color:var(--text-strong);border:1px solid var(--border);border-radius:6px;padding:5px 9px;font-size:0.78rem;width:180px;">
+          <select id="paTagSelect" onchange="onPaTagChange(this.value)" style="background:var(--card);color:var(--text-strong);border:1px solid var(--border);border-radius:6px;padding:5px 9px;font-size:0.78rem;">
+            <option value="">All Tags (${rows.length})</option>
+            ${uniqueTags.map(t => `<option value="${t}" ${paSelectedTag === t ? 'selected' : ''}>${t} (${tagCounts[t] || 0})</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="briefing-table" id="paExplorerTable">
+          <thead>
+            <tr>
+              <th>Symbol</th>
+              <th>Tag</th>
+              <th>State</th>
+              <th class="num">Close (₹)</th>
+              <th class="num">Ref / Pivot (₹)</th>
+              <th class="num">RVOL20</th>
+              <th class="num">Close Range</th>
+              <th class="num">Retention</th>
+              <th class="num">Penetration</th>
+              <th class="num">Risk-to-Ref</th>
+              <th style="width:70px;text-align:center;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="paExplorerTbody">
+  `;
+
+  const qUpper = paFilterQuery.toUpperCase().trim();
+  const filteredRows = rows.filter(r => {
+    if (qUpper && !(r.symbol || '').toUpperCase().includes(qUpper)) return false;
+    if (paSelectedTag && r.tag !== paSelectedTag) return false;
+    return true;
+  });
+
+  const displayRows = filteredRows.slice(0, 60);
+
+  if (displayRows.length === 0) {
+    html += `<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--text-muted);">No candidates matching filter.</td></tr>`;
+  } else {
+    displayRows.forEach(r => {
+      const tagColor = CO[r.tag] || '#64748b';
+      const retentionPct = r.retention !== null && r.retention !== undefined ? (Number(r.retention) * 100).toFixed(1) + '%' : '-';
+      const penetrPct = r.penetration !== null && r.penetration !== undefined ? (Number(r.penetration) * 100).toFixed(1) + '%' : '-';
+      const riskPct = r.stop_proxy !== null && r.stop_proxy !== undefined ? (Number(r.stop_proxy) * 100).toFixed(2) + '%' : '-';
+      const crPct = r.closing_range !== null && r.closing_range !== undefined ? (Number(r.closing_range) * 100).toFixed(1) + '%' : '-';
+      const rvol = r.rvol20 !== null && r.rvol20 !== undefined ? Number(r.rvol20).toFixed(2) + 'x' : '-';
+
+      html += `
+        <tr>
+          <td><button class="briefing-sym-btn" onclick="openModal('${r.symbol}')">${r.symbol}</button></td>
+          <td><span class="briefing-card-badge" style="background:${tagColor}22;color:${tagColor};border-color:${tagColor}66;">${r.tag}</span></td>
+          <td style="font-size:0.75rem;color:var(--text-secondary);font-family:'JetBrains Mono',monospace;">${r.state || '-'}</td>
+          <td class="num"><strong style="color:var(--text-strong);font-family:'JetBrains Mono',monospace;">₹${r.close ? Number(r.close).toFixed(2) : '-'}</strong></td>
+          <td class="num" style="font-family:'JetBrains Mono',monospace;">${r.reference ? '₹' + Number(r.reference).toFixed(2) : '-'}</td>
+          <td class="num" style="font-family:'JetBrains Mono',monospace;">${rvol}</td>
+          <td class="num" style="font-family:'JetBrains Mono',monospace;">${crPct}</td>
+          <td class="num" style="font-family:'JetBrains Mono',monospace;">${retentionPct}</td>
+          <td class="num" style="font-family:'JetBrains Mono',monospace;">${penetrPct}</td>
+          <td class="num" style="font-family:'JetBrains Mono',monospace;">${riskPct}</td>
+          <td style="text-align:center;"><button class="chart-link-pill" onclick="openModal('${r.symbol}')" style="font-size:0.72rem;padding:2px 6px;">Chart ↗</button></td>
+        </tr>
+      `;
+    });
+  }
+
+  html += `</tbody></table></div>`;
+  if (filteredRows.length > 60) {
+    html += `<div style="padding:10px 14px;font-size:0.75rem;color:var(--text-muted);text-align:center;border-top:1px solid var(--border);">Showing top 60 of ${filteredRows.length} matching candidates. Type in search bar to narrow down.</div>`;
+  }
+  html += `</div>`;
+
+  // 4. Strategy Benchmarks
+  if (strats.length > 0) {
+    html += `
+      <div class="briefing-card">
+        <div class="briefing-card-header">
+          <div class="briefing-card-title">
+            <span>📊</span>
+            <span>3. Strategy Benchmark Performance</span>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="briefing-table">
+            <thead>
+              <tr>
+                <th>Strategy</th>
+                <th class="num">N (Trades)</th>
+                <th class="num">Win Rate</th>
+                <th class="num">Safe Rate</th>
+                <th class="num">Expectancy</th>
+                <th class="num">Profit Factor</th>
+                <th class="num">CAGR</th>
+                <th class="num">Max Drawdown</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${strats.map(s => `
+                <tr>
+                  <td><strong>${s.strategy}</strong></td>
+                  <td class="num">${s.N || 0}</td>
+                  <td class="num">${s.win ? (Number(s.win) * 100).toFixed(1) + '%' : '-'}</td>
+                  <td class="num">${s.safe ? (Number(s.safe) * 100).toFixed(1) + '%' : '-'}</td>
+                  <td class="num">${s.exp ? Number(s.exp).toFixed(3) : '-'}</td>
+                  <td class="num">${s.pf ? Number(s.pf).toFixed(2) : '-'}</td>
+                  <td class="num">${s.cagr ? (Number(s.cagr) * 100).toFixed(1) + '%' : '-'}</td>
+                  <td class="num">${s.maxdd ? (Number(s.maxdd) * 100).toFixed(1) + '%' : '-'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  el.innerHTML = html;
+}
+
+function onPaSearchInput(val) {
+  paFilterQuery = val;
+  renderPriceActionBoard();
+}
+
+function onPaTagChange(val) {
+  paSelectedTag = val;
+  renderPriceActionBoard();
+}
+
+function setPaTagFilter(tag) {
+  paSelectedTag = tag;
+  const sel = document.getElementById('paTagSelect');
+  if (sel) sel.value = tag;
+  renderPriceActionBoard();
 }
 
 function initSectorTrack() {
@@ -6440,8 +6834,12 @@ setTimeout(() => {
     <span class="dock-icon">🎯</span>
     <span class="dock-label">Screener</span>
   </button>
-  <button class="dock-btn" onclick="scrollToSection('forwardVerifierSection');">
+  <button class="dock-btn" onclick="setViewMode('price_action'); window.scrollTo({top: 0, behavior: 'smooth'});">
     <span class="dock-icon">⚡</span>
+    <span class="dock-label">PA Board</span>
+  </button>
+  <button class="dock-btn" onclick="scrollToSection('forwardVerifierSection');">
+    <span class="dock-icon">🔬</span>
     <span class="dock-label">Verifier</span>
   </button>
   <a href="paper_trading.html" class="dock-btn">
@@ -6455,10 +6853,6 @@ setTimeout(() => {
   <button class="dock-btn" onclick="toggleTheme();">
     <span class="dock-icon theme-icon" data-theme-icon>☀️</span>
     <span class="dock-label">Theme</span>
-  </button>
-  <button class="dock-btn" onclick="scrollToSection('sectorSection');">
-    <span class="dock-icon">📊</span>
-    <span class="dock-label">Sectors</span>
   </button>
 </nav>
 </body>

@@ -98,6 +98,8 @@ def make_404_html() -> str:
         window.location.replace('verifier.html' + query + hash);
       } else if (path.includes('report')) {
         window.location.replace('report.html' + query + hash);
+      } else if (path.includes('dashboard')) {
+        window.location.replace('dashboard.html' + query + hash);
       } else {
         window.location.replace('index.html' + query + hash);
       }
@@ -136,8 +138,13 @@ def build_app(data_path: str, asof_date: str | None = None, outdir: str = "repor
         (Path("paper_trading.html"), paper_html),
         (Path("404.html"), make_404_html()),
     ]
+
+    dash_src = ROOT / "reports" / "dashboard.html"
+    if dash_src.exists():
+        files.append((Path("dashboard.html"), dash_src.read_text(encoding="utf-8")))
+
     # Directory-style clean URL handlers (/screener/, /macro/, ...).
-    for section in ("screener", "macro", "inspector", "verifier", "report", "paper_trading"):
+    for section in ("screener", "macro", "inspector", "verifier", "report", "paper_trading", "dashboard"):
         files.append((Path(section) / "index.html", make_redirect_html(f"{section}.html")))
 
     tapes = app_data.get("_tapes", {})

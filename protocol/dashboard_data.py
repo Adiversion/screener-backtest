@@ -23,6 +23,7 @@ from protocol.sector import (
     get_symbol_industry_momentum
 )
 from protocol.forward_verifier import build_forward_verification_suite
+from protocol.price_action import load_price_action_board
 from protocol.weekly import WEEKLY_GATES
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -350,6 +351,7 @@ def build_candidate_data(df: pd.DataFrame, asof_date: str | pd.Timestamp | None 
             "swing_watchlist": swing_watchlist,
         },
         "candidates": cand_list,
+        "price_action_board": load_price_action_board(),
         "universe_lookup": {s: full_universe[s] for s in cand_symbols if s in full_universe},
         "walk_forward": _load_report("walk_forward_report.json"),
         "industry_rankings": ind_df.to_dict(orient="records") if not ind_df.empty else [],

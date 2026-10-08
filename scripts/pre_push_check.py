@@ -49,8 +49,12 @@ def run_checks() -> int:
     print("🚀 ASTRA QUANT PRE-FLIGHT E2E BROWSER CHECK (PLAYWRIGHT)")
     print("=" * 70)
 
-    # 1. Start local server
-    server = socketserver.TCPServer(("127.0.0.1", PORT), QuietHTTPHandler)
+    # 1. Start local multi-threaded server
+    class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+        allow_reuse_address = True
+        daemon_threads = True
+
+    server = ThreadedHTTPServer(("127.0.0.1", PORT), QuietHTTPHandler)
     server_thread = threading.Thread(target=server.serve_forever, daemon=True)
     server_thread.start()
     print(f"✓ Local verification server running at http://127.0.0.1:{PORT}")
@@ -245,6 +249,7 @@ def run_checks() -> int:
             "verifier.html",
             "report.html",
             "paper_trading.html",
+            "dashboard.html",
         ]
         for p_name in pages_to_check:
             page.goto(f"{base_url}/{p_name}", wait_until="networkidle")
