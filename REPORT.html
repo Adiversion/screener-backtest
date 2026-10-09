@@ -1,0 +1,82 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<title>Screener Backtest Report</title>
+<style>
+ body{font:14px/1.5 system-ui,Segoe UI,sans-serif;margin:0;background:#0d1117;color:#e6edf3}
+ header{padding:20px 26px;background:#161b22;border-bottom:1px solid #30363d}
+ h1{margin:0 0 6px;font-size:22px} h2{margin:26px 0 10px;font-size:17px}
+ main{padding:20px 26px;max-width:1250px;margin:auto}
+ .warn{padding:9px 13px;border:1px solid #9e6a03;background:#2d2305;color:#d29922;border-radius:8px;margin:12px 0}
+ .cards{display:flex;gap:12px;flex-wrap:wrap;margin:16px 0}
+ .card{flex:1 1 150px;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px 14px}
+ .card .k{color:#8b949e;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+ .card .v{font-size:20px;font-weight:600;margin-top:4px}
+ table{border-collapse:collapse;width:100%;margin:8px 0 18px;font-size:13px}
+ th,td{border-bottom:1px solid #21262d;padding:7px 9px;text-align:left;white-space:nowrap}
+ th{position:sticky;top:0;background:#161b22;cursor:pointer;user-select:none}
+ tr:hover td{background:#161b22}
+ .num{text-align:right;font-variant-numeric:tabular-nums}
+ .pos{color:#3fb950} .neg{color:#f85149}
+ .bar{height:9px;border-radius:4px;background:#30363d;position:relative;min-width:60px}
+ .bar>span{position:absolute;top:0;bottom:0;border-radius:4px}
+ input,select{background:#0d1117;color:#e6edf3;border:1px solid #30363d;border-radius:6px;padding:6px 9px}
+ code{background:#161b22;padding:1px 5px;border-radius:4px}
+</style></head><body>
+<header><h1>Screener Backtest - Strategy Comparison</h1><div id="sub" class="sub"></div></header>
+<main>
+ <div class="warn" id="wm"></div>
+ <div class="cards" id="cards"></div>
+ <h2>Strategy comparison</h2>
+ <div style="margin-bottom:10px"><input id="q" placeholder="filter strategy..." style="width:240px">
+ <select id="f"><option value="">all</option><option value="pos">expectancy &gt; 0</option>
+ <option value="neg">expectancy &lt;= 0</option></select></div>
+ <table id="t"><thead><tr>
+  <th data-k="strategy">Strategy</th><th data-k="N" class="num">N</th>
+  <th class="num">Expectancy</th><th data-k="win" class="num">WinRate</th>
+  <th data-k="safe" class="num">SafeRate</th><th data-k="tail" class="num">TailBreach</th>
+  <th data-k="pf" class="num">PF</th><th data-k="dd" class="num">MaxDD</th>
+  <th data-k="cagr" class="num">CAGR</th></tr></thead><tbody></tbody></table>
+ <h2>Capital sensitivity</h2>
+ <table id="s"><thead><tr><th>Strategy</th><th>Capital</th><th class="num">N</th>
+  <th class="num">Expectancy</th><th class="num">WinRate</th><th class="num">SafeRate</th></tr></thead>
+  <tbody></tbody></table>
+ <h2>No-lookahead audit</h2><div id="audit"></div>
+</main>
+<script>
+const D = {"config_hash": "f4b4e3f7a20e4a4de94970b4d9ad378c03686e60e75893306737484f02b2dcee", "window": [null, null], "universe": {"symbols": 2697, "sessions": 2167, "from": "2018-01-01", "to": "2026-10-09"}, "benchmark": {"N": 2692, "mean_return": 0.6648, "median_return": -0.0017, "pct_positive": 0.4688}, "audit": {"passed": true, "tests": [{"test": "truncation", "checked": 42, "mismatches": 0, "pass": true}, {"test": "shuffle_future", "checked": 10, "mismatches": 0, "pass": true}, {"test": "static_scan", "hits": [], "exemptions": [{"module": "participation.py", "pattern": "shift(-", "reason": "Reads the future on purpose, to LABEL a cohort: 'participation later expanded back through the level' is not knowable until it has happened. The label is descriptive only and is never an entry signal; cohorts A, B and D are all point-in-time. See label_cohorts's docstring."}, {"module": "verdict.py", "pattern": "shift(-", "reason": "Computes forward returns, which are OUTCOMES measured after the verdict. The score at each session is built by ranking.build_long from data through that session only, so no outcome can flow backwards into a verdict. See the module docstring."}], "pass": true}, {"test": "ordering", "checked": 223859, "violations": 0, "pass": true}, {"test": "cutoff", "max_date": "2026-10-09", "cutoff": "2026-10-09", "pass": true}]}, "verdict": {"label": "SEE COMPARISON", "reason": "requires baseline CIs (see table)"}, "mode": "exploratory", "data_quality": {"rows": 910916, "symbols": 2697, "sessions": 2167, "date_min": "2018-01-01", "date_max": "2026-10-09", "missing_ohlcv_cells": 0, "duplicate_symbol_date": 0, "high_less_than_low": 0, "close_outside_range": 5, "zero_volume": 1298, "non_positive_price": 0, "delivery_data_available": true, "delivery_rows": 27265, "surveillance_lists_available": false}, "capital": "1000", "rows": [{"strategy": "recovered_after_rej", "N": 1133, "win": 0.2021, "safe": 0.8535, "tail": 0.1801, "exp": 0.0122, "pf": 1.421, "dd": null, "cagr": null, "tpy": null}, {"strategy": "trend", "N": 156593, "win": 0.1208, "safe": 0.7804, "tail": 0.2775, "exp": -0.0152, "pf": 0.623, "dd": null, "cagr": null, "tpy": null}, {"strategy": "momentum_top", "N": 6232, "win": 0.1723, "safe": 0.6361, "tail": 0.4108, "exp": -0.0163, "pf": 0.663, "dd": null, "cagr": null, "tpy": null}, {"strategy": "high_52w", "N": 4681, "win": 0.1085, "safe": 0.7639, "tail": 0.2848, "exp": -0.0177, "pf": 0.568, "dd": null, "cagr": null, "tpy": null}, {"strategy": "high_effort_low_result", "N": 10300, "win": 0.1169, "safe": 0.7553, "tail": 0.3112, "exp": -0.0185, "pf": 0.568, "dd": null, "cagr": null, "tpy": null}, {"strategy": "breakout_day", "N": 8825, "win": 0.1368, "safe": 0.7003, "tail": 0.3626, "exp": -0.0192, "pf": 0.584, "dd": null, "cagr": null, "tpy": null}, {"strategy": "fip_proxy", "N": 10994, "win": 0.093, "safe": 0.7871, "tail": 0.2734, "exp": -0.0199, "pf": 0.512, "dd": null, "cagr": null, "tpy": null}, {"strategy": "vol_breakout", "N": 20202, "win": 0.1251, "safe": 0.7184, "tail": 0.3462, "exp": -0.0203, "pf": 0.552, "dd": null, "cagr": null, "tpy": null}, {"strategy": "aae_acceptance", "N": 862, "win": 0.0742, "safe": 0.5232, "tail": 0.1439, "exp": -0.0221, "pf": 0.441, "dd": null, "cagr": null, "tpy": null}, {"strategy": "trap", "N": 2408, "win": 0.1931, "safe": 0.451, "tail": 0.5872, "exp": -0.0276, "pf": 0.542, "dd": null, "cagr": null, "tpy": null}, {"strategy": "random", "N": 1629, "win": 0.027, "safe": 0.8619, "tail": 0.1835, "exp": -0.0322, "pf": 0.183, "dd": null, "cagr": null, "tpy": null}], "sensitivity": [{"strategy": "aae_acceptance", "capital": "1000", "N": 862, "exp": -0.0221, "win": 0.0742, "safe": 0.5232}, {"strategy": "trap", "capital": "1000", "N": 2408, "exp": -0.0276, "win": 0.1931, "safe": 0.451}, {"strategy": "breakout_day", "capital": "1000", "N": 8825, "exp": -0.0192, "win": 0.1368, "safe": 0.7003}, {"strategy": "vol_breakout", "capital": "1000", "N": 20202, "exp": -0.0203, "win": 0.1251, "safe": 0.7184}, {"strategy": "momentum_top", "capital": "1000", "N": 6232, "exp": -0.0163, "win": 0.1723, "safe": 0.6361}, {"strategy": "high_52w", "capital": "1000", "N": 4681, "exp": -0.0177, "win": 0.1085, "safe": 0.7639}, {"strategy": "trend", "capital": "1000", "N": 156593, "exp": -0.0152, "win": 0.1208, "safe": 0.7804}, {"strategy": "fip_proxy", "capital": "1000", "N": 10994, "exp": -0.0199, "win": 0.093, "safe": 0.7871}, {"strategy": "high_effort_low_result", "capital": "1000", "N": 10300, "exp": -0.0185, "win": 0.1169, "safe": 0.7553}, {"strategy": "recovered_after_rej", "capital": "1000", "N": 1133, "exp": 0.0122, "win": 0.2021, "safe": 0.8535}, {"strategy": "random", "capital": "1000", "N": 1629, "exp": -0.0322, "win": 0.027, "safe": 0.8619}], "watermark": "DEGRADED-DATA RUN: no delivery/surveillance/calendar data, adjusted OHLCV only."};
+const f = v => (v===null||v===undefined)?'-':v;
+const col = v => (typeof v==='number' && v>0)?'pos':((typeof v==='number'&&v<0)?'neg':'');
+document.getElementById('wm').textContent = D.watermark;
+const u = D.universe||{}, b = D.benchmark||{};
+document.getElementById('sub').textContent =
+  `config ${(D.config_hash||'').slice(0,12)} | ${u.symbols||'?'} symbols | ${u.sessions||'?'} sessions | ${u.from||'?'} to ${u.to||'?'}`;
+const cards = [['Universe',(u.symbols||0)+' sym'],['Sessions',u.sessions||0],
+  ['B&H mean',f(b.mean_return)],['Audit',(D.audit&&D.audit.passed)?'PASS':'FAIL'],
+  ['Strategies',D.rows.length]];
+document.getElementById('cards').innerHTML = cards.map(c=>
+  `<div class="card"><div class="k">${c[0]}</div><div class="v">${c[1]}</div></div>`).join('');
+const maxAbs = Math.max(1e-9, ...D.rows.map(r=>Math.abs(r.exp||0)));
+function bar(v){const w=Math.abs(v||0)/maxAbs*100;const c=(v||0)>=0?'#3fb950':'#f85149';
+  return `<div class="bar"><span style="width:${w}%;background:${c};${(v||0)<0?'right:50%;left:auto':''}"></span></div>`;}
+function render(){
+  const q=document.getElementById('q').value.toUpperCase();
+  const mode=document.getElementById('f').value;
+  document.querySelector('#t tbody').innerHTML = D.rows
+   .filter(r=>(!q||(r.strategy||'').toUpperCase().includes(q)) &&
+     (mode==='' || (mode==='pos'&&(r.exp||0)>0) || (mode==='neg'&&(r.exp||0)<=0)))
+   .map(r=>`<tr><td><b>${r.strategy}</b></td><td class="num">${f(r.N)}</td>
+     <td class="num ${col(r.exp)}">${f(r.exp)} ${bar(r.exp)}</td>
+     <td class="num">${f(r.win)}</td><td class="num">${f(r.safe)}</td>
+     <td class="num">${f(r.tail)}</td><td class="num">${f(r.pf)}</td>
+     <td class="num">${f(r.dd)}</td><td class="num">${f(r.cagr)}</td></tr>`).join('');
+}
+document.getElementById('q').oninput=render; document.getElementById('f').onchange=render; render();
+document.querySelector('#s tbody').innerHTML = D.sensitivity.map(r=>
+  `<tr><td>${r.strategy}</td><td>${r.capital}</td><td class="num">${f(r.N)}</td>
+   <td class="num ${col(r.exp)}">${f(r.exp)}</td><td class="num">${f(r.win)}</td>
+   <td class="num">${f(r.safe)}</td></tr>`).join('');
+const a = D.audit||{};
+document.getElementById('audit').innerHTML =
+  `<p><b>passed: ${a.passed}</b></p><ul>` + (a.tests||[]).map(t=>
+   `<li>${t.test}: ${t.pass?'PASS':'FAIL'} <code>${JSON.stringify(
+     Object.fromEntries(Object.entries(t).filter(([k])=>!['test','pass'].includes(k))))}</code></li>`).join('') + '</ul>';
+</script></body></html>

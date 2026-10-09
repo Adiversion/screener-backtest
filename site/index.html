@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NSE stock research — every verdict with its evidence</title>
+<style>
+:root{
+  --bg:#0d1117; --panel:#161b22; --panel2:#1c2129; --line:#30363d;
+  --text:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --good:#3fb950;
+  --warn:#d29922; --bad:#f85149; --radius:10px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+a{color:var(--accent)}
+header{border-bottom:1px solid var(--line);background:var(--panel);
+  padding:18px 20px;position:sticky;top:0;z-index:20}
+.wrap{max-width:1100px;margin:0 auto}
+h1{margin:0 0 2px;font-size:20px;letter-spacing:-.2px}
+h2{font-size:17px;margin:26px 0 10px}
+h3{font-size:14px;margin:18px 0 8px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.6px}
+.sub{color:var(--muted);font-size:13px}
+.tabs{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap}
+.tab{background:var(--panel2);border:1px solid var(--line);color:var(--muted);
+  padding:7px 14px;border-radius:999px;cursor:pointer;font-size:13px}
+.tab.on{background:var(--accent);border-color:var(--accent);color:#04121f;
+  font-weight:600}
+main{padding:20px}
+#q{width:100%;padding:14px 16px;font-size:17px;border-radius:var(--radius);
+  border:1px solid var(--line);background:var(--panel);color:var(--text)}
+#q:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.card{background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--radius);padding:16px;margin:14px 0}
+.verdict{display:inline-block;padding:5px 12px;border-radius:999px;
+  font-weight:700;font-size:12px;letter-spacing:.5px}
+.pass{background:rgba(63,185,80,.15);color:var(--good);
+  border:1px solid rgba(63,185,80,.4)}
+.fail{background:rgba(248,81,73,.13);color:var(--bad);
+  border:1px solid rgba(248,81,73,.4)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:10px;margin:12px 0}
+.kpi{background:var(--panel2);border-radius:8px;padding:10px 12px}
+.kpi .k{font-size:11px;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.5px}
+.kpi .v{font-size:17px;font-weight:600;margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0}
+th{text-align:left;color:var(--muted);font-weight:600;font-size:11px;
+  text-transform:uppercase;letter-spacing:.5px;padding:7px 8px;
+  border-bottom:1px solid var(--line)}
+td{padding:7px 8px;border-bottom:1px solid rgba(48,54,61,.5);
+  vertical-align:top}
+tr:last-child td{border-bottom:none}
+.ok{color:var(--good);font-weight:700}
+.no{color:var(--bad);font-weight:700}
+.bar{height:7px;background:var(--panel2);border-radius:4px;overflow:hidden;
+  min-width:70px}
+.bar>i{display:block;height:100%;background:var(--accent)}
+.sym{font-weight:700;letter-spacing:.3px}
+.row{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  align-items:baseline}
+.pill{font-size:11px;color:var(--muted);border:1px solid var(--line);
+  padding:2px 8px;border-radius:999px}
+.muted{color:var(--muted)}
+.note{font-size:12px;color:var(--muted);margin-top:6px}
+.list a{display:block;padding:9px 11px;border:1px solid var(--line);
+  border-radius:8px;margin:6px 0;text-decoration:none;color:var(--text);
+  background:var(--panel2)}
+.list a:hover{border-color:var(--accent)}
+code{background:var(--panel2);padding:1px 5px;border-radius:4px;font-size:12px}
+footer{padding:26px 20px;color:var(--muted);font-size:12px;
+  border-top:1px solid var(--line);margin-top:30px}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>NSE stock research</h1>
+  <div class="sub" id="asof">loading…</div>
+  <input id="q" type="search" placeholder="Search any NSE symbol — e.g. CUPID, RELIANCE, MOREPENLAB"
+         autocomplete="off" spellcheck="false">
+  <div class="tabs">
+    <div class="tab on" data-p="list">Candidates</div>
+    <div class="tab" data-p="research">The research</div>
+    <div class="tab" data-p="caveats">Limits</div>
+  </div>
+</div></header>
+<main class="wrap">
+  <section id="list"></section>
+  <section id="result" class="hide"></section>
+  <section id="stock" class="hide"></section>
+  <section id="research" class="hide">
+    <h2>What the engine measured about its own rules</h2>
+    <div id="evidence"></div>
+    <h2>How a stock is scored</h2>
+    <div id="comps"></div>
+  </section>
+  <section id="caveats" class="hide"><div id="caveatsBody"></div></section>
+</main>
+<footer class="wrap">
+  <div><b>2073 symbols</b> · session
+  <b>09/10/2026</b> · <b>7</b>
+  clear every hard gate · config <code>f4b4e3f7a20e</code></div>
+  <div style="margin-top:6px">Every verdict on this page is a <b>RESEARCH_CANDIDATE</b>
+  or a documented rejection. Nothing here is investment advice, and no participant
+  identity is inferred anywhere.</div>
+</footer>
+<script>
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+let DATA=null, TAPE=null;
+
+function dmy(d){
+  if(!d) return '—';
+  const m=String(d).match(/^(\d{4})-(\d{2})-(\d{2})(.*)$/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}${m[4]}` : d;
+}
+
+async function boot(){
+  DATA=await (await fetch('stocks.json?v='+Date.now())).json();
+  $('#asof').textContent='session '+dmy(DATA.asof)+' · '+DATA.universe.symbols+' symbols · '
+    +dmy(DATA.universe.from)+' → '+dmy(DATA.universe.to);
+  const cl=$('#cleared'); if(cl) cl.textContent=DATA.stats.cleared;
+  renderList(DATA.clearing);
+  renderComponents();
+  renderEvidence();
+  renderCaveats();
+  wire();
+}
+
+function fmt(v,d=2){ if(v===null||v===undefined||Number.isNaN(v))return '—';
+  return typeof v==='number'? v.toFixed(d) : v; }
+function pct(v){ return v===null||v===undefined? '—' : (v*100).toFixed(0)+'%'; }
+function cr(v){ return v===null||v===undefined? '—' : (v*100).toFixed(1)+'%'; }
+
+function wire(){
+  $('#q').addEventListener('input',e=>{
+    const t=e.target.value.trim().toUpperCase();
+    if(!t){ show('list'); return; }
+    const hits=Object.keys(DATA.stocks).filter(s=>s.includes(t)).slice(0,40);
+    show('result');
+    if(!hits.length){ $('#result').innerHTML=
+      '<div class="card"><div class="sym">No symbol matching "'+t+
+      '"</div><p class="sub">'+DATA.universe.symbols+
+      ' NSE cash equities are scored this session. Check the spelling, or try part of the ticker.</p></div>';
+      return; }
+    $('#result').innerHTML=hits.map(s=>{
+      const v=DATA.stocks[s];
+      return '<a class="list" style="padding:9px 11px;border:1px solid var(--line);'+
+        'border-radius:8px;margin:6px 0;text-decoration:none;color:var(--text);'+
+        'background:var(--panel2);display:flex;justify-content:space-between" href="#'+
+        encodeURIComponent(s)+'"><b>'+s+'</b><span>'+
+        (v.clears?'<span class="verdict pass">CLEARS</span>':'<span class="verdict fail">REJECTED</span>')+
+        '</span><span class="muted">score '+fmt(v.score,3)+' · '+pct(v.percentile)+'</span></a>';
+    }).join('');
+  });
+  $$('.tab').forEach(t=>t.onclick=()=>{
+    $$('.tab').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on'); show(t.dataset.p);
+  });
+  window.onhashchange=()=>route();
+}
+
+function route(){
+  const s=decodeURIComponent(location.hash.slice(1));
+  if(s && DATA && DATA.stocks[s]){ show('stock'); draw(s); }
+  else if(!s && location.hash==='#research') show('research');
+  else show('list');
+}
+function show(p){
+  ['list','result','stock','research'].forEach(x=>
+    $('#'+x).classList.toggle('hide', x!==p));
+}
+
+function renderList(syms){
+  $('#list').innerHTML=
+    '<h2>'+syms.length+' of '+DATA.universe.symbols+' symbols clear every hard gate</h2>'
+    +'<p class="sub">The gates are strict on purpose. On most days very few names pass, '
+    +'and on some days none do — that is the engine protecting capital, not a bug.</p>'
+    +'<div class="list">'+syms.map(s=>
+      '<a href="#'+encodeURIComponent(s)+'"><div class="row"><b>'+s+'</b>'
+      +'<span class="pill">score '+fmt(DATA.stocks[s].score,3)+'</span></div>'
+      +'<div class="sub">₹'+fmt(DATA.stocks[s].close)+' · '
+      +cr(DATA.stocks[s].ret120)+' in 120d · '+(DATA.stocks[s].industry||'—')+'</div></a>'
+    ).join('')+'</div>';
+}
+
+function draw(sym){
+  const light=DATA.stocks[sym];
+  $('#stock').innerHTML=
+    '<div class="row"><div><span class="sym" style="font-size:22px">'+sym+'</span>'
+    +'<span class="pill">score '+fmt(light.score,3)+'</span></div>'
+    +'<span class="verdict '+(light.clears?'pass':'fail')+'">'
+    +(light.clears?'CLEARS EVERY GATE':'REJECTED')+'</span></div>'
+    +'<p class="sub">loading the full evidence…</p>';
+  loadStock(sym);
+}
+
+async function loadStock(sym){
+  let v;
+  try{ v=await (await fetch('stock/'+sym+'.json?v='+Date.now())).json(); }
+  catch(e){ $('#stock').innerHTML='<div class="card">detail unavailable for '+sym+'</div>'; return; }
+  const failed=v.gates.filter(g=>!g.passed);
+  const comps=Object.entries(v.components).map(([k,p])=>{
+    const meta=DATA.components.find(c=>c.field===k)||{};
+    return '<tr><td>'+(meta.label||k)+'</td><td class="muted" style="font-size:11px">'
+      +pct(v[k])+'</td><td style="width:130px"><div class="bar"><i style="width:'
+      +((p||0)*100)+'%"></i></div></td><td class="muted">'+(meta.weight!=null?('w '+meta.weight):'')
+      +'</td><td class="muted" style="font-size:11px">'+(meta.why||'')+'</td></tr>';
+  }).join('');
+
+  $('#stock').innerHTML=
+  '<div class="row"><div><span class="sym" style="font-size:22px">'+sym+'</span> '
+    +(v.industry?'<span class="pill">'+v.industry+'</span>':'')+'</div>'
+    +'<span class="verdict '+(v.clears?'pass':'fail')+'">'
+    +(v.clears?'CLEARS EVERY GATE':'REJECTED')+'</span></div>'
+    +'<p class="sub">'+(v.clears
+      ? 'This name clears every hard gate. It is a RESEARCH_CANDIDATE — a research screen, not a recommendation.'
+      : 'This name fails '+failed.length+' of '+v.gates.length+' hard gates. The full evidence is below, so the rejection is explainable rather than opaque.')+'</p>'
+  +'<p class="sub">'+(v.clears
+      ? 'This name clears every hard gate. It is a RESEARCH_CANDIDATE — a research screen, not a recommendation.'
+      : 'This name fails '+failed.length+' of '+v.gates.length+' hard gates. The full evidence is below, so the rejection is explainable rather than opaque.')+'</p>'
+
+  +'<div class="grid">'
+    +kpi('Score', fmt(v.score,3))+kpi('Percentile', pct(v.percentile))
+    +kpi('Close','₹'+fmt(v.close))+kpi('52w high', fmt(v.prox52,3))
+    +kpi('ATR%', cr(v.atrpct))+kpi('RVOL20', fmt(v.rvol20,2))
+    +kpi('120d', cr(v.ret120))+kpi('20d', cr(v.ret20))
+    +kpi('Turnover 20d','₹'+fmt((v.turnover20||0)/1e7,0)+' Cr')
+    +kpi('Sessions', v.sessions)+kpi('Coverage', pct(v.coverage)+' '+v.data_status)
+    +(v.screen_tag?kpi('Session tag', v.screen_tag):'')
+  +'</div>'
+
+  +'<h3>Hard gates</h3><table><tr><th>Gate</th><th>Value</th><th>Threshold</th>'
+    +'<th></th><th>Why</th></tr>'
+    +v.gates.map(g=>'<tr><td>'+g.criterion+'</td><td>'+
+        (typeof g.value==='number'?fmt(g.value,4):String(g.value==null?'unknown':g.value))+
+        '</td><td class="muted">'+g.threshold+'</td><td class="'+(g.passed?'ok':'no')+'">'
+        +(g.passed?'PASS':'FAIL')+'</td><td class="muted" style="font-size:11px">'
+        +g.meaning+'</td></tr>').join('')+'</table>'
+
+  +'<h3>What the score is made of</h3>'
+    +'<p class="sub">Each component is a cross-sectional percentile against the whole '
+    +'universe on '+dmy(DATA.asof)+' — not an absolute level.</p>'
+    +'<table><tr><th>Component</th><th>Raw</th><th>Percentile</th><th>Weight</th>'
+    +'<th>Evidence</th></tr>'+comps+'</table>'
+    +'<p class="note">The weights were fitted to 5-day forward returns. They were '
+    +'never validated on a months-long holding period, and the strongest factor '
+    +'(low volatility) loses as a short-horizon entry rule. Read the research tab.</p>'
+
+  +'<h3>Recent sessions</h3><table><tr><th>Date</th><th>Close</th><th>RVOL20</th>'
+    +'<th>ATR%</th><th>20d return</th></tr>'+(v.tape||[]).slice().reverse().map(r=>
+    '<tr><td class="muted">'+dmy(r.date)+'</td><td>₹'+fmt(r.close)+'</td><td>'
+    +fmt(r.rvol20,2)+'</td><td>'+cr(r.atrpct)+'</td><td>'+cr(r.ret20)+'</td></tr>'
+    ).join('')+'</table>';
+}
+
+function kpi(k,v){ return '<div class="kpi"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>'; }
+
+function renderComponents(){
+  $('#comps').innerHTML='<table><tr><th>Component</th><th>Weight</th><th>Measures</th>'
+    +'<th>Why it earns the weight</th></tr>'+DATA.components.map(c=>
+    '<tr><td>'+c.label+'</td><td>'+(c.weight!=null?c.weight:'—')+'</td><td>'
+    +c.measures+'</td><td class="muted">'+c.why+'</td></tr>').join('')+'</table>'
+    +'<h3>Hard gates every stock must clear</h3><table><tr><th>Gate</th>'
+    +'<th>Threshold</th><th>Why</th></tr>'+DATA.gates.map(g=>
+    '<tr><td>'+g.criterion+'</td><td><code>'+g.threshold+'</code></td><td>'
+    +g.meaning+'</td></tr>').join('')+'</table>';
+}
+
+function renderEvidence(){
+  const e=DATA.evidence||{};
+  let h='<p class="sub">What the engine measured about its own rules. These are the '
+    +'findings that decide what this site is allowed to claim.</p>';
+  if(e.verdict){
+    h+='<h3>Does the ranking actually rank?</h3><p class="sub">'+e.verdict.note
+      +'</p><table><tr><th>Decile</th><th>Observations</th><th>Mean score</th>'
+      +'<th>+5d</th><th>+20d</th><th>vs universe</th></tr>'
+      +e.verdict.rows.map(r=>{
+        return '<tr><td><b>'+r.decile+'</b> '+(r.decile==='D1'?'<span class="muted">(lowest)</span>':'')
+          +(r.decile==='D10'?' <span class="muted">(highest)</span>':'')+'</td><td>'
+          +Number(r.events).toLocaleString()+'</td><td>'+fmt(r.score_mean,3)
+          +'</td><td>'+cr(r.fwd5,2)+'</td><td>'+cr(r.fwd20,2)+'</td><td>'
+          +(r.excess>0?'<span class="ok">':'<span class="no">')+cr(r.excess,2)
+          +'</span></td></tr>';
+      }).join('')+'</table>'
+      +'<p class="note">D1 is the lowest-scoring tenth of the universe and D10 the '
+      +'highest. A ladder that rises from D1 to D10 means the score orders '
+      +'outcomes; a flat or falling one means it does not.</p>';
+  }
+  if(e.ic){
+    h+='<h3>Information coefficients vs the 5-day forward return</h3>'
+      +'<p class="sub">Measured on 108,742 breakout events. A positive IC means the '
+      +'higher value went with the better next 5 days.</p><table><tr><th>Factor</th>'
+      +'<th>IC</th><th>t</th><th>Reading</th></tr>'
+      +e.ic.map(r=>'<tr><td>'+r.factor+'</td><td>'+fmt(r.ic,4)+'</td><td>'
+        +fmt(r.t,2)+'</td><td class="muted">'+r.reading+'</td></tr>').join('')
+      +'</table>';
+  }
+  if(e.factors_dropped){
+    h+='<h3>Factors the protocol proposed, and what happened to them</h3>'
+      +'<p class="sub">The research protocol\'s own instruction is: if a factor adds '
+      +'no information beyond simpler ones, discard the complexity.</p><table>'
+      +e.factors_dropped.map(r=>'<tr><td>'+r.factor+'</td><td>'+fmt(r.ic,5)+'</td>'
+        +'<td>'+fmt(r.t,2)+'</td><td class="muted">'+r.verdict+'</td></tr>').join('')
+      +'</table>';
+  }
+  if(e.rotation){
+    h+='<h3>Single-position rotation — one stock, the whole account</h3>'
+      +'<p class="sub">'+e.rotation.note+'</p><table><tr><th>Pick</th><th>Trades</th>'
+      +'<th>CAGR</th><th>Max drawdown</th><th>Hit rate</th><th>Per trade</th></tr>'
+      +e.rotation.runs.map(r=>'<tr><td>'+r.pick+'</td><td>'+r.trades+'</td><td>'
+        +cr(r.CAGR)+'</td><td>'+cr(r.max_dd)+'</td><td>'+pct(r.WinRate)+'</td><td>'
+        +cr(r.Expectancy,2)+'</td></tr>').join('')+'</table>'
+      +'<p class="note">'+e.rotation.verdict+'</p>';
+  }
+  if(e.costs){
+    h+='<h3>What one rotation costs</h3>'
+      +'<p class="sub">The DP charge is flat <i>per sell</i>, so it scales as 1/capital. '
+      +'This is arithmetic, not opinion.</p><table><tr><th>Capital</th>'
+      +'<th>DP as % of account</th><th>Round trip</th><th>Idle cash</th>'
+      +'<th>Gross move for a +15% net target</th></tr>'
+      +e.costs.map(c=>'<tr><td>₹'+Number(c.capital).toLocaleString()+'</td><td>'
+        +c.dp_pct_of_capital+'%</td><td>'+c.round_trip_bps_of_capital+' bps</td><td>'
+        +c.idle_cash_pct+'%</td><td>'+cr(c.gross_for_target,2)+'</td></tr>').join('')
+      +'</table>';
+  }
+  if(e.geometry){
+    h+='<h3>Target / stop geometry</h3><p class="sub">'+e.geometry.note+'</p>'
+      +'<table><tr><th>Target</th><th>Stop</th><th>Trades</th><th>CAGR</th>'
+      +'<th>Max drawdown</th><th>Hit rate</th></tr>'
+      +e.geometry.rows.map(r=>'<tr><td>'+pct(r.target,0)+'</td><td>'+pct(r.stop,0)
+        +'</td><td>'+r.trades+'</td><td>'+cr(r.CAGR)+'</td><td>'+cr(r.max_dd)
+        +'</td><td>'+pct(r.hit_rate)+'</td></tr>').join('')+'</table>';
+  }
+  if(e.audits){
+    h+='<h3>Data integrity &amp; multiple-testing control</h3><table>'
+      +e.audits.map(a=>'<tr><td>'+a.name+'</td><td class="muted">'+a.verdict
+        +'</td></tr>').join('')+'</table>';
+  }
+  $('#evidence').innerHTML=h;
+}
+
+function renderCaveats(){
+  $('#caveats').innerHTML='<h2>What this does and does not prove</h2><ul>'
+    +DATA.caveats.map(c=>'<li>'+c+'</li>').join('')+'</ul>';
+}
+</script>
+<script>boot();</script>
+</body>
+</html>
