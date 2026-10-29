@@ -1,0 +1,146 @@
+{
+  "symbols": 2757,
+  "events": 2585096,
+  "from": "2020-10-05",
+  "to": "2026-10-29",
+  "horizon": 20,
+  "summary": "The highest-scoring bucket does NOT beat the lowest-scoring one (-0.06% over 20 sessions). The ranking does not order outcomes. Names clearing every gate averaged 0.0159 over 32584 events with a 0.5145 win rate.",
+  "monotonicity": {
+    "verdict": "The highest-scoring bucket does NOT beat the lowest-scoring one (-0.06% over 20 sessions). The ranking does not order outcomes.",
+    "top_minus_bottom": -0.0006,
+    "trend_corr": -0.008,
+    "universe_mean": 0.02387281013497507
+  },
+  "deciles": [
+    {
+      "events": 253598,
+      "score_mean": 0.1852,
+      "fwd1": 0.0009,
+      "fwd5": 0.0066,
+      "fwd10": 0.0141,
+      "fwd20": 0.0291,
+      "mae": -0.1023,
+      "excess": 0.0053
+    },
+    {
+      "events": 253598,
+      "score_mean": 0.3125,
+      "fwd1": 0.0012,
+      "fwd5": 0.0067,
+      "fwd10": 0.0133,
+      "fwd20": 0.0245,
+      "mae": -0.0962,
+      "excess": 0.0006
+    },
+    {
+      "events": 253598,
+      "score_mean": 0.3721,
+      "fwd1": 0.0011,
+      "fwd5": 0.0057,
+      "fwd10": 0.0117,
+      "fwd20": 0.0228,
+      "mae": -0.0921,
+      "excess": -0.0011
+    },
+    {
+      "events": 253597,
+      "score_mean": 0.4183,
+      "fwd1": 0.0011,
+      "fwd5": 0.0055,
+      "fwd10": 0.0109,
+      "fwd20": 0.0215,
+      "mae": -0.0894,
+      "excess": -0.0024
+    },
+    {
+      "events": 253598,
+      "score_mean": 0.4583,
+      "fwd1": 0.001,
+      "fwd5": 0.0053,
+      "fwd10": 0.0108,
+      "fwd20": 0.0214,
+      "mae": -0.0867,
+      "excess": -0.0025
+    },
+    {
+      "events": 253598,
+      "score_mean": 0.4958,
+      "fwd1": 0.001,
+      "fwd5": 0.0052,
+      "fwd10": 0.0105,
+      "fwd20": 0.0213,
+      "mae": -0.0845,
+      "excess": -0.0025
+    },
+    {
+      "events": 253597,
+      "score_mean": 0.5337,
+      "fwd1": 0.0011,
+      "fwd5": 0.0055,
+      "fwd10": 0.011,
+      "fwd20": 0.0222,
+      "mae": -0.0816,
+      "excess": -0.0016
+    },
+    {
+      "events": 253598,
+      "score_mean": 0.5745,
+      "fwd1": 0.0012,
+      "fwd5": 0.0055,
+      "fwd10": 0.0111,
+      "fwd20": 0.0224,
+      "mae": -0.0782,
+      "excess": -0.0015
+    },
+    {
+      "events": 253598,
+      "score_mean": 0.6236,
+      "fwd1": 0.0014,
+      "fwd5": 0.0063,
+      "fwd10": 0.0125,
+      "fwd20": 0.0251,
+      "mae": -0.0738,
+      "excess": 0.0012
+    },
+    {
+      "events": 253598,
+      "score_mean": 0.7085,
+      "fwd1": 0.0014,
+      "fwd5": 0.0069,
+      "fwd10": 0.014,
+      "fwd20": 0.0285,
+      "mae": -0.067,
+      "excess": 0.0046
+    }
+  ],
+  "verdicts": [
+    {
+      "group": "CLEARS every gate",
+      "events": 32584,
+      "score_mean": 0.5752,
+      "fwd1": 0.0019,
+      "fwd5": 0.0034,
+      "fwd10": 0.0073,
+      "fwd20": 0.0159,
+      "win_rate": 0.5145,
+      "mae_mean": -0.0876
+    },
+    {
+      "group": "does NOT clear",
+      "events": 2503394,
+      "score_mean": 0.4669,
+      "fwd1": 0.0011,
+      "fwd5": 0.006,
+      "fwd10": 0.012,
+      "fwd20": 0.024,
+      "win_rate": 0.5037,
+      "mae_mean": -0.0851
+    }
+  ],
+  "caveats": [
+    "Forward returns are outcomes measured after the verdict. Every score was computed from data through its own session, so nothing leaks backwards.",
+    "The gate-clearing group is SMALL and self-selected: those are exactly the sessions where the engine said 'act'. Read the event count before the percentage -- a strong-looking rate on a few dozen events is noise.",
+    "Survivorship is not controlled: the universe is today's listed NSE cash equities, so names that were delisted are absent entirely.",
+    "The score weights were fitted to 5-day forward returns on this same sample. A decile table measured on the fitting sample flatters it; the walk-forward folds in protocol/crosssec.py are the honest comparison."
+  ]
+}
