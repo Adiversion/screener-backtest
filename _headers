@@ -1,0 +1,33 @@
+# Cloudflare Pages & Edge CDN HTTP Response Headers
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+
+# Edge Cache Tapes: 24h edge cache with stale-while-revalidate and CORS
+/tapes/*
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  Content-Type: application/json; charset=utf-8
+
+# Edge Cache Diagnostic Data: 24h edge cache with CORS
+/data/*
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  Content-Type: application/json; charset=utf-8
+
+/*.json
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  Content-Type: application/json; charset=utf-8
+
+# Static Vendor Scripts: 1-year immutable cache
+/*.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.cjs
+  Cache-Control: public, max-age=31536000, immutable
+
+# HTML Pages: immediate revalidation so latest screener data appears instantly
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate

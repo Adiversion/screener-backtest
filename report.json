@@ -1,0 +1,639 @@
+{
+  "config_hash": "f4b4e3f7a20e4a4de94970b4d9ad378c03686e60e75893306737484f02b2dcee",
+  "window": [
+    null,
+    null
+  ],
+  "universe": {
+    "symbols": 2768,
+    "sessions": 2186,
+    "from": "2018-01-01",
+    "to": "2026-11-06"
+  },
+  "benchmark": {
+    "N": 2754,
+    "mean_return": 0.6783,
+    "median_return": 0.0327,
+    "pct_positive": 0.7538
+  },
+  "mode": "exploratory",
+  "exploratory": true,
+  "data_quality": {
+    "rows": 920684,
+    "symbols": 2768,
+    "sessions": 2186,
+    "date_min": "2018-01-01",
+    "date_max": "2026-11-06",
+    "missing_ohlcv_cells": 0,
+    "duplicate_symbol_date": 0,
+    "high_less_than_low": 0,
+    "close_outside_range": 2,
+    "zero_volume": 1298,
+    "non_positive_price": 0,
+    "delivery_data_available": true,
+    "delivery_rows": 36913,
+    "surveillance_lists_available": false
+  },
+  "audit": {
+    "passed": true,
+    "tests": [
+      {
+        "test": "truncation",
+        "checked": 36,
+        "mismatches": 0,
+        "pass": true
+      },
+      {
+        "test": "shuffle_future",
+        "checked": 19,
+        "mismatches": 0,
+        "pass": true
+      },
+      {
+        "test": "static_scan",
+        "hits": [],
+        "exemptions": [
+          {
+            "module": "participation.py",
+            "pattern": "shift(-",
+            "reason": "Reads the future on purpose, to LABEL a cohort: 'participation later expanded back through the level' is not knowable until it has happened. The label is descriptive only and is never an entry signal; cohorts A, B and D are all point-in-time. See label_cohorts's docstring."
+          },
+          {
+            "module": "verdict.py",
+            "pattern": "shift(-",
+            "reason": "Computes forward returns, which are OUTCOMES measured after the verdict. The score at each session is built by ranking.build_long from data through that session only, so no outcome can flow backwards into a verdict. See the module docstring."
+          }
+        ],
+        "pass": true
+      },
+      {
+        "test": "ordering",
+        "checked": 224826,
+        "violations": 0,
+        "pass": true
+      },
+      {
+        "test": "cutoff",
+        "max_date": "2026-11-06",
+        "cutoff": "2026-11-06",
+        "pass": true
+      }
+    ]
+  },
+  "verdict": {
+    "label": "SEE COMPARISON",
+    "reason": "requires baseline CIs (see table)"
+  },
+  "results": {
+    "aae_acceptance": {
+      "1000": {
+        "strategy": "aae_acceptance",
+        "capital": 1000.0,
+        "metrics": {
+          "N": 863,
+          "WinRate": 0.0753,
+          "WinRate_CI": [
+            0.0579,
+            0.0939
+          ],
+          "LossRate": 0.7717,
+          "TimeExitRate": 0.139,
+          "SafeRate": 0.5261,
+          "SafeRate_CI": [
+            0.4925,
+            0.5585
+          ],
+          "TailBreach": 0.1437,
+          "Expectancy": -0.022,
+          "Expectancy_CI": [
+            -0.0268,
+            -0.0175
+          ],
+          "Expectancy_median": -0.0436,
+          "ProfitFactor": 0.443,
+          "Std": 0.0691,
+          "P25": -0.0615,
+          "P75": -0.0042,
+          "MAE_mean": -0.0325,
+          "MFE_mean": 0.048,
+          "Sessions_mean": 6.57,
+          "Strategy": "aae_acceptance",
+          "signals": 1393,
+          "skipped": 530
+        },
+        "portfolio": {
+          "trades": 863,
+          "overlapping": true,
+          "applicable": false,
+          "final": null,
+          "total_return": null,
+          "max_dd": null,
+          "CAGR": null,
+          "longest_losing_streak": null,
+          "trades_per_year": null
+        },
+        "n_trades": 863
+      }
+    },
+    "trap": {
+      "1000": {
+        "strategy": "trap",
+        "capital": 1000.0,
+        "metrics": {
+          "N": 2442,
+          "WinRate": 0.1904,
+          "WinRate_CI": [
+            0.1753,
+            0.2064
+          ],
+          "LossRate": 0.7396,
+          "TimeExitRate": 0.1216,
+          "SafeRate": 0.4554,
+          "SafeRate_CI": [
+            0.4353,
+            0.4746
+          ],
+          "TailBreach": 0.5835,
+          "Expectancy": -0.0278,
+          "Expectancy_CI": [
+            -0.0314,
+            -0.0239
+          ],
+          "Expectancy_median": -0.0899,
+          "ProfitFactor": 0.537,
+          "Std": 0.0965,
+          "P25": -0.0911,
+          "P75": 0.0082,
+          "MAE_mean": -0.0511,
+          "MFE_mean": 0.0685,
+          "Sessions_mean": 5.67,
+          "Strategy": "trap",
+          "signals": 3700,
+          "skipped": 1258
+        },
+        "portfolio": {
+          "trades": 2442,
+          "overlapping": true,
+          "applicable": false,
+          "final": null,
+          "total_return": null,
+          "max_dd": null,
+          "CAGR": null,
+          "longest_losing_streak": null,
+          "trades_per_year": null
+        },
+        "n_trades": 2442
+      }
+    },
+    "breakout_day": {
+      "1000": {
+        "strategy": "breakout_day",
+        "capital": 1000.0,
+        "metrics": {
+          "N": 8875,
+          "WinRate": 0.1366,
+          "WinRate_CI": [
+            0.1295,
+            0.1439
+          ],
+          "LossRate": 0.7191,
+          "TimeExitRate": 0.1763,
+          "SafeRate": 0.7006,
+          "SafeRate_CI": [
+            0.6907,
+            0.7106
+          ],
+          "TailBreach": 0.3619,
+          "Expectancy": -0.0191,
+          "Expectancy_CI": [
+            -0.0208,
+            -0.0173
+          ],
+          "Expectancy_median": -0.0407,
+          "ProfitFactor": 0.584,
+          "Std": 0.084,
+          "P25": -0.0902,
+          "P75": 0.0095,
+          "MAE_mean": -0.0469,
+          "MFE_mean": 0.0628,
+          "Sessions_mean": 7.47,
+          "Strategy": "breakout_day",
+          "signals": 13360,
+          "skipped": 4485
+        },
+        "portfolio": {
+          "trades": 8875,
+          "overlapping": true,
+          "applicable": false,
+          "final": null,
+          "total_return": null,
+          "max_dd": null,
+          "CAGR": null,
+          "longest_losing_streak": null,
+          "trades_per_year": null
+        },
+        "n_trades": 8875
+      }
+    },
+    "vol_breakout": {
+      "1000": {
+        "strategy": "vol_breakout",
+        "capital": 1000.0,
+        "metrics": {
+          "N": 20311,
+          "WinRate": 0.1247,
+          "WinRate_CI": [
+            0.1201,
+            0.1294
+          ],
+          "LossRate": 0.7291,
+          "TimeExitRate": 0.1738,
+          "SafeRate": 0.719,
+          "SafeRate_CI": [
+            0.7129,
+            0.7252
+          ],
+          "TailBreach": 0.3453,
+          "Expectancy": -0.0202,
+          "Expectancy_CI": [
+            -0.0213,
+            -0.0191
+          ],
+          "Expectancy_median": -0.0398,
+          "ProfitFactor": 0.553,
+          "Std": 0.0808,
+          "P25": -0.0901,
+          "P75": 0.0059,
+          "MAE_mean": -0.0462,
+          "MFE_mean": 0.0604,
+          "Sessions_mean": 7.51,
+          "Strategy": "vol_breakout",
+          "signals": 30117,
+          "skipped": 9806
+        },
+        "portfolio": {
+          "trades": 20311,
+          "overlapping": true,
+          "applicable": false,
+          "final": null,
+          "total_return": null,
+          "max_dd": null,
+          "CAGR": null,
+          "longest_losing_streak": null,
+          "trades_per_year": null
+        },
+        "n_trades": 20311
+      }
+    },
+    "momentum_top": {
+      "1000": {
+        "strategy": "momentum_top",
+        "capital": 1000.0,
+        "metrics": {
+          "N": 6265,
+          "WinRate": 0.1716,
+          "WinRate_CI": [
+            0.1625,
+            0.1805
+          ],
+          "LossRate": 0.6961,
+          "TimeExitRate": 0.1658,
+          "SafeRate": 0.6346,
+          "SafeRate_CI": [
+            0.6227,
+            0.6471
+          ],
+          "TailBreach": 0.4128,
+          "Expectancy": -0.0165,
+          "Expectancy_CI": [
+            -0.0187,
+            -0.0144
+          ],
+          "Expectancy_median": -0.045,
+          "ProfitFactor": 0.659,
+          "Std": 0.091,
+          "P25": -0.0908,
+          "P75": 0.0248,
+          "MAE_mean": -0.0508,
+          "MFE_mean": 0.0722,
+          "Sessions_mean": 7.55,
+          "Strategy": "momentum_top",
+          "signals": 8981,
+          "skipped": 2716
+        },
+        "portfolio": {
+          "trades": 6265,
+          "overlapping": true,
+          "applicable": false,
+          "final": null,
+          "total_return": null,
+          "max_dd": null,
+          "CAGR": null,
+          "longest_losing_streak": null,
+          "trades_per_year": null
+        },
+        "n_trades": 6265
+      }
+    },
+    "high_52w": {
+      "1000": {
+        "strategy": "high_52w",
+        "capital": 1000.0,
+        "metrics": {
+          "N": 4714,
+          "WinRate": 0.1082,
+          "WinRate_CI": [
+            0.0993,
+            0.1171
+          ],
+          "LossRate": 0.724,
+          "TimeExitRate": 0.1797,
+          "SafeRate": 0.763,
+          "SafeRate_CI": [
+            0.751,
+            0.7751
+          ],
+          "TailBreach": 0.2855,
+          "Expectancy": -0.0178,
+          "Expectancy_CI": [
+            -0.02,
+            -0.0156
+          ],
+          "Expectancy_median": -0.0325,
+          "ProfitFactor": 0.567,
+          "Std": 0.0775,
+          "P25": -0.0899,
+          "P75": 0.0057,
+          "MAE_mean": -0.0427,
+          "MFE_mean": 0.0573,
+          "Sessions_mean": 7.64,
+          "Strategy": "high_52w",
+          "signals": 8161,
+          "skipped": 3447
+        },
+        "portfolio": {
+          "trades": 4714,
+          "overlapping": true,
+          "applicable": false,
+          "final": null,
+          "total_return": null,
+          "max_dd": null,
+          "CAGR": null,
+          "longest_losing_streak": null,
+          "trades_per_year": null
+        },
+        "n_trades": 4714
+      }
+    },
+    "trend": {
+      "1000": {
+        "strategy": "trend",
+        "capital": 1000.0,
+        "metrics": {
+          "N": 157110,
+          "WinRate": 0.1206,
+          "WinRate_CI": [
+            0.1189,
+            0.1222
+          ],
+          "LossRate": 0.7154,
+          "TimeExitRate": 0.1905,
+          "SafeRate": 0.78,
+          "SafeRate_CI": [
+            0.778,
+            0.7821
+          ],
+          "TailBreach": 0.2779,
+          "Expectancy": -0.0152,
+          "Expectancy_CI": [
+            -0.0156,
+            -0.0149
+          ],
+          "Expectancy_median": -0.0319,
+          "ProfitFactor": 0.621,
+          "Std": 0.0786,
+          "P25": -0.0807,
+          "P75": 0.0084,
+          "MAE_mean": -0.0426,
+          "MFE_mean": 0.0623,
+          "Sessions_mean": 8.0,
+          "Strategy": "trend",
+          "signals": 244980,
+          "skipped": 87870
+        },
+        "portfolio": {
+          "trades": 157110,
+          "overlapping": true,
+          "applicable": false,
+          "final": null,
+          "total_return": null,
+          "max_dd": null,
+          "CAGR": null,
+          "longest_losing_streak": null,
+          "trades_per_year": null
+        },
+        "n_trades": 157110
+      }
+    },
+    "fip_proxy": {
+      "1000": {
+        "strategy": "fip_proxy",
+        "capital": 1000.0,
+        "metrics": {
+          "N": 11095,
+          "WinRate": 0.0926,
+          "WinRate_CI": [
+            0.0872,
+            0.0982
+          ],
+          "LossRate": 0.7355,
+          "TimeExitRate": 0.1919,
+          "SafeRate": 0.7865,
+          "SafeRate_CI": [
+            0.7789,
+            0.7941
+          ],
+          "TailBreach": 0.2736,
+          "Expectancy": -0.0199,
+          "Expectancy_CI": [
+            -0.0212,
+            -0.0185
+          ],
+          "Expectancy_median": -0.0324,
+          "ProfitFactor": 0.512,
+          "Std": 0.0734,
+          "P25": -0.0784,
+          "P75": 0.0026,
+          "MAE_mean": -0.0424,
+          "MFE_mean": 0.0559,
+          "Sessions_mean": 7.94,
+          "Strategy": "fip_proxy",
+          "signals": 17275,
+          "skipped": 6180
+        },
+        "portfolio": {
+          "trades": 11095,
+          "overlapping": true,
+          "applicable": false,
+          "final": null,
+          "total_return": null,
+          "max_dd": null,
+          "CAGR": null,
+          "longest_losing_streak": null,
+          "trades_per_year": null
+        },
+        "n_trades": 11095
+      }
+    },
+    "high_effort_low_result": {
+      "1000": {
+        "strategy": "high_effort_low_result",
+        "capital": 1000.0,
+        "metrics": {
+          "N": 10383,
+          "WinRate": 0.1162,
+          "WinRate_CI": [
+            0.1104,
+            0.1222
+          ],
+          "LossRate": 0.7288,
+          "TimeExitRate": 0.1925,
+          "SafeRate": 0.7554,
+          "SafeRate_CI": [
+            0.7473,
+            0.7637
+          ],
+          "TailBreach": 0.311,
+          "Expectancy": -0.0185,
+          "Expectancy_CI": [
+            -0.0201,
+            -0.017
+          ],
+          "Expectancy_median": -0.0363,
+          "ProfitFactor": 0.568,
+          "Std": 0.0786,
+          "P25": -0.0899,
+          "P75": 0.0065,
+          "MAE_mean": -0.0436,
+          "MFE_mean": 0.0599,
+          "Sessions_mean": 7.76,
+          "Strategy": "high_effort_low_result",
+          "signals": 14598,
+          "skipped": 4215
+        },
+        "portfolio": {
+          "trades": 10383,
+          "overlapping": true,
+          "applicable": false,
+          "final": null,
+          "total_return": null,
+          "max_dd": null,
+          "CAGR": null,
+          "longest_losing_streak": null,
+          "trades_per_year": null
+        },
+        "n_trades": 10383
+      }
+    },
+    "recovered_after_rej": {
+      "1000": {
+        "strategy": "recovered_after_rej",
+        "capital": 1000.0,
+        "metrics": {
+          "N": 1138,
+          "WinRate": 0.2012,
+          "WinRate_CI": [
+            0.1775,
+            0.2241
+          ],
+          "LossRate": 0.5747,
+          "TimeExitRate": 0.3102,
+          "SafeRate": 0.8515,
+          "SafeRate_CI": [
+            0.8304,
+            0.8708
+          ],
+          "TailBreach": 0.1819,
+          "Expectancy": 0.012,
+          "Expectancy_CI": [
+            0.0068,
+            0.0173
+          ],
+          "Expectancy_median": -0.0109,
+          "ProfitFactor": 1.415,
+          "Std": 0.0888,
+          "P25": -0.0491,
+          "P75": 0.0763,
+          "MAE_mean": -0.0336,
+          "MFE_mean": 0.0966,
+          "Sessions_mean": 9.86,
+          "Strategy": "recovered_after_rej",
+          "signals": 1559,
+          "skipped": 421
+        },
+        "portfolio": {
+          "trades": 1138,
+          "overlapping": true,
+          "applicable": false,
+          "final": null,
+          "total_return": null,
+          "max_dd": null,
+          "CAGR": null,
+          "longest_losing_streak": null,
+          "trades_per_year": null
+        },
+        "n_trades": 1138
+      }
+    },
+    "random": {
+      "1000": {
+        "strategy": "random",
+        "capital": 1000.0,
+        "metrics": {
+          "N": 1630,
+          "WinRate": 0.0393,
+          "WinRate_CI": [
+            0.0301,
+            0.0491
+          ],
+          "LossRate": 0.6785,
+          "TimeExitRate": 0.7939,
+          "SafeRate": 0.9098,
+          "SafeRate_CI": [
+            0.8963,
+            0.9233
+          ],
+          "TailBreach": 0.119,
+          "Expectancy": -0.0139,
+          "Expectancy_CI": [
+            -0.0164,
+            -0.0113
+          ],
+          "Expectancy_median": -0.0203,
+          "ProfitFactor": 0.503,
+          "Std": 0.0528,
+          "P25": -0.0446,
+          "P75": 0.0102,
+          "MAE_mean": -0.0203,
+          "MFE_mean": 0.0416,
+          "Sessions_mean": 3.26,
+          "Strategy": "random",
+          "signals": 1986,
+          "skipped": 356
+        },
+        "portfolio": {
+          "trades": 1630,
+          "overlapping": true,
+          "applicable": false,
+          "final": null,
+          "total_return": null,
+          "max_dd": null,
+          "CAGR": null,
+          "longest_losing_streak": null,
+          "trades_per_year": null
+        },
+        "n_trades": 1630
+      }
+    }
+  }
+}
